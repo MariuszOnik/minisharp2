@@ -28,11 +28,21 @@ Zasady:
   i generator kodu wywołuje z C (wasm) – nie pisze ich drugi raz w JS.
 - Żadnych ścieżek ani nazw gier w rdzeniu (`toee/`, `Toee`, `Actor`…). Zasoby gier czyta moduł gry.
 
+## Edytor kodu a język
+
+Edytor jest **zwykłym edytorem tekstu** (bufor, kursor, przewijanie, zaznaczanie, klawiatura, pliki) i nic nie wie
+o MiniSharpie. O język pyta przez wąską **usługę języka** (`lang/service.h`), którą dostarcza rdzeń:
+kolory linii, podpowiedzi w miejscu kursora, sygnatura wywołania, typ pod kursorem, błędy z liniami, uruchom.
+Dziś te punkty są rozsiane w `editor.c` (słowa kluczowe, `ci_*`, `ms_complete`, `project_*`, `help_*`).
+Zysk: ten sam edytor otwiera też pliki bez języka (`uses.txt`, dane), a przeglądarka woła tę samą usługę przez wasm.
+Kolejność prac się nie zmienia: usługa stoi na rdzeniu, więc najpierw język i biblioteka (etapy 1–2), edytor w etapie 4.
+
 ## Układ folderów (propozycja)
 
 ```
 minisharp-core/
-  lang/         ms.h (publiczne API), parser, kompilator (kilka plików), vm, gc, korutyny, disasm
+  lang/         ms.h (publiczne API), parser, kompilator (kilka plików), vm, gc, korutyny, disasm,
+                service.h/.c – usługa języka dla edytorów (kolory, podpowiedzi, błędy; z codeindex)
   lib/          funkcje wbudowane niezależne od platformy
   platform/
     platform.h  czego warstwy wyżej chcą od hosta

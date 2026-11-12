@@ -52,7 +52,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę. Pierwszy build na konsolę.
 
 ### Etap 4 – edytor kodu
-- [ ] `editor.c` (przegląd, podział), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
+- [ ] Usługa języka (`lang/service.h`): kolory, podpowiedzi, sygnatury, błędy – na bazie `codeindex.c`; testy na PC.
+- [ ] `editor.c` jako edytor tekstu bez wiedzy o języku (pyta usługę), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
 
 ### Etap 5 – edytor grafu
 - [ ] Wg decyzji z etapu 0.
