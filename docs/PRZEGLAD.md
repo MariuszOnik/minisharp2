@@ -13,8 +13,9 @@ Stare repo zostaje **archiwum**: nic w nim nie zmieniamy, kod przenosimy stąd p
 
 - Nowe repo w nowym folderze, czysta historia; stare repo jako archiwum.
 - Przenoszenie z przeglądem (nie pisanie od zera); testy idą razem z kodem.
-- Platforma: **tylko 3DS**. Build PC zostaje wyłącznie jako narzędzie do testów automatycznych (bez okna i bez
-  wspierania jako platforma); wersja w przeglądarce odpada.
+- Platformy: **3DS i przeglądarka (web)**. Build PC zostaje wyłącznie jako narzędzie do testów automatycznych (bez okna
+  i bez wspierania jako platforma). Web zostaje, bo rdzeń jest w C (wasm) – różni się tylko warstwa platformy
+  (decyzja zmieniona tego samego dnia: najpierw „tylko 3DS”).
 - Edytor kodu i edytor grafu zostają; **który edytor grafu – decyzja po porównaniu** (sekcja niżej).
 
 ## Rdzeń języka
@@ -69,13 +70,21 @@ Stare repo zostaje **archiwum**: nic w nim nie zmieniamy, kod przenosimy stąd p
 | `pc/main_pc.c` | 205 | zostaje | uruchamianie testów, `--frames`, `--press`, `--ppm` (podgląd klatki) |
 | `pc/platform_pc.c` | 374 | zostaje | programowy bufor obu ekranów – potrzebny do `--ppm` i testów rysowania |
 | `pc/astcheck.c/.h` | 450 | zostaje | test zakresów AST (potrzebny edytorowi i grafowi A) |
-| `pc/fgcheck.c/.h` | 182 | wyrzucić | porównywał graf B z wersją w przeglądarce, która odpada |
+| `pc/fgcheck.c/.h` | 182 | decyzja | porównuje graf B w C z wersją JS; zbędny, gdy generator będzie tylko w C |
 
-## Przeglądarka (`web/`) – wyrzucić
+## Przeglądarka (`web/`) – zostaje, z mniejszym dublowaniem
 
-`app.js`, `complete.js`, `graph.js`, `grapheditor.js`, `main_web.c`, `index.html`, `przewodnik.html`, `style.css`,
-`build.sh`, `make_examples.py`, `sjlj.s` (ok. 4100 linii). Decyzja: tylko 3DS. Strona na GitHub Pages zostaje
-w starym repo, jak jest.
+Rdzeń (parser, kompilator, VM, biblioteka) to ten sam kod C skompilowany do WebAssembly (Zig, `wasm32-wasi`).
+
+| Plik | Linie | Co robi | Werdykt | Uwagi |
+|---|---:|---|---|---|
+| `main_web.c` | 197 | host: `platform.h` przez ok. 20 funkcji JS (canvas 2D, dźwięk, obrazki, dotyk) | zostaje | brakuje `Gfx.NewImage` (rysowanie do obrazka) i 3D – dopisać albo zgłaszać brak |
+| `app.js` | 1401 | strona: edytor kodu (HTML), projekty, uruchamianie, ekrany, przyciski, udostępnianie linkiem | poprawić | rozdzielić: host gry (ekrany, wejście, dźwięk) / edytor / pliki i udostępnianie |
+| `complete.js` | 364 | podpowiedzi w edytorze | poprawić | **dubluje `codeindex.c`** – zastąpić wywołaniami C przez wasm (jedna implementacja) |
+| `graph.js`, `grapheditor.js` | 1226 | edytor grafu B w JS (model + generator kodu + SVG) | decyzja | **dubluje `fgraph.c`** (stąd padający test `fgraph`). Model i generator tylko w C, w JS sam widok |
+| `index.html`, `style.css`, `przewodnik.html` | 862 | strona, wygląd, samouczek | zostaje | |
+| `build.sh`, `make_examples.py`, `sjlj.s` | 51 | budowanie (Zig z pip), przykłady | zostaje | lista plików C z konfiguracji modułów zamiast ręcznej |
+| publikacja (GitHub Actions → Pages) | | | decyzja | nowe repo na GitHubie czy publikacja dalej ze starego – do ustalenia przy etapie web |
 
 ## SDK, narzędzia, przykłady, testy
 
@@ -105,14 +114,17 @@ w starym repo, jak jest.
 | Edycja | każda zmiana w grafie to łatka tekstu kodu (zakresy AST) – kod i graf zawsze zgodne | węzły z katalogu, kable, wartości; generator pisze kod od nowa |
 | Wygląd | widok metody (instrukcje jako węzły) | przepływ od lewej do prawej, duże porty pod palec (jak Bolt) |
 | Główna zaleta | jeden program, dwa widoki; nie ma „plików grafowych” | przyjazny dla początkujących, wygodny dotykiem |
-| Słabość | graf instrukcji bywa gęsty, mniej „wizualny” | dwa światy (graf/kod), duży katalog węzłów do utrzymania; atut zgodności z przeglądarką znika, bo web odpada |
+| Słabość | graf instrukcji bywa gęsty, mniej „wizualny” | dwa światy (graf/kod), duży katalog węzłów do utrzymania; dziś dwie implementacje (C i JS) |
 | Testy | `graph_kinds*`, `graph_ship`, `spans`, `graph_edit*` (2 padają na MinGW) | `fgraph` (pada – dane z przeglądarki nieaktualne) |
 
-Moja rekomendacja: **A jako podstawa** (kod jest jedynym źródłem, działa dla wszystkiego, mniej kodu i jeden świat),
-a z B przenieść to, co było w nim dobre dla dotyku: wygląd węzłów i portów, gesty, dodawanie węzła z katalogu jako
-wstawianie gotowego fragmentu kodu. Decyzja należy do użytkownika.
+Oba są w C, więc każdy może działać na 3DS i w przeglądarce (przez wasm) – web nie przesądza wyboru.
+Moja rekomendacja: **A jako podstawa** (kod jest jedynym źródłem, działa dla wszystkiego, jeden świat), a z B przenieść
+to, co było w nim dobre dla dotyku: wygląd węzłów i portów, gesty, dodawanie węzła z katalogu jako wstawianie gotowego
+fragmentu kodu. W przeglądarce ten sam model z C, widok w SVG. Decyzja należy do użytkownika.
 
 ## Znane problemy do naprawy przy przenoszeniu
+
+0. Logika edytora w przeglądarce napisana drugi raz w JS (`complete.js`, `graph.js`) – ma pochodzić z C (wasm).
 
 1. Funkcje wbudowane w jednej tabeli, moduły gier w rdzeniu (`natives.c`, `gfx3d.c`) – patrz architektura.
 2. 3 testy padają od dawna (`graph_edit`, `graph_edit_run`, `fgraph`).

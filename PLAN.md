@@ -11,7 +11,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
    plik po pliku, z przeglądem. Nie wprowadzamy w nim zmian.
 4. Kod przenosimy **razem z testami**; po każdym kroku wszystkie przeniesione testy przechodzą.
 5. W rdzeniu żadnych nazw ani ścieżek gier. Gry i ich zasoby to moduły w repozytoriach gier.
-6. Platforma: 3DS. PC tylko do testów. Pliki `.cs` bez BOM.
+6. Platformy: 3DS i przeglądarka (web). PC tylko do testów. Logika (podpowiedzi, graf) tylko w C – web woła ją
+   przez wasm. Pliki `.cs` bez BOM.
 
 ## Gdzie co leży
 
@@ -56,6 +57,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 ### Etap 5 – edytor grafu
 - [ ] Wg decyzji z etapu 0.
 
+### Etap 5b – przeglądarka
+- [ ] `platform/web` (`main_web.c`) + budowanie wasm (Zig) z listy modułów; `Gfx.NewImage` w JS.
+- [ ] Strona: edytor HTML/JS, podpowiedzi i graf przez wywołania C (bez `complete.js`/`graph.js` jako drugiej logiki).
+- [ ] Publikacja (GitHub Pages) – nowe repo na GitHubie albo dalej stare: decyzja użytkownika.
+
 ### Etap 6 – moduły
 - [ ] API modułów (folder, tabela funkcji, `api.cs`, testy, włączanie w buildzie).
 - [ ] `modules/iso`, `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).
@@ -68,3 +74,4 @@ Etap 0: decyzje użytkownika (edytor grafu, terminal) i zatwierdzenie architektu
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
   przenoszenie z przeglądem, tylko 3DS (PC do testów). Zrobiony przegląd starego kodu i szkic architektury.
+- 2026-11-12: web jednak zostaje (rdzeń w C → wasm, różni się tylko platforma); zasada: logika edytora tylko w C.

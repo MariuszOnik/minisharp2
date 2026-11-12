@@ -2,7 +2,7 @@
 
 Cel: MiniSharp jest **podstawą niezależną od gier**. Rdzeń nie wie nic o żadnej grze ani projekcie, który na nim
 powstaje. Gry (ToEE, Fallout…) i większe dodatki (3D, Iso) są modułami, które dołączają się do rdzenia, a nie
-odwrotnie. Platforma docelowa: Nintendo 3DS; build PC służy tylko testom.
+odwrotnie. Platformy: Nintendo 3DS i przeglądarka (ten sam C jako WebAssembly); build PC służy tylko testom.
 
 ## Warstwy
 
@@ -11,7 +11,7 @@ Każda warstwa korzysta tylko z niższych. Niższa nie zna wyższej.
 ```
 5. aplikacje      menu, edytor kodu, edytor grafu, Help             (app/)
 4. moduły         3d, iso, …  (opcjonalne, każdy w swoim folderze)   (modules/<nazwa>/)
-3. platforma      Gfx, Input, Audio, Time, App, File – 3DS i PC-test (platform/3ds, platform/pc)
+3. platforma      Gfx, Input, Audio, Time, App, File – 3DS, web, PC-test (platform/3ds, web, pc)
 2. biblioteka     Console, Math, Mathf, Random, string, char, List…  (lib/)
 1. język          lekser, parser, kompilator, VM, GC, korutyny       (lang/)
 ```
@@ -24,6 +24,8 @@ Zasady:
   przy budowaniu (lista modułów w pliku konfiguracyjnym builda). Moduły gier żyją w repozytoriach gier.
 - **Aplikacje (5)** nie zawierają logiki języka; korzystają z publicznego API (`ms.h`): kompiluj, uruchom klatkę,
   zapytaj indeks kodu, pobierz błąd z linią.
+- **Logika raz, w C.** Przeglądarka ma własny interfejs (HTML/JS/SVG), ale podpowiedzi, indeks kodu, model grafu
+  i generator kodu wywołuje z C (wasm) – nie pisze ich drugi raz w JS.
 - Żadnych ścieżek ani nazw gier w rdzeniu (`toee/`, `Toee`, `Actor`…). Zasoby gier czyta moduł gry.
 
 ## Układ folderów (propozycja)
@@ -35,9 +37,11 @@ minisharp-core/
   platform/
     platform.h  czego warstwy wyżej chcą od hosta
     3ds/        libctru + citro2d/citro3d: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka
+    web/        host w wasm: platform.h przez funkcje JS (canvas, dźwięk, dotyk)
     pc/         host testów: konsola, programowy bufor ekranów (--frames, --press, --ppm)
   modules/      3d/, iso/ (opcjonalne)
-  app/          menu, editor, graph, help, keyboard, ui, terminal (jeśli zostaje)
+  app/          menu, editor, graph, help, keyboard, ui, terminal (jeśli zostaje) – wersja 3DS w C
+  web/          strona: edytor HTML/JS, widok grafu SVG, budowanie wasm (Zig), publikacja
   sdk/          Help.txt, api/*.cs (opis API wg warstw i modułów, dla podpowiedzi i VS Code)
   tools/        gen_help.py, gen_samples.py, make_atlas.py, ms.ps1, build/test skrypty
   examples/     przykładowe programy (tylko ogólne)
