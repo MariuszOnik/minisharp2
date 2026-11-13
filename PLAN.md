@@ -88,8 +88,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       Ograniczenie: `else` musi być w linii z `}` (samo `}` kończy wejście).
 - [ ] **Braki względem C# znalezione przy rozdziale 5** (zasada: program poprawny w C# działa i u nas):
       - ~~przecinek w `for`~~ (zrobione 2026-11-13: `E_SEQ` w parserze tylko dla części 1 i 3 `for`, printer, test `forcomma`);
-      - `char` to jeden bajt: `foreach (char c in "pętla")` daje dla `ę` dwa znaki (napisy w UTF-8). Do decyzji: `char` jako
-        punkt kodowy Unicode (indeksowanie i `Length` po znakach) czy zostawić bajty i opisać.
+      - ~~`char` to jeden bajt~~ – **decyzja użytkownika 2026-11-13: `char` = punkt kodowy Unicode** (zrobione 2026-11-13:
+        `lang/text.c`, napisy dalej w UTF-8, `ObjString.ulen` liczone leniwie + pamięć ostatniej pozycji; `Length`, `s[i]`,
+        `Substring`, `IndexOf`, `Split`, `ToUpper/ToLower` z polskimi literami, grekiem i cyrylicą; testy `unicode`,
+        `rt_strindex`). Zostało: sortowanie napisów po polsku (dziś `ą` po `z`, kolejność kodów).
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,
@@ -99,8 +101,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] **Braki względem C# znalezione przy rozdziale 7 (tablice):**
       - ~~przypisanie do zmiennej pętli `foreach` przechodzi, w C# to błąd CS1656~~ (zrobione 2026-11-13: `Local.readOnly`,
         `check_writable_local` w `lvalue` i przy `ref`/`out`; błędy `foreach_*`; zostało: pole struktury przez taką zmienną, CS1654);
-      - `int[,] t = new int[2, 3];` daje niejasny błąd `unexpected type name 'int' here` – tablic prostokątnych nie ma
-        (rozdział 7 każe używać `int[][]`); do decyzji: dodać je czy tylko czytelny komunikat.
+      - `int[,] t = new int[2, 3];` daje niejasny błąd – **decyzja użytkownika 2026-11-13: dodać tablice prostokątne**
+        (`int[,]`, `new int[w, h]`, `{ {..}, {..} }`, `t[y, x]`, `GetLength`, `Length`, `foreach`, printer, podpowiedzi).
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
@@ -224,9 +226,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 ## Do decyzji
 
+- **Błąd w rdzeniu (znaleziony 2026-11-13):** kilka kompilacji programu z błędem w jednym procesie czasem kończy się
+  naruszeniem pamięci (0xC0000005, ok. 10% procesów po 20 kompilacjach; stąd niestabilny `test_hooks`). Do naprawy
+  przed `int[,]` – terminal i edytor kompilują wiele razy w jednym procesie.
+
 Sprawy, których plan nie rozstrzyga – czekają na użytkownika (tu dopisuje je też tryb autonomiczny, zob. `CLAUDE.md`).
-- `char` jako jeden bajt czy punkt kodowy Unicode (`foreach (char c in "pętla")` daje dziś dla `ę` dwa znaki) – etap 2,
-  „Braki względem C# znalezione przy rozdziale 5”.
+- (rozstrzygnięte 2026-11-13: `char` = punkt kodowy Unicode; `int[,]` – dodać do języka.)
 
 ## Następny krok
 

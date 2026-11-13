@@ -111,3 +111,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   i ostatniej części, kompilowany jak kolejne instrukcje; inne funkcje przechodzące po drzewie nie wymagały zmian.
   Test `forcomma`, rozdział 5: dopisek „Dla zaawansowanych”.
 - 2026-11-13: Rozdział 8 „Napisy” – 6 sprawdzanych przykładów (sklejanie, `$"..."`, znaki, metody, `Split` z `int.Parse`).
+- 2026-11-13: `char` to punkt kodowy Unicode (decyzja użytkownika): napisy zostają w UTF-8, a `Length`, `s[i]`,
+  `Substring`, `IndexOf` liczą znaki jak C#; liczba znaków liczona raz, przy pierwszej potrzebie, a pętla po `s[i]`
+  korzysta z zapamiętanej pozycji. Wielkie/małe litery i `char.IsLetter` także dla polskich liter, greki i cyrylicy.
+  Przy okazji wyszła awaria przy wielu kompilacjach z błędem w jednym procesie – zapisana w „Do decyzji” do naprawy.

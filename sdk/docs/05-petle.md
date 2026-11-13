@@ -187,8 +187,7 @@ class Program
 
 Czytaj to tak: „dla każdego znaku `znak` w `slowo` zrób…”. Nie ma licznika i nie da się pomylić o jeden.
 
-> **Dla zaawansowanych:** na razie `char` to jeden bajt, a polska litera (np. `ę`) zajmuje w napisie dwa bajty, więc
-> `foreach` po słowie z polskimi literami poda je jako dwa dziwne znaki. Wypisywanie całych napisów działa normalnie.
+`foreach` po napisie podaje każdy znak, także polskie litery: `foreach (char c in "gęś")` da `g`, `ę`, `ś`.
 
 ## break i continue
 

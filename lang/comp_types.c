@@ -193,7 +193,7 @@ int add_string(C* c, const char* s, int len) {
     }
     ObjString* o = (ObjString*)malloc(sizeof(ObjString) + len + 1);
     o->h.type = O_STRING; o->h.marked = 0; o->h.pinned = 1; o->h.next = NULL;
-    o->len = len; memcpy(o->chars, s, len); o->chars[len] = 0;
+    o->len = len; o->ulen = -1; o->cacheI = o->cacheB = 0; memcpy(o->chars, s, len); o->chars[len] = 0;
     P->strings[P->nstrings] = o;
     return P->nstrings++;
 }

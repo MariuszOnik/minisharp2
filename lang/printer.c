@@ -4,6 +4,7 @@
    Moved from the old src/printer.c (931ad08); new: access modifiers, static class, const/readonly,
    using and namespace, ms_format. */
 #include "printer.h"
+#include "ms.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -123,6 +124,12 @@ static void print_char_escaped(MsBuf* b, int ch, char quote) {
         case '\\': puts_(b, "\\\\"); return;
     }
     if (ch == quote) { putc_(b, '\\'); putc_(b, quote); return; }
+    if (ch >= 0x80 && quote == '\'') {          /* a char literal holds a code point: back to UTF-8 */
+        char u[4];
+        int n = ms_utf8_encode(ch, u);
+        for (int i = 0; i < n; i++) putc_(b, u[i]);
+        return;
+    }
     putc_(b, (char)ch);
 }
 

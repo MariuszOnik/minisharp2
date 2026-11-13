@@ -19,7 +19,9 @@ typedef struct {
 
 enum { O_STRING, O_ARRAY, O_INSTANCE, O_LIST, O_CORO, O_DICT, O_CELL, O_CLOSURE };
 struct Obj { uint8_t type, marked, pinned; Obj* next; };
-typedef struct { Obj h; int32_t len; char chars[]; } ObjString;
+/* UTF-8 text. len = bytes; ulen = characters (code points), -1 until first needed (strings never change);
+ * cacheI / cacheB: the last character index looked up and its byte offset, so a loop over s[i] is not quadratic */
+typedef struct { Obj h; int32_t len, ulen, cacheI, cacheB; char chars[]; } ObjString;
 typedef struct { Obj h; int32_t len; Value items[]; } ObjArray;
 typedef struct { Obj h; int32_t cls; int32_t nfields; Value fields[]; } ObjInstance;
 typedef struct { Obj h; int32_t len, cap; Value* items; } ObjList;
@@ -103,6 +105,18 @@ int vm_tick_coroutines(VM* vm);         /* once per frame after Update(); same r
 Value vm_make_string(VM* vm, const char* s, int len);
 Value vm_make_array(VM* vm, int len);      /* filled with null */
 void ms_value_to_text(VM* vm, Value v, char* buf, int buflen);
+
+/* ---------- text: strings are UTF-8, a char is one code point (lang/text.c) ---------- */
+int ms_utf8_decode(const char* s, int len, int* adv);  /* code point at s; a bad byte gives itself, *adv = 1 */
+int ms_utf8_encode(int cp, char* out);                 /* 1..4 bytes into out (no NUL) */
+int ms_utf8_count(const char* s, int len);             /* characters in len bytes */
+int ms_str_length(ObjString* s);                       /* characters */
+int ms_str_offset(ObjString* s, int i);                /* byte offset of character i (0..length) */
+int ms_str_char_at(ObjString* s, int i);               /* code point of character i (0 <= i < length) */
+int ms_char_upper(int cp);                             /* Latin (with Polish letters), Greek, Cyrillic */
+int ms_char_lower(int cp);
+int ms_char_is_letter(int cp);
+int ms_char_is_space(int cp);
 
 void ms_disassemble(Program* p);        /* print the bytecode (tools) */
 

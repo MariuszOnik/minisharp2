@@ -1,5 +1,6 @@
 /* MiniSharp - arena, lexer and recursive-descent parser. */
 #include "ast.h"
+#include "ms.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -184,9 +185,13 @@ static Token* lex(ParseCtx* c, const char* src, const char* end, int line, int* 
             if (*p == '\\') {
                 p++;
                 switch (*p) { case 'n': v = '\n'; break; case 't': v = '\t'; break; case 'r': v = '\r'; break; case '0': v = 0; break; default: v = (unsigned char)*p; }
+            } else if ((unsigned char)*p >= 0x80) {        /* 'ę': one character of 2..4 bytes in UTF-8 */
+                int adv;
+                v = ms_utf8_decode(p, (int)strlen(p), &adv);
+                p += adv - 1;
             } else v = (unsigned char)*p;
             p++;
-            if (*p != '\'') fail(c, line, "bad character literal");
+            if (*p != '\'') fail(c, line, "bad character literal (a char holds one character; for text use \"...\")");
             p++;
             t->kind = TK_CHAR; t->ival = v; t->len = (int)(p - t->start);
             continue;

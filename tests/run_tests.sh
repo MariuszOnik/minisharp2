@@ -19,7 +19,7 @@ check() { # nazwa, wynik, plik z oczekiwanym wynikiem
 
 # Testy jednostkowe w C (zmienna UNIT = lista binarek z build/unit): każdy wypisuje swoje FAIL-e, kod 0 = ok.
 for u in $UNIT; do
-    if r=$("$u" 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: unit/$(basename "$u")"; echo "$r"; fi
+    if r=$("$u" 2>&1); then pass=$((pass+1)); else code=$?; fail=$((fail+1)); echo "FAIL: unit/$(basename "$u") (exit code $code)"; echo "$r"; fi
 done
 
 if [ -z "$BIN" ]; then

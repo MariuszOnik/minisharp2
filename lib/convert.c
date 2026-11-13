@@ -41,10 +41,11 @@ static Value n_intval(VM* vm, Value* a) { (void)vm; int32_t v = 0; return vint(a
 static Value n_floatcan(VM* vm, Value* a) { (void)vm; float v; return vbool(a[0].t == V_OBJ && !parse_float(vstr(a[0]), &v)); }
 static Value n_floatval(VM* vm, Value* a) { (void)vm; float v = 0; return vfloat(a[0].t == V_OBJ && !parse_float(vstr(a[0]), &v) ? v : 0); }
 static Value n_isdigit(VM* vm, Value* a) { (void)vm; return vbool(a[0].as.i < 128 && isdigit(a[0].as.i)); }
-static Value n_isletter(VM* vm, Value* a) { (void)vm; return vbool(a[0].as.i < 128 && isalpha(a[0].as.i)); }
-static Value n_iswhite(VM* vm, Value* a) { (void)vm; return vbool(a[0].as.i < 128 && isspace(a[0].as.i)); }
-static Value n_ctoupper(VM* vm, Value* a) { (void)vm; return vchar(a[0].as.i < 128 ? toupper(a[0].as.i) : a[0].as.i); }
-static Value n_ctolower(VM* vm, Value* a) { (void)vm; return vchar(a[0].as.i < 128 ? tolower(a[0].as.i) : a[0].as.i); }
+/* letters beyond ASCII too: Polish, other Latin, Greek, Cyrillic (lang/text.c) */
+static Value n_isletter(VM* vm, Value* a) { (void)vm; return vbool(ms_char_is_letter(a[0].as.i)); }
+static Value n_iswhite(VM* vm, Value* a) { (void)vm; return vbool(ms_char_is_space(a[0].as.i)); }
+static Value n_ctoupper(VM* vm, Value* a) { (void)vm; return vchar(ms_char_upper(a[0].as.i)); }
+static Value n_ctolower(VM* vm, Value* a) { (void)vm; return vchar(ms_char_lower(a[0].as.i)); }
 
 static const NativeDef convert[] = {
     {"int", "Parse", 1, {S}, I, n_intparse},

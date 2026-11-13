@@ -112,9 +112,13 @@ Napisów nie zmienia się w miejscu: `slowo[0] = 'K';` to błąd (`strings canno
 instead`). Zamiast tego buduje się nowy napis (jak `wspak`
 wyżej) albo używa metod z następnej części.
 
-> **Dla zaawansowanych:** na razie `char` to jeden bajt. Polska litera (np. `ę`) zajmuje w napisie dwa bajty, więc
-> `"ęa".Length` to 3, a `foreach` po takim napisie da dla `ę` dwa znaki. Sklejanie, porównywanie i wypisywanie
-> działają z polskimi literami normalnie.
+Polskie litery to zwykłe znaki: `"żółw".Length` to 4, `"żółw"[1]` to `'ó'`, a `"zażółć".ToUpper()` daje
+`"ZAŻÓŁĆ"`.
+
+> **Dla zaawansowanych:** w pamięci napis jest zapisany w UTF-8 (polska litera zajmuje 2 bajty), ale `Length`,
+> `s[i]`, `Substring` i `IndexOf` liczą znaki, nie bajty – tak jak w C#. `(int)'ę'` to 281, numer znaku w Unicode.
+> Napis z samych znaków ASCII jest indeksowany od razu; w napisie z polskimi literami `s[i]` musi odliczyć znaki,
+> ale pętla po kolejnych `i` pamięta ostatnie miejsce, więc też jest szybka.
 
 ## Przydatne metody
 

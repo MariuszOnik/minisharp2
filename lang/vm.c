@@ -168,7 +168,7 @@ static MS_COLD Obj* alloc_obj(VM* vm, size_t size, int type) {
 
 static MS_COLD ObjString* new_string(VM* vm, int len) {
     ObjString* s = (ObjString*)alloc_obj(vm, sizeof(ObjString) + len + 1, O_STRING);
-    if (s) { s->len = len; s->chars[len] = 0; }
+    if (s) { s->len = len; s->ulen = -1; s->cacheI = s->cacheB = 0; s->chars[len] = 0; }
     return s;
 }
 
@@ -215,7 +215,7 @@ void ms_value_to_text(VM* vm, Value v, char* buf, int n) {
         case V_INT: snprintf(buf, n, "%d", (int)v.as.i); return;
         case V_FLOAT: fmt_float(v.as.f, buf, n); return;
         case V_BOOL: snprintf(buf, n, v.as.i ? "True" : "False"); return;
-        case V_CHAR: buf[0] = (char)v.as.i; buf[1] = 0; return;
+        case V_CHAR: if (n >= 5) buf[ms_utf8_encode((int)v.as.i, buf)] = 0; else buf[0] = 0; return;
         default: {
             Obj* o = v.as.o;
             if (o->type == O_STRING) snprintf(buf, n, "%s", ((ObjString*)o)->chars);
@@ -889,14 +889,14 @@ static int vm_run(VM* vm, int startFp) {
                     sp[-2] = ((ObjDict*)ob)->entries[e].val; sp--;
                     NEXT;
                 }
-                int len = ob->type == O_ARRAY ? ((ObjArray*)ob)->len : ob->type == O_LIST ? ((ObjList*)ob)->len : ((ObjString*)ob)->len;
+                int len = ob->type == O_ARRAY ? ((ObjArray*)ob)->len : ob->type == O_LIST ? ((ObjList*)ob)->len : ms_str_length((ObjString*)ob);
                 if (i < 0 || i >= len) {
                     char m[80]; snprintf(m, sizeof m, "index %d is outside the %s (length %d)", i,
                                          ob->type == O_ARRAY ? "array" : ob->type == O_LIST ? "list" : "string", len); FAIL(m);
                 }
                 if (ob->type == O_ARRAY) sp[-2] = ((ObjArray*)ob)->items[i];
                 else if (ob->type == O_LIST) sp[-2] = ((ObjList*)ob)->items[i];
-                else { sp[-2].t = V_CHAR; sp[-2].as.i = (unsigned char)((ObjString*)ob)->chars[i]; }
+                else { sp[-2].t = V_CHAR; sp[-2].as.i = ms_str_char_at((ObjString*)ob, i); }
                 sp--;
                 NEXT;
             }
@@ -1284,12 +1284,12 @@ static int vm_run(VM* vm, int startFp) {
                 Obj* ob = sp[-1].as.o;
                 sp[-1].t = V_INT;
                 sp[-1].as.i = ob->type == O_ARRAY ? ((ObjArray*)ob)->len : ob->type == O_LIST ? ((ObjList*)ob)->len :
-                              ob->type == O_DICT ? ((ObjDict*)ob)->count : ((ObjString*)ob)->len;
+                              ob->type == O_DICT ? ((ObjDict*)ob)->count : ms_str_length((ObjString*)ob);
                 break;
             }
             CASE(OP_STRLEN)
                 if (sp[-1].t != V_OBJ) FAIL("null reference (Length of a null string)");
-                sp[-1].t = V_INT; sp[-1].as.i = STR(sp[-1])->len; NEXT;
+                sp[-1].t = V_INT; sp[-1].as.i = ms_str_length(STR(sp[-1])); NEXT;
             CASE(OP_NORET) FAIL("method ended without returning a value");
             CASE(OP_IAND) sp[-2].as.i &= sp[-1].as.i; sp--; NEXT;
             CASE(OP_IOR) sp[-2].as.i |= sp[-1].as.i; sp--; NEXT;
