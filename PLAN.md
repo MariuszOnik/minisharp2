@@ -266,7 +266,11 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    z `codeindex`, wbudowane z tabel z „(+N)” dla przeciążeń), `svc_complete_line` dla terminala (dawne `ms_complete`
    z `app/repl.c`); test `tests/unit/test_service.c`. Brak: sygnatury konstruktorów (`codeindex` ich nie zapisuje),
    błędy z liniami (dojdą z „Uruchom” w edytorze).
-9. Edytor tekstu bez podpowiedzi: ~~bufor (kursor, zaznaczenie, cofanie – logika z testami na PC)~~ (zrobione
-   2026-11-13: `app/textbuf.c`, test `test_textbuf`: UTF-8, Home/End/słowa, wcięcia po Enter i `}`, wcięcie
-   zaznaczonych linii, cofanie krokami, „zmieniony”); dalej: widok z numerami
-   linii, kolorowanie, zapis/otwieranie z karty, „Uruchom” i skok do linii błędu; potem podpowiedzi z usługi języka.
+9. [x] Edytor kodu na 3DS – zrobione 2026-11-13: bufor `app/textbuf.c` (test `test_textbuf`) i `app/editor.c`
+   (test `test_editor`): widok z numerami linii i kolorami z usługi języka, podpowiedzi i sygnatura wywołania,
+   przyciski Save/Run/Undo/Redo, zapis bez BOM, Run przez host (`EditorHost.run`) i skok do linii błędu, ostrzeżenie
+   o niezapisanych zmianach. Na 3DS: B w menu edytuje `main.cs`, Run wychodzi na chwilę do konsoli tekstowej.
+   **Sprawdzić na konsoli**: czytelność, szybkość rysowania przy dłuższym pliku, Run i powrót.
+10. Edytor, dalej: wybór pliku / projektu z karty (lista, nowy plik, karty kilku plików – wzór: stare `files_screen`,
+   `new_file`, `Doc`), zaznaczanie i schowek (L + D-pad zajęte przez Home/End – np. tryb zaznaczania przyciskiem),
+   wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), Help.

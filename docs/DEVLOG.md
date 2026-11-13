@@ -102,3 +102,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Bufor tekstu edytora `app/textbuf.c` (bez rysowania i bez wiedzy o języku): kursor po znakach UTF-8,
   zaznaczanie, automatyczne wcięcia, cofanie/ponawianie (pisanie i kasowanie z rzędu = jeden krok), znacznik
   „zmieniony” zgodny z cofaniem do zapisanego stanu. Test `test_textbuf`.
+- 2026-11-13: Edytor kodu `app/editor.c` na `ui.h`: tekst w `textbuf`, kolory, podpowiedzi i sygnatury z usługi języka,
+  uruchamianie przez funkcję hosta i skok do linii błędu. Na 3DS przycisk B w menu. Testy z konsoli po poprzednich
+  zmianach: 207 ok, 0 błędów. Rozdział 1: sekcja „Edytor na 3DS”.

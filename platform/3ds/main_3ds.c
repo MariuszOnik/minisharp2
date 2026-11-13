@@ -3,6 +3,7 @@
  *   X      run the test files from sdmc:/minisharp/tests/ (the .cs files there and in errors/, the folders in projects/)
  *          and write each result to sdmc:/minisharp/tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
  *          tools/3ds_tests.sh compares them with tests/expected/ on the PC
+ *   B      code editor on main.cs (app/editor.c; A in it runs the program and jumps to the error line)
  *   Y      terminal (app/terminal.c, touch keyboard, app/ui.h on citro2d; START = back)
  *   START  quit
  * START+SELECT held = the Stop button: a running loop (also Main with while (true)) stops with "stopped by the user".
@@ -14,6 +15,7 @@
 #include "lib.h"
 #include "project.h"
 #include "terminal.h"
+#include "editor.h"
 #include "ui_3ds.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -55,11 +57,6 @@ static void out_write(const char* s) {
     if (g_out) fputs(s, g_out);
 }
 
-static void out_printf(const char* fmt, const char* a) {
-    char buf[400];
-    snprintf(buf, sizeof buf, fmt, a);
-    out_write(buf);
-}
 
 static char* read_file(const char* path) {
     FILE* f = fopen(path, "rb");
@@ -72,30 +69,40 @@ static char* read_file(const char* path) {
 }
 
 /* frames > 0: a fixed number of frames (tests); frames < 0: until START (a program run by the user) */
+static char g_lastErr[320];             /* the last error of run() ("" = none), for the editor */
+
+/* an error of run(): to the screen / log and to g_lastErr */
+static void run_fail(const char* fmt, const char* a) {
+    snprintf(g_lastErr, sizeof g_lastErr, fmt, a);
+    out_write(g_lastErr);
+    out_write("\n");
+}
+
 static void run(const char* path, int isProject, int frames) {
     char err[300];
+    g_lastErr[0] = 0;
     Project proj;
     memset(&proj, 0, sizeof proj);
     char* src;
     if (isProject) {
-        if (!project_load(path, &proj, err, sizeof err)) { out_printf("%s\n", err); return; }
+        if (!project_load(path, &proj, err, sizeof err)) { run_fail("%s", err); return; }
         src = proj.src; proj.src = NULL;
     } else {
         src = read_file(path);
-        if (!src) { out_printf("cannot read %s\n", path); return; }
+        if (!src) { run_fail("cannot read %s", path); return; }
     }
     Program* p = ms_compile(src, err, sizeof err);
     free(src);
     if (!p) {
         project_map_error(&proj, err, sizeof err);
-        out_printf("compile error: %s\n", err);
+        run_fail("compile error: %s", err);
         project_free(&proj);
         return;
     }
     int si = ms_entry(p, MS_ENTRY_STATIC_INIT), mi = ms_entry(p, MS_ENTRY_MAIN);
     int up = ms_hook(p, "Update"), dr = ms_hook(p, "Draw");
     if (mi < 0 && up < 0) {
-        out_write("compile error: line 1: no entry point: add 'static void Main()' or 'static void Update()'\n");
+        run_fail("%s", "compile error: line 1: no entry point: add 'static void Main()' or 'static void Update()'");
         ms_free_program(p); project_free(&proj);
         return;
     }
@@ -120,7 +127,7 @@ static void run(const char* path, int isProject, int frames) {
     if (!ok && !ms_vm_quit_requested(vm)) {
         snprintf(err, sizeof err, "%s", ms_vm_error(vm));
         project_map_error(&proj, err, sizeof err);
-        out_printf("runtime error: %s\n", err);
+        run_fail("runtime error: %s", err);
     }
     vm_free(vm);
     ms_free_program(p);
@@ -209,6 +216,7 @@ static void menu(void) {
     printf("MiniSharp2 (" BUILD_ID ")\n\n");
     printf("A      run " MAIN_CS "\n");
     printf("X      run tests from " TESTS_DIR "\n");
+    printf("B      edit " MAIN_CS "\n");
     printf("Y      terminal\n");
     printf("START  quit\n");
 }
@@ -234,6 +242,55 @@ static void terminal(void) {
     }
     term_free(t);
     lib_set_output(out_write);
+    ui3ds_exit();
+    consoleInit(GFX_TOP, &top);
+    consoleInit(GFX_BOTTOM, &bottom);
+    menu();
+}
+
+/* the editor's Run: the screens go back to the text console, the program runs like with A in the menu, then
+ * a key returns to the editor (citro2d again); the error, if any, goes back to the editor for the jump */
+static int editor_run(const char* path, char* err, int errcap) {
+    ui3ds_exit();
+    consoleInit(GFX_TOP, &top);
+    consoleInit(GFX_BOTTOM, &bottom);
+    consoleSelect(&bottom);
+    printf("running %s\n(START stops Update,\nSTART+SELECT stops any loop)\n", path);
+    g_out = fopen(LOG_PATH, "w");
+    run(path, 0, -1);
+    if (g_out) { fclose(g_out); g_out = NULL; }
+    consoleSelect(&bottom);
+    printf("\n%s\n\nA / B: back to the editor\n", g_lastErr[0] ? "error (see the top screen)" : "done");
+    while (aptMainLoop()) {
+        hidScanInput();
+        if (hidKeysDown() & (KEY_A | KEY_B)) break;
+        gspWaitForVBlank();
+    }
+    snprintf(err, errcap, "%s", g_lastErr);
+    if (!ui3ds_init()) return 0;
+    return g_lastErr[0] == 0;
+}
+
+/* B: the code editor (app/editor.c) on main.cs */
+static void editor(void) {
+    EditorHost host = { editor_run };
+    Editor* ed = NULL;
+    if (!ui3ds_init() || !(ed = ed_new(&host))) {
+        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
+        printf("\ncannot open the editor\n");
+        return;
+    }
+    ed_open(ed, MAIN_CS);
+    while (aptMainLoop()) {
+        hidScanInput();
+        UiInput in;
+        ui3ds_input(&in);
+        if (!ed_update(ed, &in)) break;
+        ui3ds_frame_begin(0x1E1E1E, 0x0C0C0C);
+        ed_draw(ed);
+        ui3ds_frame_end();
+    }
+    ed_free(ed);
     ui3ds_exit();
     consoleInit(GFX_TOP, &top);
     consoleInit(GFX_BOTTOM, &bottom);
@@ -279,6 +336,7 @@ int main(void) {
         }
         if (k & KEY_X) run_tests();
         if (k & KEY_Y) terminal();
+        if (k & KEY_B) editor();
         gspWaitForVBlank();
     }
     gfxExit();

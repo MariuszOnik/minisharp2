@@ -87,9 +87,24 @@ Na konsoli (Homebrew Launcher) MiniSharp uruchamia plik `sdmc:/minisharp/main.cs
 przykładowy program. W menu na dolnym ekranie **A** uruchamia `main.cs`, a **START** wychodzi. Wynik `Console`
 pojawia się na górnym ekranie i trafia też do pliku `sdmc:/minisharp/log.txt`. Jeśli program ma metodę `Update`,
 wywołuje się ona co klatkę, dopóki nie naciśniesz START. Plik `main.cs` możesz edytować na komputerze i skopiować na kartę,
-na przykład przez FTP. Edytor na samej konsoli dojdzie później.
+na przykład przez FTP, albo na samej konsoli w edytorze (niżej).
 
 Program, który kręci się bez końca, zatrzymasz, przytrzymując razem **START i SELECT**.
+
+## Edytor na 3DS
+
+Przycisk **B** w menu otwiera `main.cs` w edytorze. Kod jest na górnym ekranie, w kolorach i z numerami linii.
+Na dolnym są przyciski **Save**, **Run**, **Undo**, **Redo**, pod nimi podpowiedzi i klawiatura dotykowa.
+
+- Pisz na klawiaturze. Po **Enter** następna linia sama dostaje wcięcie, a po `{` – o poziom głębsze.
+  `}` na początku linii cofa wcięcie.
+- Gdy kursor stoi w nawiasie wywołania, nad podpowiedziami widać, jakie parametry ma metoda,
+  np. `void WriteLine(object) (+1)  [arg 1]`.
+- **A** (albo **Run**) zapisuje plik i uruchamia program. Gdy jest błąd, edytor wraca z kursorem na tej linii
+  i zaznacza ją na czerwono.
+- **D-pad** przesuwa kursor; **L + lewo/prawo** – na początek / koniec linii, **L + góra/dół** – o stronę.
+- **B** kasuje znak, **Y** cofa zmianę, **R** wstawia pierwszą podpowiedź, **SELECT** zapisuje.
+- **START** wraca do menu. Jeśli są niezapisane zmiany, edytor najpierw ostrzeże – drugi START wychodzi bez zapisu.
 
 ## Terminal na 3DS
 
