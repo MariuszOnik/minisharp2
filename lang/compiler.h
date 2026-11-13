@@ -5,7 +5,7 @@
 
 #include "vm.h"
 #include "ast.h"
-#include <setjmp.h>
+#include "msjmp.h"          /* setjmp without the SEH unwind on 64-bit MinGW */
 
 typedef struct Type Type;
 struct Type {

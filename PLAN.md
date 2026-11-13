@@ -226,11 +226,6 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 ## Do decyzji
 
-- **Błąd w rdzeniu (znaleziony 2026-11-13):** kilka kompilacji programu z błędem w jednym procesie czasem kończy się
-  naruszeniem pamięci (0xC0000005, ok. 10% procesów po 20 kompilacjach; stąd niestabilny `test_hooks`). Do naprawy
-  przed `int[,]` – terminal i edytor kompilują wiele razy w jednym procesie.
-
-Sprawy, których plan nie rozstrzyga – czekają na użytkownika (tu dopisuje je też tryb autonomiczny, zob. `CLAUDE.md`).
 - (rozstrzygnięte 2026-11-13: `char` = punkt kodowy Unicode; `int[,]` – dodać do języka.)
 
 ## Następny krok

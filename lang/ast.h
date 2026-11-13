@@ -3,7 +3,7 @@
 #define MS_AST_H
 
 #include <stdint.h>
-#include <setjmp.h>
+#include "msjmp.h"          /* setjmp without the SEH unwind on 64-bit MinGW */
 #include <stddef.h>
 
 /* ---------- arena ---------- */
