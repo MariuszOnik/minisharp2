@@ -44,6 +44,17 @@ else
         args=$(sed -n "s/^$n //p" tests/opcje.txt)
         check "$n" "$("$BIN" "tests/projects/$n" $args 2>&1)" "tests/expected/$n.txt"
     done
+    # Printer AST: program wydrukowany przez --print działa tak samo jak oryginał (print/<nazwa>; bez rt_*,
+    # bo ich komunikaty mają numery linii, które po wydruku są inne)
+    rm -rf build/print; mkdir -p build/print
+    for f in tests/*.cs; do
+        n=$(basename "$f" .cs)
+        [ -f "tests/expected/$n.txt" ] || continue
+        case $n in rt_*) continue ;; esac
+        args=$(sed -n "s/^$n //p" tests/opcje.txt)
+        "$BIN" --print "$f" > "build/print/$n.cs" 2>&1
+        check "print/$n" "$("$BIN" "build/print/$n.cs" $args 2>&1)" "tests/expected/$n.txt"
+    done
     # Terminal: tests/repl.txt podane na stdin hosta --repl (echo wejścia po "> ", wyniki, błędy, #complete)
     check repl "$("$BIN" --repl < tests/repl.txt 2>&1)" tests/expected/repl.txt
     # Przykłady z dokumentacji (sdk/docs/*.md): blok ```cs = cały program; po nim ```wynik = oczekiwane wyjście.

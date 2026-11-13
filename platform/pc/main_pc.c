@@ -5,12 +5,14 @@
  *   minisharp file.cs --check       only compile, report errors
  *   minisharp file.cs --dis         print the bytecode
  *   minisharp --repl                terminal: run inputs from stdin (a line with an open '{' or '(' goes on in the next)
+ *   minisharp --print file.cs       the file printed again by the AST printer ("Format code"; comments are dropped)
  * Graphics, input and --press/--ppm come in stage 3.
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
 #include "lib.h"
 #include "project.h"
 #include "repl.h"
+#include "printer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,6 +76,17 @@ int main(int argc, char** argv) {
         ms_set_clock(frame_millis);
         lib_register_all();
         return repl_main();
+    }
+    if (argc == 3 && !strcmp(argv[1], "--print")) {
+        char* src = read_file(argv[2]);
+        if (!src) { fprintf(stderr, "cannot read %s\n", argv[2]); return 2; }
+        char perr[300];
+        char* out = ms_format(src, perr, sizeof perr);
+        free(src);
+        if (!out) { fprintf(stderr, "syntax error: %s\n", perr); return 1; }
+        fputs(out, stdout);
+        free(out);
+        return 0;
     }
     if (argc < 2) { fprintf(stderr, "usage: %s file.cs|folder [--frames N] [--check] [--dis] | --repl\n", argv[0]); return 2; }
     int frames = 60, check = 0, dis = 0;

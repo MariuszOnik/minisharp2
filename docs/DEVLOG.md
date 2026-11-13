@@ -66,3 +66,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   `app` dopisane do `SRCDIRS` (PC) i `SOURCES` (3DS); testy PC 211 ok, build 3DS przechodzi.
 - 2026-11-13: `tools/3ds_send.sh tests` wysyła tylko nowe i zmienione testy (sumy md5 w `build/3ds_sent.md5`),
   `tests all` – wszystko od nowa. Wcześniej za każdym razem szło 206 plików.
+- 2026-11-13: `printer.c` w `lang/` (AST → kod, `ms_format`, host `--print`) z dostępem, `static class`, `const`/`readonly`
+  i `namespace`; test jednostkowy przepuszcza przez wydruk 202 pliki, a `print/*` sprawdza, że wydrukowany program
+  działa tak samo. Pułapka MinGW: `return ms_parse(...)` jako wywołanie ogonowe zabiera ramkę `setjmp` i `longjmp`
+  kończy się `0xC0000028`. Rozdział 6 „Metody”.

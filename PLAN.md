@@ -64,7 +64,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 3 „Rachunki” (działania, `+=`/`++`, `Math`/`Mathf`, `Random`).
 - [x] Rozdział 4 „Warunki: if i else” (porównania, `&& || !`, `?:`, `switch`).
 - [x] Rozdział 5 „Pętle” (`for`, `while`, `do … while`, `foreach`, `break`/`continue`, pętle w terminalu).
-- [ ] Kolejne rozdziały (propozycja kolejności): metody, tablice, string,
+- [x] Rozdział 6 „Metody” (parametry, `return`, `=>`, przeciążanie, rekurencja, zasięg zmiennych).
+- [ ] Kolejne rozdziały (propozycja kolejności): tablice, string,
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
@@ -87,12 +88,23 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - przecinek w `for`: `for (int a = 0, b = 10; a < b; a += 3, b--)` – dziś błąd `expected ')', found ','`;
       - `char` to jeden bajt: `foreach (char c in "pętla")` daje dla `ę` dwa znaki (napisy w UTF-8). Do decyzji: `char` jako
         punkt kodowy Unicode (indeksowanie i `Length` po znakach) czy zostawić bajty i opisać.
+- [ ] **Braki względem C# znalezione przy rozdziale 6:**
+      - parametry z wartością domyślną (`int b = 10`) – dziś czytelny błąd „not supported yet”;
+      - `ref` / `out` we własnych metodach (`out` jest tylko w `TryGetValue`; `int.TryParse(s, out int n)` też nie działa);
+        komunikat dla `ref` jest niejasny: `expected name, found 'int'`;
+      - skrócony inicjalizator tablicy `int[] t = { 1, 2 };` – dziś `unexpected '{' in expression` (działa `new int[] { … }`);
+      - brak `return` na jakiejś drodze to błąd w czasie działania, w C# – błąd kompilacji.
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
       stanąć w połowie) i na PC (stdin, testy z plikiem odpowiedzi). `ReadLine` w lambdzie wołanej z funkcji wbudowanej
       (np. `Sort`) = czytelny błąd. Rozdział dokumentacji „Rozmowa z użytkownikiem” (np. zgadywanka liczby).
-- [ ] `printer.c` (AST → kod) z testami `print/*`, `spans`.
+- [x] `printer.c` (AST → kod) z testami `print/*` (2026-11-13): `lang/printer.c` + `ms_format` („Formatuj kod”),
+      host `--print`, `tests/unit/test_printer.c` (każdy plik testów, projektów i przykład z dokumentacji: wydruk daje
+      to samo drzewo i ten sam tekst przy drugim wydruku). Nowe: dostęp, `static class`, `const`/`readonly`
+      (`readOnly = 2` dla `const`), `using`/`namespace`. Wydruk gubi komentarze (nie ma ich w AST) – przed „Formatuj
+      kod” w edytorze trzeba je zachować (np. komentarze w AST albo formatowanie tylko wcięć). Test `spans` nie
+      przeniesiony: był dla grafu A (łatki po zakresach), wróci, jeśli przyda się edytorowi.
 - [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
 - [x] **Rdzeń bez pętli gry** (uwaga użytkownika 2026-11-13, zrobione 2026-11-13). Kompilator zna tylko `Main`; warstwy wyżej
       rejestrują hooki (`ms_register_hook("Update")`, `ms_hook(p, "Update")`) i swoje klasy C# (`ms_register_source`, np. `Node`
@@ -202,6 +214,4 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ## Następny krok
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
-1. `printer.c` (musi drukować modyfikatory dostępu: `access` w `FieldDecl`/`MethodDecl`/`PropDecl`, `getAccess`/`setAccess`,
-   `ClassDecl.isStatic`) + rozdział 6 „Metody”.
-2. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
+1. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).

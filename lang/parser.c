@@ -1211,7 +1211,7 @@ static void parse_class(P* p, ClassDecl* cd) {
         for (;;) {
             Token* m = peek(p);
             if (accept(p, TK_STATIC)) isStatic = 1;
-            else if (accept(p, TK_CONST)) isStatic = readOnly = 1;                /* const fields are static */
+            else if (accept(p, TK_CONST)) { isStatic = 1; readOnly = 2; }        /* const fields are static (2: written as const) */
             else if (accept(p, TK_READONLY)) readOnly = 1;
             else if (parse_access(p, &access) || accept(p, TK_SEALED)) {}
             else if (m->kind == TK_IDENT && m->len == 5 && !memcmp(m->start, "event", 5) && peekn(p, 1)->kind == TK_IDENT) next(p);   /* 'event Action x;' is a delegate field */

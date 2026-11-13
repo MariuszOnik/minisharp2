@@ -107,7 +107,7 @@ typedef struct {
     const char *s0, *s1;                    /* source text from the first modifier to the closing '}' or ';' */
 } MethodDecl;
 enum { FA_IN = 1, FA_OUT = 2, FA_ORDER = 4, FA_FLAGS = 8 };   /* attributes: [In] / [Out] on a field, [Order(n)] on a class, [Flags] on an enum */
-/* readOnly: const or readonly. An enum member is a FieldDecl with tn = NULL (init = its value or NULL). */
+/* readOnly: 1 readonly, 2 const (both: cannot be assigned after the initializer). An enum member is a FieldDecl with tn = NULL (init = its value or NULL). */
 typedef struct { int line, isStatic; TypeNode* tn; const char* name; int nlen; Expr* init; const char *s0, *s1; int attrs, readOnly, access; } FieldDecl;
 /* A property. The compiler turns it into methods get_Name / set_Name (and a hidden field for { get; set; }). */
 typedef struct {
