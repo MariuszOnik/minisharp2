@@ -1,0 +1,5 @@
+# shared folders, relative to this project
+../shared_lib/
+
+// the same folder twice is read once
+../project_uses/../shared_lib

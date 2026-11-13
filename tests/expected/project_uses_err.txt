@@ -1,0 +1,1 @@
+compile error: shared_bad/Broken.cs line 4: return value: cannot convert string to int

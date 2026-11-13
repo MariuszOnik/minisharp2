@@ -42,3 +42,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: poprawione ostrzeżenie gcc w `compiler.c` (rozmiar `calloc` z `int`). Dziennik przeniesiony z PLAN.md tutaj.
   Ruszyła dokumentacja języka `sdk/docs/` (format w `sdk/docs/README.md`, rozdział 1 „Pierwszy program”); przykłady
   z dokumentacji sprawdza `make test` (`doc/*`).
+- 2026-11-13: `lang/project.c` z `toee-3d` (`uses.txt` + `using X;` → `../x/lib` lub `../lib/X`, pliki rozdzielone bajtem 0x1C,
+  błędy mapowane na „Plik.cs line N”); host PC przyjmuje folder. 12 testów projektów w `tests/projects/` (162 ok z przykładami dokumentacji, 6 czeka);
+  `project_ns` przepisany bez ToEE. Dokumentacja: rozdział 2 „Zmienne i typy”. W planie etapu 4 zakładka „Opcje” edytora.

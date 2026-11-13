@@ -36,6 +36,14 @@ else
             *)    check "$n" "$("$BIN" "$f" $args 2>&1)" "tests/expected/$n.txt" ;;
         esac
     done
+    # Projekty: tests/projects/<nazwa>/ (folder = wszystkie jego .cs + biblioteki z uses.txt / 'using X;') z plikiem
+    # tests/expected/<nazwa>.txt; stdout i stderr razem. Foldery bez expected to biblioteki używane przez projekty.
+    for d in tests/projects/*/; do
+        n=$(basename "$d")
+        [ -f "tests/expected/$n.txt" ] || continue
+        args=$(sed -n "s/^$n //p" tests/opcje.txt)
+        check "$n" "$("$BIN" "tests/projects/$n" $args 2>&1)" "tests/expected/$n.txt"
+    done
     # Przykłady z dokumentacji (sdk/docs/*.md): blok ```cs = cały program; po nim ```wynik = oczekiwane wyjście.
     # Przykład bez bloku wynik musi się przynajmniej skompilować.
     rm -rf build/doc; mkdir -p build/doc

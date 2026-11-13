@@ -1,0 +1,1 @@
+compile error: A.cs line 2: expected '}' to close the namespace before the end of the file

@@ -1,0 +1,2 @@
+namespace Lib {
+    class L { }

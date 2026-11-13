@@ -1,12 +1,14 @@
-/* MiniSharp - minimal PC host for the tests (stage 1): compile and run one .cs file.
+/* MiniSharp - minimal PC host for the tests: compile and run one .cs file or a project (a folder).
  *   minisharp file.cs               run Main(), then 60 frames of Update()/coroutines/Draw() if there is Update
+ *   minisharp folder                the same for a project: all .cs files of the folder + uses.txt / 'using' libraries
  *   minisharp file.cs --frames N    run N frames
  *   minisharp file.cs --check       only compile, report errors
  *   minisharp file.cs --dis         print the bytecode
- * Graphics, input, --press/--ppm, projects (folders) and the terminal come in stages 2–3.
+ * Graphics, input, --press/--ppm and the terminal come in stages 2–3.
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
 #include "lib.h"
+#include "project.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +36,7 @@ int main(int argc, char** argv) {
     _setmode(_fileno(stdout), _O_BINARY); /* "\n" not "\r\n", so output matches tests/expected */
     _setmode(_fileno(stderr), _O_BINARY);
 #endif
-    if (argc < 2) { fprintf(stderr, "usage: %s file.cs [--frames N] [--check] [--dis]\n", argv[0]); return 2; }
+    if (argc < 2) { fprintf(stderr, "usage: %s file.cs|folder [--frames N] [--check] [--dis]\n", argv[0]); return 2; }
     int frames = 60, check = 0, dis = 0;
     for (int i = 2; i < argc; i++) {
         if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
@@ -42,20 +44,36 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--dis")) dis = 1;
         else { fprintf(stderr, "unknown option %s\n", argv[i]); return 2; }
     }
-    size_t len = strlen(argv[1]);
-    if (len < 3 || strcmp(argv[1] + len - 3, ".cs")) { fprintf(stderr, "projects (folders) come in stage 2: %s\n", argv[1]); return 2; }
+    char dir[256];
+    snprintf(dir, sizeof dir, "%s", argv[1]);
+    size_t dl = strlen(dir);
+    int isProject = dl < 3 || strcmp(dir + dl - 3, ".cs");     /* a folder: all its .cs files */
+    while (isProject && dl > 1 && (dir[dl - 1] == '/' || dir[dl - 1] == '\\')) dir[--dl] = 0;
 
     ms_set_clock(frame_millis);
     lib_register_all();
 
-    char* src = read_file(argv[1]);
-    if (!src) { fprintf(stderr, "cannot read %s\n", argv[1]); return 2; }
     char err[300];
+    Project proj;                           /* stays empty for one file: project_map_error then does nothing */
+    memset(&proj, 0, sizeof proj);
+    char* src;
+    if (isProject) {
+        if (!project_load(dir, &proj, err, sizeof err)) { fprintf(stderr, "%s\n", err); return 2; }
+        src = proj.src; proj.src = NULL;
+    } else {
+        src = read_file(argv[1]);
+        if (!src) { fprintf(stderr, "cannot read %s\n", argv[1]); return 2; }
+    }
     Program* p = ms_compile(src, err, sizeof err);
     free(src);
-    if (!p) { fprintf(stderr, "compile error: %s\n", err); return 1; }
+    if (!p) {
+        project_map_error(&proj, err, sizeof err);     /* "line 57: ..." -> "Player.cs line 12: ..." */
+        fprintf(stderr, "compile error: %s\n", err);
+        project_free(&proj);
+        return 1;
+    }
     if (dis) ms_disassemble(p);
-    if (check) { ms_free_program(p); return 0; }
+    if (check) { ms_free_program(p); project_free(&proj); return 0; }
 
     VM* vm = vm_new(p);
     int si = ms_entry(p, MS_ENTRY_STATIC_INIT), mi = ms_entry(p, MS_ENTRY_MAIN);
@@ -71,8 +89,14 @@ int main(int argc, char** argv) {
         }
     }
     int rc = 0;
-    if (!ok && !ms_vm_quit_requested(vm)) { fprintf(stderr, "runtime error: %s\n", ms_vm_error(vm)); rc = 3; }
+    if (!ok && !ms_vm_quit_requested(vm)) {
+        snprintf(err, sizeof err, "%s", ms_vm_error(vm));
+        project_map_error(&proj, err, sizeof err);
+        fprintf(stderr, "runtime error: %s\n", err);
+        rc = 3;
+    }
     vm_free(vm);
     ms_free_program(p);
+    project_free(&proj);
     return rc;
 }

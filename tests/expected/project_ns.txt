@@ -1,0 +1,5 @@
+built-in Math: 3
+weapon from the library
+library math
+with using: library math
+7

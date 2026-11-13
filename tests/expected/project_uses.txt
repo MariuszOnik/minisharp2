@@ -1,0 +1,2 @@
+Hello, library!
+count 2, 42

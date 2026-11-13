@@ -59,15 +59,19 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 ### Dokumentacja języka (przez cały czas, rozdział na commit)
 - [x] Format i sprawdzanie przykładów (`sdk/docs/README.md`, `doc/*` w `make test`); rozdział 1 „Pierwszy program”.
-- [ ] Kolejne rozdziały (propozycja kolejności): zmienne i typy, rachunki, if/else, pętle, metody, tablice, string,
+- [x] Rozdział 2 „Zmienne i typy”.
+- [ ] Kolejne rozdziały (propozycja kolejności): rachunki, if/else, pętle, metody, tablice, string,
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 
 ### Etap 2 – biblioteka i projekty
 - [x] `lib/`: Console, Math, Mathf, Random, string, char, int/float (z `natives.c`); List i Dictionary są w języku (`vm.c`).
-- [ ] `project.c` (projekt = folder, `uses.txt`, `using X;`), `repl.c` (terminal), `printer.c` (AST → kod), `codeindex.c`.
-- [ ] Testy projektów i indeksu kodu.
+- [x] `lang/project.c` (projekt = folder, `uses.txt`, `using X;` dołącza `../x/lib`), host PC przyjmuje folder; 12 testów
+      projektów w `tests/projects/` (2026-11-13).
+- [ ] `repl.c` (terminal) z testem `repl`.
+- [ ] `printer.c` (AST → kod) z testami `print/*`, `spans`.
+- [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
 
 ### Etap 3 – platforma 3DS i host testów PC
 - [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
@@ -95,6 +99,14 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         tylko logikę: usługę języka i model grafu.
 - [ ] Usługa języka (`lang/service.h`): kolory, podpowiedzi, sygnatury, błędy – na bazie `codeindex.c`; testy na PC.
 - [ ] `editor.c` jako edytor tekstu bez wiedzy o języku (pyta usługę), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
+- [ ] **Zakładka „Opcje” w edytorze** (prośba użytkownika 2026-11-13), zapisywana w pliku ustawień na karcie / w przeglądarce:
+      - **własne klawisze**: użytkownik przypisuje akcje do przycisków (np. kasowanie pod inny przycisk niż domyślne A = spacja,
+        B = backspace); domyślny układ jako przycisk „Przywróć”. Akcje edytora mają nazwy (tabela akcja → klawisz), żeby
+        przypisanie działało tak samo na 3DS, Switch i w przeglądarce;
+      - **schematy kolorowania** wczytywane z pliku (np. `themes/*.txt`: kolor dla słów kluczowych, typów, napisów, komentarzy,
+        tła, zaznaczenia), kilka wbudowanych do wyboru;
+      - **czcionki** do wyboru (inne pliki czcionek) i **powiększanie / zmniejszanie** czcionki w edytorze (też skrótem);
+      - **zaznacz, kopiuj, wytnij, wklej** (schowek edytora; w przeglądarce także systemowy).
 - [ ] **„Idź do definicji / pokaż API”** (prośba użytkownika 2026-11-13): kursor na nazwie klasy + przycisk otwiera tę klasę,
       żeby podejrzeć jej metody i pola. Usługa języka zwraca, *skąd* jest klasa:
       - klasa z projektu (też z innego folderu, z `uses.txt`/`using X;`) – `codeindex.c` zna plik i linię deklaracji →
@@ -126,6 +138,5 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 ## Następny krok
 
-Etap 2: `project.c` (projekt = folder, `uses.txt`, `using X;`) + testy projektów (`project*`, `ci*` z `931ad08`, `project_ns`
-z `a350c5e`); host PC przyjmuje folder. Potem w osobnych krokach `repl.c`, `printer.c`, `codeindex.c`.
-Przy okazji: rozdział 2 dokumentacji („Zmienne i typy”).
+Etap 2: `repl.c` (terminal) + test `repl` z `toee-3d`/`931ad08` (opcja hosta `--repl`, wejście ze stdin).
+Potem w osobnych krokach `printer.c`, `codeindex.c`. Przy okazji: rozdział 3 dokumentacji („Rachunki”).
