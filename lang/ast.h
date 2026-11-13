@@ -32,7 +32,8 @@ enum {
     TK_ARROW,                           /* => */
     TK_QDOT, TK_QQ,                     /* ?. ?? */
     TK_ENUM, TK_STRUCT,
-    TK_INTERP                           /* $"...{x}...": the whole literal; the parser lexes the holes again */
+    TK_INTERP,                          /* $"...{x}...": the whole literal; the parser lexes the holes again */
+    TK_FILESEP                          /* byte 0x1C that project.c puts between files: 'using' ends there */
 };
 
 typedef struct { int kind; const char* start; int len; int line; int32_t ival; float fval; } Token;
@@ -114,8 +115,11 @@ typedef struct {
     Expr* init;                             /* '{ get; set; } = value;' */
     const char *s0, *s1;
 } PropDecl;
+typedef struct { const char* s; int l; } NsName;      /* a namespace name with dots, e.g. "Toee.Monsters" */
 typedef struct {
     int line; const char* name; int nlen;
+    NsName ns;                              /* namespace it is declared in (l = 0: the global one) */
+    NsName* usings; int nusings;            /* 'using X;' in effect where it is declared (its file and namespace blocks) */
     int isAbstract, isInterface, isEnum, isStruct, isFlags;
     TypeNode** bases; int nbases;           /* ': Base, IFoo, IBar' (which one is the class is decided later) */
     FieldDecl* fields; int nfields;

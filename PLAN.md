@@ -48,7 +48,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 ### Etap 1 – język (lang/) + testy na PC
 - [x] Szkielet repo: foldery, `Makefile` dla testów PC (sam ustawia `TMP`), skrypt `tools/test.ps1`, `.gitignore`.
 - [x] Przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
-- [ ] Przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania.
+- [x] Przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania (z przestrzeniami nazw `a350c5e`).
 - [ ] Rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli.
 - [ ] Przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`) – wszystkie mają przejść.
 
@@ -88,8 +88,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 1: przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania (razem z przestrzeniami nazw `a350c5e`:
-zmieniają też `parser.c` i `ast.h`).
+Etap 1: rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli – `ms_natives`/`ms_consts`
+w `lang/vm.c` to dziś puste wskaźniki, które `ms_register` ma wypełniać (kolejność = indeksy w bajtkodzie).
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -111,3 +111,9 @@ zmieniają też `parser.c` i `ast.h`).
   `vm.c` nie zna już platformy: reset grafiki/Iso/FPS przez hooki `ms_on_vm_new`, zegar `ms_set_clock`; `ms_natives` to na razie
   pusty wskaźnik (wypełni `ms_register`). Parser sprawdzony lokalnie: 158 plików `.cs` starego repo OK, 18 błędów = `.expected`.
   Uwaga: testy `.cs` potrzebują `main` – do kroku „testy języka” trzeba minimalnego hosta PC (Console), nie czekać na etap 3.
+- 2026-11-13: `compiler.c` z `931ad08` + przestrzenie nazw (`a350c5e`, też w `parser.c`/`ast.h`), podzielony na `compiler.h`,
+  `comp_types.c`, `comp_expr.c`, `comp_call.c`, `comp_lambda.c`, `comp_stmt.c`, `compiler.c` (ogólne nazwy przemianowane:
+  `op`→`emit_op`, `expr`→`compile_expr`, `call`→`compile_call`…). Sprawdzone: bajtkod i komunikaty błędów 213 programów
+  (testy, przykłady, 13 projektów z `a350c5e`) identyczne przed i po podziale. Odłożone do swoich funkcji wbudowanych:
+  `T_INTARR` (`File`, `ff4efc5`), `T_FLTARR` (Gfx3D) i `ms_require_entry` (API osadzania `6ab15e9`). Testy przestrzeni nazw
+  (`namespaces.cs`, `project_ns`, `errors/ns_*`) brać z `a350c5e`, nie z `931ad08`.

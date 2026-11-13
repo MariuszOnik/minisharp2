@@ -116,6 +116,7 @@ static Token* lex(ParseCtx* c, const char* src, const char* end, int line, int* 
         char ch = *p;
         if (!ch || (end && p >= end)) { t->kind = TK_EOF; break; }
 
+        if (ch == 0x1C) { p++; t->kind = TK_FILESEP; t->len = 1; continue; }   /* project.c: the next file starts here */
         if (isalpha((unsigned char)ch) || ch == '_') {
             while (isalnum((unsigned char)*p) || *p == '_') p++;
             t->len = (int)(p - t->start);
@@ -279,7 +280,7 @@ static const char* tokname(int k) {
 static Token* expect(P* p, int k) {
     if (!at(p, k)) {
         Token* t = peek(p);
-        if (t->kind == TK_EOF) fail(p->c, t->line, "expected %s but reached end of file", tokname(k));
+        if (t->kind == TK_EOF || t->kind == TK_FILESEP) fail(p->c, t->kind == TK_EOF ? t->line : t->line - 1, "expected %s but reached end of file", tokname(k));
         fail(p->c, t->line, "expected %s, found '%.*s'", tokname(k), t->len, t->start);
     }
     return next(p);
@@ -491,6 +492,11 @@ static Expr* parse_new(P* p, int line) {
     if (t->kind == TK_VOID) fail(p->c, t->line, "cannot create 'void'");
     TypeNode* tn = (TypeNode*)nw(p, sizeof(TypeNode));
     tn->base = t->kind; tn->name = t->start; tn->nlen = t->len; tn->line = t->line;
+    while (t->kind == TK_IDENT && at(p, TK_DOT) && peekn(p, 1)->kind == TK_IDENT) {   /* new Toee.Item() */
+        next(p);
+        Token* u = next(p);
+        tn->nlen = (int)(u->start + u->len - tn->name);
+    }
     if (t->kind == TK_IDENT && at(p, TK_LT)) {
         /* new List<T>(), new List<T>(capacity), new List<T> { a, b } */
         next(p);
@@ -669,8 +675,11 @@ static Expr* parse_unary_(P* p) {
             return e;
         }
         /* (Enemy)x: a name in parentheses followed by something that starts an operand, as in C# */
-        if (k == TK_IDENT && peekn(p, 2)->kind == TK_RPAREN) {
-            int n = peekn(p, 3)->kind;
+        int j = 2;                                  /* (Toee.Item)x: a full name */
+        while (k == TK_IDENT && peekn(p, j)->kind == TK_DOT && peekn(p, j + 1)->kind == TK_IDENT) j += 2;
+        if (k == TK_IDENT && peekn(p, j)->kind == TK_RPAREN) {
+            int n = peekn(p, j + 1)->kind;
+            if (j > 2 && n == TK_LPAREN) n = TK_EOF;    /* (a.f)(x): a call through a field, not a cast */
             if (n == TK_IDENT || n == TK_THIS || n == TK_BASE || n == TK_NEW || n == TK_LPAREN || n == TK_INT || n == TK_FLOAT ||
                 n == TK_STRING || n == TK_INTERP || n == TK_CHAR || n == TK_TRUE || n == TK_FALSE || n == TK_NULL || n == TK_BANG || n == TK_TILDE) {
                 p->pos++;
@@ -1259,24 +1268,72 @@ static void parse_class(P* p, ClassDecl* cd) {
     p->inInterface = 0;
 }
 
+/* A.B.C after 'namespace' or 'using': the name without spaces, in the arena */
+static NsName parse_dotted(P* p) {
+    Token* first = expect(p, TK_IDENT);
+    int len = first->len;
+    for (int i = p->pos; p->t[i].kind == TK_DOT && p->t[i + 1].kind == TK_IDENT; i += 2) len += 1 + p->t[i + 1].len;
+    char* s = (char*)nw(p, len + 1);
+    memcpy(s, first->start, first->len);
+    int at0 = first->len;
+    while (accept(p, TK_DOT)) {
+        Token* u = expect(p, TK_IDENT);
+        s[at0++] = '.'; memcpy(s + at0, u->start, u->len); at0 += u->len;
+    }
+    s[at0] = 0;
+    NsName r = { s, at0 };
+    return r;
+}
+
 ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
     P p; memset(&p, 0, sizeof p);
     p.c = c; p.t = toks; p.n = ntok;
     ProgramAST* prog = (ProgramAST*)arena_alloc(c->A, sizeof(ProgramAST));
     int cap = 0, nsDepth = 0;
+    /* namespaces: ns = the current one ("" = global); a block 'namespace X { ... }' saves the outer state */
+    NsName ns = { "", 0 }, fileNs = { "", 0 };
+    NsName* usings = NULL; int nus = 0, capus = 0;
+    struct { NsName ns; int nus; } outer[32];
     while (!at(&p, TK_EOF)) {
-        if (accept(&p, TK_USING)) {       /* 'using System;' etc. is accepted and ignored */
-            while (!at(&p, TK_SEMI) && !at(&p, TK_EOF)) next(&p);
+        if (accept(&p, TK_FILESEP)) {   /* the next file of a project: its own 'using' and namespace */
+            if (nsDepth > 0) fail(c, peek(&p)->line - 1, "expected '}' to close the namespace before the end of the file");
+            ns.s = ""; ns.l = 0; fileNs = ns; nus = 0;
+            continue;
+        }
+        if (accept(&p, TK_USING)) {
+            if (accept(&p, TK_STATIC) || (at(&p, TK_IDENT) && peekn(&p, 1)->kind == TK_ASSIGN)) {   /* 'using static X;', 'using A = B;': ignored */
+                while (!at(&p, TK_SEMI) && !at(&p, TK_EOF)) next(&p);
+                expect(&p, TK_SEMI);
+                continue;
+            }
+            NsName u = parse_dotted(&p);
             expect(&p, TK_SEMI);
+            usings = (NsName*)arena_grow(c->A, usings, nus, &capus, sizeof(NsName));
+            usings[nus++] = u;
             continue;
         }
-        if (accept(&p, TK_NAMESPACE)) {   /* 'namespace A.B;' or 'namespace A.B { ... }' is ignored */
-            expect(&p, TK_IDENT);
-            while (accept(&p, TK_DOT)) expect(&p, TK_IDENT);
-            if (!accept(&p, TK_SEMI)) { expect(&p, TK_LBRACE); nsDepth++; }
+        if (accept(&p, TK_NAMESPACE)) {   /* 'namespace A.B;' (the rest of the file) or 'namespace A.B { ... }' */
+            int line = p.t[p.pos - 1].line;
+            NsName nm = parse_dotted(&p);
+            NsName full = nm;
+            if (ns.l) {                   /* nested: Outer.Inner */
+                char* s = (char*)nw(&p, ns.l + 1 + nm.l + 1);
+                memcpy(s, ns.s, ns.l); s[ns.l] = '.'; memcpy(s + ns.l + 1, nm.s, nm.l + 1);
+                full.s = s; full.l = ns.l + 1 + nm.l;
+            }
+            if (accept(&p, TK_SEMI)) {
+                if (nsDepth > 0 || fileNs.l) fail(c, line, "'namespace %s;' must be the only namespace of the file, outside any '{ }'", nm.s);
+                fileNs = full; ns = full;
+                continue;
+            }
+            expect(&p, TK_LBRACE);
+            if (nsDepth >= 32) fail(c, line, "namespaces nested too deep");
+            outer[nsDepth].ns = ns; outer[nsDepth].nus = nus;
+            nsDepth++;
+            ns = full;
             continue;
         }
-        if (nsDepth > 0 && accept(&p, TK_RBRACE)) { nsDepth--; continue; }
+        if (nsDepth > 0 && accept(&p, TK_RBRACE)) { nsDepth--; ns = outer[nsDepth].ns; nus = outer[nsDepth].nus; continue; }
         if (accept(&p, TK_SEMI)) continue;          /* 'enum E { A, B };' */
         int isAbstract = 0, cst = p.pos, order = 0;
         int attrs = parse_attributes(&p, &order);
@@ -1301,9 +1358,17 @@ ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
         cd->isFlags = !!(attrs & FA_FLAGS);
         if (t->kind == TK_ENUM) parse_enum(&p, cd); else parse_class(&p, cd);
         cd->s0 = toks[cst].start; cd->s1 = prev_end(&p);
+        cd->ns = ns;
+        if (nus) {                                  /* its own copy: a later block may reuse the slots */
+            cd->usings = (NsName*)nw(&p, sizeof(NsName) * nus);
+            memcpy(cd->usings, usings, sizeof(NsName) * nus);
+            cd->nusings = nus;
+        }
         for (int i = 0; i < p.npend; i++) {         /* enums declared inside this class */
             prog->classes = (ClassDecl*)arena_grow(c->A, prog->classes, prog->nclasses, &cap, sizeof(ClassDecl));
-            prog->classes[prog->nclasses++] = p.pend[i];
+            ClassDecl* ed = &prog->classes[prog->nclasses++];
+            *ed = p.pend[i];
+            ed->ns = cd->ns; ed->usings = cd->usings; ed->nusings = cd->nusings;
         }
         p.npend = 0;
     }
