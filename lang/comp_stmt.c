@@ -334,3 +334,56 @@ void compile_stmt(C* c, Stmt* s) {
         }
     }
 }
+
+/* ================= reachability ================= */
+/* Like C#: a method that returns a value must not reach its closing '}'. can_end tells whether the end of a statement
+   can be reached once the statement is; a reachable 'break' / 'continue' is noted in Flow for the loop or switch around it.
+   Only the literals true/false count as constant conditions (while (true), for (;;), if (false)...). */
+typedef struct { int brk, cont; } Flow;
+static int is_true(Expr* e)  { return !e || (e->k == E_BOOL && e->ival); }     /* for (;;): no condition = true */
+static int is_false(Expr* e) { return e && e->k == E_BOOL && !e->ival; }
+
+static int can_end(Stmt* s, Flow* f) {
+    if (!s) return 1;
+    switch (s->k) {
+        case S_BLOCK:
+            for (int i = 0; i < s->n; i++) if (!can_end(s->list[i], f)) return 0;  /* the rest cannot be reached */
+            return 1;
+        case S_RETURN: case S_YIELDBREAK: return 0;
+        case S_BREAK: f->brk = 1; return 0;
+        case S_CONTINUE: f->cont = 1; return 0;
+        case S_IF: {
+            int t = is_false(s->e) ? 0 : can_end(s->body, f);
+            int e = is_true(s->e) ? 0 : can_end(s->els, f);   /* no 'else': its end is reached when the condition is false */
+            return t || e;
+        }
+        case S_WHILE: case S_FOR: {
+            if (is_false(s->e)) return 1;
+            Flow in = {0, 0};
+            can_end(s->body, &in);
+            return in.brk || !is_true(s->e);
+        }
+        case S_DO: {
+            Flow in = {0, 0};
+            int b = can_end(s->body, &in);
+            return in.brk || ((b || in.cont) && !is_true(s->e));
+        }
+        case S_FOREACH: { Flow in = {0, 0}; can_end(s->body, &in); return 1; }
+        case S_SWITCH: {
+            Flow in = {0, 0};
+            int end = 0, def = 0;
+            for (int i = 0; i < s->n; i++) {
+                Stmt* sec = s->list[i];
+                if (sec->isDefault) def = 1;
+                int r = 1;
+                for (int k = 0; k < sec->n && r; k++) r = can_end(sec->list[k], &in);
+                if (r) end = 1;                 /* the end of a section leaves the switch */
+            }
+            if (in.cont) f->cont = 1;           /* 'continue' in a switch belongs to the loop around it */
+            return end || in.brk || !def;
+        }
+        default: return 1;                      /* S_VAR, S_EXPR, S_YIELD */
+    }
+}
+
+int stmt_can_end(Stmt* s) { Flow f = {0, 0}; return can_end(s, &f); }

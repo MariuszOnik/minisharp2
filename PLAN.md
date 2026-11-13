@@ -93,7 +93,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - `ref` / `out` we własnych metodach (`out` jest tylko w `TryGetValue`; `int.TryParse(s, out int n)` też nie działa);
         komunikat dla `ref` jest niejasny: `expected name, found 'int'`;
       - skrócony inicjalizator tablicy `int[] t = { 1, 2 };` – dziś `unexpected '{' in expression` (działa `new int[] { … }`);
-      - brak `return` na jakiejś drodze to błąd w czasie działania, w C# – błąd kompilacji.
+      - ~~brak `return` na jakiejś drodze to błąd w czasie działania, w C# – błąd kompilacji~~ (zrobione 2026-11-13).
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
@@ -217,8 +217,9 @@ Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1�
 (decyzja użytkownika 2026-11-13: przed `codeindex.c`); każdy z testami i poprawką rozdziału 6 („Dla zaawansowanych”):
 1. [x] Skrócony inicjalizator tablicy `int[] t = { 1, 2 };` (zmienna, pole, właściwość) – zrobione 2026-11-13:
    `parse_init` w parserze robi `E_NEWARR` z `prefix = 2`, printer drukuje krótko; test `arrayinit`, błędy `arrinit_*`.
-2. Brak `return` na jakiejś drodze = błąd kompilacji (osiągalność końca metody: `return`, `if`/`else`, `while (true)`
-   bez `break`, `switch` z `default`…); `OP_NORET` w VM zostaje jako zabezpieczenie.
+2. [x] Brak `return` na jakiejś drodze = błąd kompilacji – zrobione 2026-11-13: `stmt_can_end` w `comp_stmt.c`
+   (osiągalność końca: `if`/`else`, `while (true)`/`for (;;)` bez `break`, `do`, `switch` z `default`, stałe
+   `true`/`false`) dla metod, `get` właściwości i lambd; `OP_NORET` zostaje; test `returns`, błędy `noret_*`.
 3. Parametry z wartością domyślną (`int b = 10`, tylko stałe jak w C#): wartość w `Param`, uzupełnianie argumentów
    przy wywołaniu, wybór przeciążenia, printer.
 4. `ref` / `out` we własnych metodach (na początek zmienne lokalne): przekazanie komórki jak przy zmiennych

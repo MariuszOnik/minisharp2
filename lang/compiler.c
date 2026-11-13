@@ -28,7 +28,15 @@ static void compile_method(C* c, int cls, CMethod* m) {
     box_params(c);
     compile_stmt(c, d->body);
     c->line = d->line;
-    if (m->ret->k == T_VOID || m->isIter) emit_op(c, OP_RET); else emit_op(c, OP_NORET);
+    if (m->ret->k == T_VOID || m->isIter) emit_op(c, OP_RET);
+    else {
+        if (stmt_can_end(d->body)) {
+            if (!d->s0 && m->nlen > 4 && m->name[3] == '_')     /* get_X of a property */
+                cfail(c, d->line, "not every path of the 'get' of '%.*s' returns a value; add 'return' at its end", m->nlen - 4, m->name + 4);
+            cfail(c, d->line, "not every path of '%.*s' returns a value; add 'return' at its end", m->nlen, m->name);
+        }
+        emit_op(c, OP_NORET);               /* cannot be reached; kept as a safety net */
+    }
     c->isIter = 0;
 }
 

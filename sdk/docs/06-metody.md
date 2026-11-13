@@ -169,8 +169,17 @@ dobrze
 spróbuj jeszcze raz
 ```
 
-Metoda z typem wyniku musi oddać wartość na każdej drodze. Bez ostatniego `return` program zatrzyma się przy małej
-liczbie punktów z błędem `method ended without returning a value`, bo nie byłoby czego oddać. W metodzie `void` można napisać samo `return;`, żeby wyjść wcześniej.
+Metoda z typem wyniku musi oddać wartość na każdej drodze. Bez ostatniego `return` przy małej liczbie punktów nie
+byłoby czego oddać, więc kompilator od razu zgłosi błąd:
+
+```text
+compile error: line 3: not every path of 'Ocena' returns a value; add 'return' at its end
+```
+
+Kompilator sprawdza wszystkie drogi: `if` bez `else` może zostać pominięty, pętla `while (warunek)` może się nie
+wykonać ani razu, a `switch` bez `default` może nie trafić w żaden `case`. Za to po `while (true)` bez `break` nie
+trzeba dopisywać `return`, bo z takiej pętli wychodzi się tylko przez `return`. W metodzie `void` można napisać samo
+`return;`, żeby wyjść wcześniej.
 
 ## Krótka metoda ze strzałką
 

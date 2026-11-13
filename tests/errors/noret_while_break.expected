@@ -1,0 +1,1 @@
+compile error: line 2: not every path of 'Szukaj' returns a value; add 'return' at its end

@@ -148,6 +148,8 @@ static void compile_lambda(C* c, Expr* e, Type* ft) {
     if (e->body) {
         compile_stmt(c, e->body);
         c->line = e->line;
+        if (ft->elem->k != T_VOID && stmt_can_end(e->body))
+            cfail(c, e->line, "not every path of this lambda returns a value; add 'return' at its end");
         emit_op(c, ft->elem->k == T_VOID ? OP_RET : OP_NORET);
     } else if (ft->elem->k == T_VOID) {
         expr_stmt(c, e->a);

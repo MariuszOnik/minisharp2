@@ -1,0 +1,1 @@
+compile error: line 3: not every path of the 'get' of 'Hp' returns a value; add 'return' at its end

@@ -174,5 +174,6 @@ void expr_to(C* c, Expr* e, Type* t, int line, const char* what);
 /* statements (comp_stmt.c) */
 void expr_stmt(C* c, Expr* e);
 void compile_stmt(C* c, Stmt* s);
+int stmt_can_end(Stmt* s);              /* the end of s can be reached (a method with a result must not get there) */
 
 #endif
