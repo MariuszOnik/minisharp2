@@ -19,7 +19,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 | Co | Gdzie |
 |---|---|
 | Nowe repo | `E:\MiniSharp2` (git lokalny; przeniesione 2026-11-13 z `E:\minsharpProject\minisharp-core`) |
-| Stare repo (archiwum) | `D:\Programowanie\FalloutDS\minisharp`, gałąź `toee-3d` (`fa01cec`) |
+| Stare repo (archiwum) | `D:\Programowanie\FalloutDS\minisharp`; baza `931ad08` (gałąź `jezyk-v4`), późniejsze zmiany z `toee-3d` (`fa01cec`) |
 | Projekty na MiniSharpie (wstrzymane) | `E:\minsharpProject\PLAN.md` (framework D&D na zasobach ToEE), `toee-models` |
 | Konsola | FTP `192.168.1.90:5000`; testowe buildy jako `/3ds/MiniSharp-*.3dsx` (nie nadpisywać `/3ds/MiniSharp.3dsx` bez pytania) |
 | Budowanie 3DS | devkitPro: `C:\devkitPro\msys2\usr\bin\bash.exe -lc "...; export DEVKITPRO=/opt/devkitpro DEVKITARM=/opt/devkitpro/devkitARM; make"` |
@@ -36,9 +36,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [x] **Terminal (REPL) na 3DS zostaje** (`repl.c`, `terminal.c`) – decyzja 2026-11-13.
 - [x] **`printer.c` zostaje** jako jedyny sposób zamiany AST na kod: generator grafu buduje AST, `printer.c` drukuje
       kod (zawsze poprawny i sformatowany); w edytorze „Formatuj kod”. Testy wydruku (`print/*`) przechodzą razem z nim.
-- [ ] **Baza przenoszenia** (do potwierdzenia): commit `931ad08` (gałąź `jezyk-v4`, stan sprzed Fallouta i ToEE)
-      zamiast `toee-3d` + lista późniejszych ogólnych zmian do przeniesienia osobno (przestrzenie nazw, `using`
-      dołączające biblioteki, `File.WriteLines`, `Input.Text`, `Audio.PlayMusic`, rysowanie do obrazka, przewijanie menu).
+- [x] **Baza przenoszenia: commit `931ad08`** (gałąź `jezyk-v4`, stan sprzed Fallouta i ToEE) zamiast `toee-3d` –
+      decyzja 2026-11-13. Późniejsze ogólne zmiany przenosimy osobno (lista z commitami: `docs/PRZEGLAD.md`,
+      „Baza przenoszenia”). Uwagi:
+      - przegląd był robiony na `toee-3d` – przy każdym pliku porównać z wersją z `931ad08`;
+      - różnice `vm.c`/`compiler.c` z commita Gfx3D (`a43971f`) przejrzeć ręcznie (mogą zawierać ogólne poprawki);
+      - przestrzenie nazw (`a350c5e`) przenieść już w etapie 1 razem z kompilatorem (`using`/`uses.txt` z nich korzystają).
 - [ ] Przejrzeć architekturę z użytkownikiem i ją zatwierdzić (układ folderów, nazwy).
 
 ### Etap 1 – język (lang/) + testy na PC
@@ -82,7 +85,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 0: potwierdzić bazę przenoszenia (`931ad08`?) i zatwierdzić architekturę. Potem etap 1 od
+Etap 0: przejrzeć i zatwierdzić architekturę z użytkownikiem (`docs/ARCHITEKTURA.md`). Potem etap 1 od
 szkieletu repo.
 
 ## Dziennik
@@ -92,3 +95,5 @@ szkieletu repo.
 - 2026-11-13: edytor grafu B („Bolt jak w Unity”). Historia języka przejrzana: proponowana baza `931ad08` (`jezyk-v4`).
 - 2026-11-13: terminal zostaje, `printer.c` zostaje (graf → AST → kod, „Formatuj kod”). Repo przeniesione do
   `E:\MiniSharp2` (nowa nazwa folderu na prośbę użytkownika), dodany `CLAUDE.md` dla nowych sesji.
+- 2026-11-13: baza przenoszenia potwierdzona: `931ad08`. Różnica do `toee-3d` w rdzeniu języka jest mała
+  (compiler +158, parser +87, vm +80 linii, 4 commity); większość późniejszych zmian to gry (`gfx3d.c`, `natives.c`).
