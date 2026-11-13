@@ -4,11 +4,13 @@
  *   minisharp file.cs --frames N    run N frames
  *   minisharp file.cs --check       only compile, report errors
  *   minisharp file.cs --dis         print the bytecode
- * Graphics, input, --press/--ppm and the terminal come in stages 2–3.
+ *   minisharp --repl                terminal: run inputs from stdin (a line with an open '{' or '(' goes on in the next)
+ * Graphics, input and --press/--ppm come in stage 3.
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
 #include "lib.h"
 #include "project.h"
+#include "repl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,12 +33,49 @@ static char* read_file(const char* path) {
     return s;
 }
 
+/* terminal mode: echoes each line after "> " (or ". " when it continues an open '{'), then runs the input;
+ * "#complete text" lists completions instead */
+static int repl_main(void) {
+    Repl* r = repl_new();
+    if (!r) { fprintf(stderr, "out of memory\n"); return 2; }
+    char line[1024], err[300], text[8192];
+    int tlen = 0;
+    while (fgets(line, sizeof line, stdin)) {
+        line[strcspn(line, "\r\n")] = 0;
+        printf("%s %s\n", tlen ? "." : ">", line);
+        if (!tlen && !strncmp(line, "#complete ", 10)) {
+            char out[8][REPL_WORD]; int start;
+            const char* t = line + 10;
+            int n = repl_complete(r, t, (int)strlen(t), &start, out, 8);
+            for (int i = 0; i < n; i++) printf("%s%s", i ? " " : "", out[i]);
+            printf("\n");
+            continue;
+        }
+        int l = (int)strlen(line);
+        if (tlen + l + 2 > (int)sizeof text) { printf("error: input too long\n"); tlen = 0; continue; }
+        if (tlen) text[tlen++] = '\n';
+        memcpy(text + tlen, line, l + 1); tlen += l;
+        if (repl_incomplete(text)) continue;
+        tlen = 0;
+        if (!repl_eval(r, text, err, sizeof err)) printf("error: %s\n", err);
+        fflush(stdout);
+    }
+    if (tlen) printf("error: the input ended with an open '{' or '('\n");
+    repl_free(r);
+    return 0;
+}
+
 int main(int argc, char** argv) {
 #ifdef _WIN32
     _setmode(_fileno(stdout), _O_BINARY); /* "\n" not "\r\n", so output matches tests/expected */
     _setmode(_fileno(stderr), _O_BINARY);
 #endif
-    if (argc < 2) { fprintf(stderr, "usage: %s file.cs|folder [--frames N] [--check] [--dis]\n", argv[0]); return 2; }
+    if (argc == 2 && !strcmp(argv[1], "--repl")) {
+        ms_set_clock(frame_millis);
+        lib_register_all();
+        return repl_main();
+    }
+    if (argc < 2) { fprintf(stderr, "usage: %s file.cs|folder [--frames N] [--check] [--dis] | --repl\n", argv[0]); return 2; }
     int frames = 60, check = 0, dis = 0;
     for (int i = 2; i < argc; i++) {
         if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);

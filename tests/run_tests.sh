@@ -44,6 +44,8 @@ else
         args=$(sed -n "s/^$n //p" tests/opcje.txt)
         check "$n" "$("$BIN" "tests/projects/$n" $args 2>&1)" "tests/expected/$n.txt"
     done
+    # Terminal: tests/repl.txt podane na stdin hosta --repl (echo wejścia po "> ", wyniki, błędy, #complete)
+    check repl "$("$BIN" --repl < tests/repl.txt 2>&1)" tests/expected/repl.txt
     # Przykłady z dokumentacji (sdk/docs/*.md): blok ```cs = cały program; po nim ```wynik = oczekiwane wyjście.
     # Przykład bez bloku wynik musi się przynajmniej skompilować.
     rm -rf build/doc; mkdir -p build/doc

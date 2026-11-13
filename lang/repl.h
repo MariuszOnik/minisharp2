@@ -1,0 +1,27 @@
+/* MiniSharp - REPL (terminal): runs one input at a time, keeping variables between inputs.
+ * The host reads the text (keyboard, stdin), shows it and passes it here; output goes through Console (lib_set_output). */
+#ifndef MS_REPL_H
+#define MS_REPL_H
+
+typedef struct Repl Repl;
+
+Repl* repl_new(void);
+void repl_free(Repl* r);
+
+/* Runs one input: a line, or several lines (a loop typed over a few lines, see repl_incomplete).
+ * 1 = ok, 0 = error (message in err; for a one-line input without the "line N:" prefix). */
+int repl_eval(Repl* r, const char* text, char* err, int errlen);
+
+/* 1 when the text so far leaves a '{', '(' or '[' open (outside strings, characters and comments):
+ * the host then asks for the next line and joins them before repl_eval, like "for (...) {" + body + "}". */
+int repl_incomplete(const char* text);
+
+/* Completions for the word that ends at 'cursor': after "Math." the members of Math, otherwise
+ * classes, keywords and the terminal's variables. Returns how many (up to max) and sets *start
+ * to where the word begins (the completion replaces line[*start..cursor]). */
+#define REPL_WORD 32
+int repl_complete(Repl* r, const char* line, int cursor, int* start, char out[][REPL_WORD], int max);
+/* the same with the caller's own names ('words', separated by spaces) instead of the terminal's variables */
+int ms_complete(const char* line, int cursor, int* start, char out[][REPL_WORD], int max, const char* words);
+
+#endif

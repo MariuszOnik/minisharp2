@@ -53,3 +53,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   (też `private set;` i `static class`); kompilator sprawdza je przy użyciu pola, właściwości, metody, delegata i konstruktora
   (`can_access`/`check_access`, przeciążenia tylko spośród dostępnych). Bez słówka – dostęp wszędzie jak dotąd. Test `access.cs`
   + 24 testy błędów; dokumentacja: rozdział 4 „Warunki: if i else”, uwaga o `public` w rozdziale 1 (202 ok).
+- 2026-11-13: `lang/repl.c` (terminal) z `931ad08`, bez nagłówka platformy; nowe wejście w kilku liniach (`repl_incomplete`),
+  host PC `--repl`, test `repl` (bez `Gfx`). Dokumentacja: rozdział 5 „Pętle”. Wyszły braki: przecinek w `for`, `char` jako bajt
+  (polskie litery w `foreach`). W planie etapu 3 wygląd terminala (fosfor, scanlines, klawiatura rysowana kodem). 211 ok.

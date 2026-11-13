@@ -1,0 +1,50 @@
+1 + 2
+Math.Sqrt(2)
+var x = 5
+x * 10
+x++;
+x
+int y = x + 1, z = 7;
+y + z
+var s = "abc";
+s.ToUpper() + x
+var list = new List<int>();
+for (int i = 0; i < 4; i++) list.Add(i * i);
+list.Count
+list[3]
+var d = new Dictionary<string, int> { {"a", 1} };
+d["b"] = 2;
+d.Count
+var x = 9
+x
+var x = "text"
+float f = 3;
+var f = 2
+f / 4
+foo
+1 / 0
+list[10]
+while (true) { }
+x
+Console.WriteLine("hi")
+if (x > 3) Console.WriteLine("big");
+x = 1; x
+for (int i = 1; i <= 3; i++)
+{
+    Console.WriteLine("i = " + i);
+}
+int suma = 0;
+foreach (var v in list) {
+    suma += v; // a comment with { inside
+}
+suma
+while (suma > 0) {
+    suma -= 5;
+    nic();
+}
+Console.WriteLine("brace in a string: {")
+#complete Con
+#complete Math.Sq
+#complete li
+#complete Mathf.P
+#complete 12

@@ -63,7 +63,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 2 „Zmienne i typy”.
 - [x] Rozdział 3 „Rachunki” (działania, `+=`/`++`, `Math`/`Mathf`, `Random`).
 - [x] Rozdział 4 „Warunki: if i else” (porównania, `&& || !`, `?:`, `switch`).
-- [ ] Kolejne rozdziały (propozycja kolejności): pętle, metody, tablice, string,
+- [x] Rozdział 5 „Pętle” (`for`, `while`, `do … while`, `foreach`, `break`/`continue`, pętle w terminalu).
+- [ ] Kolejne rozdziały (propozycja kolejności): metody, tablice, string,
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
@@ -79,7 +80,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `internal` = brak słówka; `static class` – zakaz `new` i wszystkie składniki `static`. Każdy program poprawny w C# jest
       poprawny i u nas. Sprawdzenie przy wyszukiwaniu pola/metody/właściwości (`comp_types.c`, `comp_expr.c`, `comp_call.c`,
       też w lambdach), testy w `tests/errors/`, sekcja w rozdziale „Klasy i obiekty”.
-- [ ] `repl.c` (terminal) z testem `repl`.
+- [x] `repl.c` (terminal) z testem `repl` (2026-11-13): `lang/repl.c`, host `--repl`; nowość – wejście w kilku liniach
+      (`repl_incomplete`: otwarta `{`/`(`/`[` albo nagłówek `for/while/if/foreach (...)`, `else`, `do` bez treści).
+      Ograniczenie: `else` musi być w linii z `}` (samo `}` kończy wejście).
+- [ ] **Braki względem C# znalezione przy rozdziale 5** (zasada: program poprawny w C# działa i u nas):
+      - przecinek w `for`: `for (int a = 0, b = 10; a < b; a += 3, b--)` – dziś błąd `expected ')', found ','`;
+      - `char` to jeden bajt: `foreach (char c in "pętla")` daje dla `ę` dwa znaki (napisy w UTF-8). Do decyzji: `char` jako
+        punkt kodowy Unicode (indeksowanie i `Length` po znakach) czy zostawić bajty i opisać.
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
@@ -99,6 +106,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `Console.ForegroundColor`/`BackgroundColor` (`ConsoleColor.Yellow`…), `Console.Clear()`, `Console.SetCursorPosition(x, y)`,
       `Console.CursorVisible` – na tym gry tekstowe (roguelike). Logika siatki w `lib/` (testy na PC: zrzut siatki jako tekst),
       rysowanie w `platform/*`; czcionka własna albo na wolnej licencji (nie kopiujemy czcionki ROM z kart VGA).
+- [ ] **Wygląd terminala** (rozmowa 2026-11-13, po terminalu w stylu DOS): zielony „fosfor”, migający kursor, na 3DS
+      przyciemniona co druga linia (scanlines – tanie), bez poświaty (za droga). Na 3DS terminal na **cały górny ekran**
+      (ramka monitora zjadłaby 20–30% z 400×240), na dolnym **klawiatura rysowana kodem** (prostokąty + czcionka, jeden układ
+      dla 3DS i web, skalowalna; zapas: systemowa `swkbd`). Na web/APK opcjonalna ramka monitora CRT (obrazek albo CSS/SVG)
+      w `platform/web`, w widoku dokładnie z przodu, ekran jako prostokąt o znanych współrzędnych; treść ekranu zawsze
+      rysuje kod. Klawiatury z wygenerowanego obrazka nie robimy (krzywe klawisze, zmyślone litery, ręczne hitboxy).
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę. Pierwszy build na konsolę.
 - [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
       przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
@@ -162,6 +175,6 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ## Następny krok
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
-1. `repl.c` (terminal) + test `repl` (opcja hosta `--repl`, wejście ze stdin). Przy okazji rozdział 5 dokumentacji („Pętle”).
-2. `printer.c` (musi drukować modyfikatory dostępu: `access` w `FieldDecl`/`MethodDecl`/`PropDecl`, `getAccess`/`setAccess`,
-   `ClassDecl.isStatic`), potem `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
+1. `printer.c` (musi drukować modyfikatory dostępu: `access` w `FieldDecl`/`MethodDecl`/`PropDecl`, `getAccess`/`setAccess`,
+   `ClassDecl.isStatic`) + rozdział 6 „Metody”.
+2. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
