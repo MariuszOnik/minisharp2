@@ -1,6 +1,7 @@
 #!/bin/sh
 # Testy języka na 3DS (konsola albo emulator Azahar), porównane z tests/expected/ tak jak w run_tests.sh.
 #   sh tools/3ds_tests.sh prepare <sd>   kopiuje testy do <sd>/minisharp/tests/ (+ plik "auto": aplikacja sama je uruchomi)
+#   sh tools/3ds_tests.sh fetch <dir>     pobiera wyniki z konsoli (FTP 192.168.1.90:5000) do <dir>/minisharp/tests/out/
 #   sh tools/3ds_tests.sh compare <sd>   porównuje <sd>/minisharp/tests/out/*.txt z oczekiwanymi wynikami
 # <sd> = katalog karty: emulator – "$APPDATA/Azahar/sdmc"; konsola – skopiuj przez FTP albo podaj zamontowaną kartę.
 # Na 3DS: MiniSharp.3dsx z Homebrew Launchera, X = testy (albo plik auto – testy od razu przy starcie).
@@ -16,6 +17,15 @@ if [ "$cmd" = prepare ]; then
     cp -r tests/projects/* "$T/projects/"
     : > "$T/auto"
     echo "testy skopiowane do $T"
+    exit 0
+fi
+if [ "$cmd" = fetch ]; then     # pobiera /minisharp/tests/out/ z konsoli przez FTP do <sd>/minisharp/tests/out/
+    FTP=${FTP:-ftp://192.168.1.90:5000}
+    rm -rf "$T/out"; mkdir -p "$T/out"
+    curl -sS --connect-timeout 5 --list-only "$FTP/minisharp/tests/out/" | tr -d '\r' | while read -r p; do
+        curl -sS -o "$T/out/$(basename "$p")" "$FTP/minisharp/tests/out/$(basename "$p")"
+    done
+    echo "pobrano $(ls "$T/out" | wc -l) wynikow do $T/out"
     exit 0
 fi
 [ "$cmd" = compare ] || { echo "unknown command $cmd"; exit 2; }

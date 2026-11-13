@@ -60,3 +60,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   (wspólne warstwy `lang lib graph` kompilują się pod devkitARM bez zmian), tryb testów z wynikami na karcie
   i porównanie na PC (`tools/3ds_tests.sh`). Azahar: 177 ok, 6 czeka; build wysłany na konsolę jako
   `/3ds/MiniSharp-20261113-1610.3dsx`. Dokumentacja: „Uruchamianie na 3DS” w rozdziale 1.
+- 2026-11-13: testy na prawdziwej konsoli (`tools/3ds_tests.sh fetch` przez FTP): 177 ok, 6 czeka – ułamki i stos bez
+  różnic względem PC.

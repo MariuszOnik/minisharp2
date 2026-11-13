@@ -127,8 +127,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `/3ds/MiniSharp-RRRRMMDD-GGMM.3dsx` (`tools/3ds_send.sh`). Do zrobienia: to samo dla builda z Actions (wydanie
       `3ds-latest` – nazwa pliku z datą albo numerem przebiegu `github.run_number`) i data/numer na ekranie startowym
       pełnej wersji (etap 3).
-- [ ] Testy na prawdziwej konsoli: `sh tools/3ds_send.sh tests` (FTP konsoli: `192.168.1.90:5000`), X w menu,
-      pobrać `/minisharp/tests/out/` przez FTP i `sh tools/3ds_tests.sh compare <katalog>` (punkt „Przenośność” niżej).
+- [x] Testy na prawdziwej konsoli (2026-11-13: 177 ok, 6 czeka; ułamki zgodne z PC): `sh tools/3ds_send.sh tests` (FTP konsoli: `192.168.1.90:5000`), X w menu,
+      `sh tools/3ds_tests.sh fetch <katalog>` i `sh tools/3ds_tests.sh compare <katalog>` (punkt „Przenośność” niżej).
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę – rozbudowa minimalnego hosta.
 - [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
       przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
