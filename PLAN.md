@@ -107,7 +107,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       przewijanie, zawijanie – jedna w `lib/`, testowana na PC. (3) Umowa z platformą – kilka funkcji: narysuj siatkę, daj
       wpisaną linię, czy naciśnięto Stop (`platform/3ds`, `web`, `pc`). Host decyduje, gdzie siatka jest widoczna (cały ekran,
       okienko w menu/edytorze, tekst w testach). Kompilator i VM widzą `Console` jak każdą zarejestrowaną klasę.
-- [ ] **Przenieść `repl.c` z `lang/` do `app/`** (decyzja użytkownika 2026-11-13): terminal to narzędzie na języku (jak edytor),
+- [x] **Przenieść `repl.c` z `lang/` do `app/`** (zrobione 2026-11-13: `app/repl.c`, `app` w obu Makefile'ach) (decyzja użytkownika 2026-11-13): terminal to narzędzie na języku (jak edytor),
       klient `Console`, nie rdzeń. Test `repl` i host `--repl` zostają. Pomysł na później: `Script.Run(kod)` (kompilacja
       i uruchomienie tekstu w trakcie działania, zmienne żyją między wywołaniami) – wtedy terminal może być zwykłym
       programem w MiniSharpie (`Console.ReadLine` + `Script.Run`), który każdy przerobi.

@@ -62,3 +62,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   `/3ds/MiniSharp-20261113-1610.3dsx`. Dokumentacja: „Uruchamianie na 3DS” w rozdziale 1.
 - 2026-11-13: testy na prawdziwej konsoli (`tools/3ds_tests.sh fetch` przez FTP): 177 ok, 6 czeka – ułamki i stos bez
   różnic względem PC.
+- 2026-11-13: `repl.c`/`repl.h` przeniesione z `lang/` do `app/` – terminal to narzędzie na języku, nie rdzeń.
+  `app` dopisane do `SRCDIRS` (PC) i `SOURCES` (3DS); testy PC 211 ok, build 3DS przechodzi.

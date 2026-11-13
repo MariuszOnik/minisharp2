@@ -23,7 +23,7 @@ endif
 BIN := $(BUILD)/minisharp$(EXE)
 
 # Warstwy, które wchodzą do binarki testowej (kolejne dochodzą w etapach 1–3).
-SRCDIRS := lang lib graph platform/pc
+SRCDIRS := lang lib graph app platform/pc
 SRC     := $(strip $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.c)))
 HDR     := $(strip $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.h)))
 INC     := $(foreach d,$(SRCDIRS),-I$(d))

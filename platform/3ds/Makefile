@@ -13,7 +13,7 @@ include $(DEVKITARM)/3ds_rules
 
 TARGET   := MiniSharp
 # the core layers + this platform (file names must be unique across the folders: the objects go into one directory)
-SOURCES  := lang lib graph platform/3ds
+SOURCES  := lang lib graph app platform/3ds
 BUILD    := build/obj3ds
 
 # build identifier (commit, "+" = uncommitted changes, date), shown in the Homebrew Launcher and in the menu
