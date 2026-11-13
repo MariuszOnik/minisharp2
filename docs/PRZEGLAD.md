@@ -28,8 +28,8 @@ Stare repo zostaje **archiwum**: nic w nim nie zmieniamy, kod przenosimy stąd p
 | `src/compiler.c` | 3090 | sprawdzanie typów + generowanie bajtkodu | poprawić | największy plik: podzielić (typy i nazwy, wyrażenia, instrukcje, klasy/przestrzenie nazw) bez zmiany zachowania – testy pilnują |
 | `src/vm.c` | 1537 | maszyna stosowa, GC mark & sweep, korutyny | zostaje | |
 | `src/disasm.c` | 61 | wydruk bajtkodu | zostaje | narzędzie |
-| `src/printer.c` | 445 | AST → tekst C# | decyzja | potrzebny grafowi A; poza tym może być formatowaniem kodu w edytorze |
-| `src/repl.c` | 175 | linia po linii (terminal) | decyzja | razem z terminalem na 3DS |
+| `src/printer.c` | 445 | AST → tekst C# | zostaje | decyzja 2026-11-13: generator grafu B buduje AST i drukuje kod przez printer; „Formatuj kod” w edytorze |
+| `src/repl.c` | 175 | linia po linii (terminal) | zostaje | terminal zostaje (decyzja 2026-11-13) |
 | `src/project.c` | 238 | projekt = folder, `uses.txt`, `using X;` dołącza `../x/lib` | zostaje | mechanizm ogólny (nic o ToEE w kodzie, tylko w komentarzach) |
 | `src/codeindex.c` | 608 | indeks kodu dla podpowiedzi edytora | zostaje | komentarze z przykładami `Toee.*` zamienić na ogólne |
 
@@ -57,7 +57,7 @@ Stare repo zostaje **archiwum**: nic w nim nie zmieniamy, kod przenosimy stąd p
 | `ui.c/.h` | 169 | wspólne elementy UI | zostaje | |
 | `help.c/.h` + `help_data.h` | 539 | Help w edytorze (generowany z `sdk/`) | zostaje | treść bez wzmianek o grach; moduły dokładają swoje strony |
 | `samples.h` | 1191 | przykłady wbudowane w aplikację (generowane) | zostaje | generator `tools/gen_samples.py` |
-| `terminal.c/.h` | 228 | REPL na konsoli | decyzja | |
+| `terminal.c/.h` | 228 | REPL na konsoli | zostaje | decyzja 2026-11-13 |
 | `grapheditor.c/.h`, `gview.c/.h` | 577 | graf A na konsoli | decyzja | |
 | `graphview.c/.h` | 194 | ekran pomiaru rysowania grafu (prototyp) | wyrzucić | spełnił zadanie (pomiar w `docs/graph-model.md`) |
 | `bolt.c/.h` | 1049 | graf B („mini Bolt”) na konsoli | decyzja | |

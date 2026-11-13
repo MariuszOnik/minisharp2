@@ -40,8 +40,9 @@ Kolejność prac się nie zmienia: usługa stoi na rdzeniu, więc najpierw języ
 ## Układ folderów (propozycja)
 
 ```
-minisharp-core/
-  lang/         ms.h (publiczne API), parser, kompilator (kilka plików), vm, gc, korutyny, disasm,
+MiniSharp2/
+  lang/         ms.h (publiczne API), parser, kompilator (kilka plików), vm, gc, korutyny, disasm, printer (AST → kod),
+                repl (terminal),
                 service.h/.c – usługa języka dla edytorów (kolory, podpowiedzi, błędy; z codeindex)
   lib/          funkcje wbudowane niezależne od platformy
   platform/

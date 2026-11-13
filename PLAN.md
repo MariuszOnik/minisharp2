@@ -18,7 +18,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 | Co | Gdzie |
 |---|---|
-| Nowe repo | `E:\minsharpProject\minisharp-core` (git lokalny, czysta historia) |
+| Nowe repo | `E:\MiniSharp2` (git lokalny; przeniesione 2026-11-13 z `E:\minsharpProject\minisharp-core`) |
 | Stare repo (archiwum) | `D:\Programowanie\FalloutDS\minisharp`, gałąź `toee-3d` (`fa01cec`) |
 | Projekty na MiniSharpie (wstrzymane) | `E:\minsharpProject\PLAN.md` (framework D&D na zasobach ToEE), `toee-models` |
 | Konsola | FTP `192.168.1.90:5000`; testowe buildy jako `/3ds/MiniSharp-*.3dsx` (nie nadpisywać `/3ds/MiniSharp.3dsx` bez pytania) |
@@ -33,8 +33,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [x] **Edytor grafu: B – „Bolt jak w Unity”** (decyzja użytkownika 2026-11-13). Graf jest źródłem (JSON w pliku),
       kod C# generowany z niego. Zostają `fgraph.c`, `json.c`, `bolt.c`; graf A (`graph.c`, `graphedit.c`, `gview.c`,
       `grapheditor.c`, `graphview.c`) odpada.
-- [ ] Pozostałe decyzje: terminal/REPL na 3DS (zostaje?), `printer.c` (graf B go nie potrzebuje – formatowanie kodu
-      w edytorze albo wyrzucić), **baza przenoszenia**: commit `931ad08` (gałąź `jezyk-v4`, stan sprzed Fallouta i ToEE)
+- [x] **Terminal (REPL) na 3DS zostaje** (`repl.c`, `terminal.c`) – decyzja 2026-11-13.
+- [x] **`printer.c` zostaje** jako jedyny sposób zamiany AST na kod: generator grafu buduje AST, `printer.c` drukuje
+      kod (zawsze poprawny i sformatowany); w edytorze „Formatuj kod”. Testy wydruku (`print/*`) przechodzą razem z nim.
+- [ ] **Baza przenoszenia** (do potwierdzenia): commit `931ad08` (gałąź `jezyk-v4`, stan sprzed Fallouta i ToEE)
       zamiast `toee-3d` + lista późniejszych ogólnych zmian do przeniesienia osobno (przestrzenie nazw, `using`
       dołączające biblioteki, `File.WriteLines`, `Input.Text`, `Audio.PlayMusic`, rysowanie do obrazka, przewijanie menu).
 - [ ] Przejrzeć architekturę z użytkownikiem i ją zatwierdzić (układ folderów, nazwy).
@@ -48,7 +50,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ### Etap 2 – biblioteka i projekty
 - [ ] `lib/`: Console, Math, Mathf, Random, string, char, int/float, List, Dictionary (część rdzenia z `natives.c`).
-- [ ] `project.c` (projekt = folder, `uses.txt`, `using X;`), `repl.c` jeśli terminal zostaje, `codeindex.c`.
+- [ ] `project.c` (projekt = folder, `uses.txt`, `using X;`), `repl.c` (terminal), `printer.c` (AST → kod), `codeindex.c`.
 - [ ] Testy projektów i indeksu kodu.
 
 ### Etap 3 – platforma 3DS i host testów PC
@@ -64,7 +66,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [ ] Przegląd Bolta z Unity jako wzorca (bez kopiowania kodu i grafik – `docs/graphs-notes.md` w starym repo): co z niego
       mamy (graf przepływu, zdarzenia, węzły z pamięcią, zdarzenia klasy bazowej), czego brak (np. graf stanów, zmienne
       grafu/obiektu, superjednostki = podgrafy, wyszukiwarka węzłów) – lista i kolejność do ustalenia z użytkownikiem.
-- [ ] `json.c`, `fgraph.c` (katalog węzłów + generator kodu) z testami na PC; katalog węzłów budowany z API
+- [ ] `json.c`, `fgraph.c` (katalog węzłów + generator: graf → AST → `printer.c` → kod) z testami na PC; katalog węzłów budowany z API
       zarejestrowanych funkcji (moduły dokładają swoje węzły same, bez ręcznego katalogu).
 - [ ] `bolt.c` – edytor na 3DS; potem ten sam model i generator w przeglądarce przez wasm (widok SVG), bez `graph.js`.
 
@@ -80,7 +82,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 0: pozostałe decyzje (baza `931ad08`?, terminal, `printer.c`) i zatwierdzenie architektury. Potem etap 1 od
+Etap 0: potwierdzić bazę przenoszenia (`931ad08`?) i zatwierdzić architekturę. Potem etap 1 od
 szkieletu repo.
 
 ## Dziennik
@@ -88,3 +90,5 @@ szkieletu repo.
   przenoszenie z przeglądem, tylko 3DS (PC do testów). Zrobiony przegląd starego kodu i szkic architektury.
 - 2026-11-12: web jednak zostaje (rdzeń w C → wasm, różni się tylko platforma); zasada: logika edytora tylko w C.
 - 2026-11-13: edytor grafu B („Bolt jak w Unity”). Historia języka przejrzana: proponowana baza `931ad08` (`jezyk-v4`).
+- 2026-11-13: terminal zostaje, `printer.c` zostaje (graf → AST → kod, „Formatuj kod”). Repo przeniesione do
+  `E:\MiniSharp2` (nowa nazwa folderu na prośbę użytkownika), dodany `CLAUDE.md` dla nowych sesji.
