@@ -275,6 +275,11 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    przyciski Save/Run/Undo/Redo, zapis bez BOM, Run przez host (`EditorHost.run`) i skok do linii błędu, ostrzeżenie
    o niezapisanych zmianach. Na 3DS: B w menu edytuje `main.cs`, Run wychodzi na chwilę do konsoli tekstowej.
    **Sprawdzić na konsoli**: czytelność, szybkość rysowania przy dłuższym pliku, Run i powrót.
-10. Edytor, dalej: wybór pliku / projektu z karty (lista, nowy plik, karty kilku plików – wzór: stare `files_screen`,
-   `new_file`, `Doc`), zaznaczanie i schowek (L + D-pad zajęte przez Home/End – np. tryb zaznaczania przyciskiem),
-   wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), Help.
+10. [x] Wybór pliku / projektu z karty – zrobione 2026-11-13: `app/files.c` (test `test_files`): w folderze głównym
+   projekty (foldery z `.cs`, bez `tests/`) i programy `.cs`, w projekcie jego `.cs` i `.txt`; A/dotyk otwiera, B wraca,
+   X nowy plik (program z `Main` albo pusta klasa w projekcie), Y nowy projekt (`Program.cs`); nazwa z klawiatury
+   ekranowej. Na 3DS: B w menu → lista → edytor, START w edytorze wraca do listy; Run pliku z projektu uruchamia
+   folder (`files_project_of`). **Sprawdzić na konsoli**: lista, dotyk, nowy plik/projekt, Run projektu.
+11. Edytor, dalej: karty kilku plików projektu (usługa języka dostaje wszystkie pliki – dziś podpowiedzi tylko z
+   otwartego pliku), usuwanie pliku, zaznaczanie i schowek (L + D-pad zajęte przez Home/End – np. tryb zaznaczania
+   przyciskiem), wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), Help.

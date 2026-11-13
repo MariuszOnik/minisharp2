@@ -3,7 +3,8 @@
  *   X      run the test files from sdmc:/minisharp/tests/ (the .cs files there and in errors/, the folders in projects/)
  *          and write each result to sdmc:/minisharp/tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
  *          tools/3ds_tests.sh compares them with tests/expected/ on the PC
- *   B      code editor on main.cs (app/editor.c; A in it runs the program and jumps to the error line)
+ *   B      programs and projects on the card (app/files.c), then the code editor (app/editor.c; A in it runs the
+ *          program - or the whole project for a file in a project folder - and jumps to the error line)
  *   Y      terminal (app/terminal.c, touch keyboard, app/ui.h on citro2d; START = back)
  *   START  quit
  * START+SELECT held = the Stop button: a running loop (also Main with while (true)) stops with "stopped by the user".
@@ -16,6 +17,7 @@
 #include "project.h"
 #include "terminal.h"
 #include "editor.h"
+#include "files.h"
 #include "ui_3ds.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -216,7 +218,7 @@ static void menu(void) {
     printf("MiniSharp2 (" BUILD_ID ")\n\n");
     printf("A      run " MAIN_CS "\n");
     printf("X      run tests from " TESTS_DIR "\n");
-    printf("B      edit " MAIN_CS "\n");
+    printf("B      editor: programs and projects\n");
     printf("Y      terminal\n");
     printf("START  quit\n");
 }
@@ -255,9 +257,11 @@ static int editor_run(const char* path, char* err, int errcap) {
     consoleInit(GFX_TOP, &top);
     consoleInit(GFX_BOTTOM, &bottom);
     consoleSelect(&bottom);
-    printf("running %s\n(START stops Update,\nSTART+SELECT stops any loop)\n", path);
+    char proj[400];
+    int isProject = files_project_of(APP_DIR, path, proj, sizeof proj);
+    printf("running %s\n(START stops Update,\nSTART+SELECT stops any loop)\n", isProject ? proj : path);
     g_out = fopen(LOG_PATH, "w");
-    run(path, 0, -1);
+    run(isProject ? proj : path, isProject, -1);
     if (g_out) { fclose(g_out); g_out = NULL; }
     consoleSelect(&bottom);
     printf("\n%s\n\nA / B: back to the editor\n", g_lastErr[0] ? "error (see the top screen)" : "done");
@@ -271,16 +275,12 @@ static int editor_run(const char* path, char* err, int errcap) {
     return g_lastErr[0] == 0;
 }
 
-/* B: the code editor (app/editor.c) on main.cs */
-static void editor(void) {
+/* the code editor (app/editor.c) on one file, until START */
+static void edit_file(const char* path) {
     EditorHost host = { editor_run };
-    Editor* ed = NULL;
-    if (!ui3ds_init() || !(ed = ed_new(&host))) {
-        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
-        printf("\ncannot open the editor\n");
-        return;
-    }
-    ed_open(ed, MAIN_CS);
+    Editor* ed = ed_new(&host);
+    if (!ed) return;
+    ed_open(ed, path);
     while (aptMainLoop()) {
         hidScanInput();
         UiInput in;
@@ -291,6 +291,29 @@ static void editor(void) {
         ui3ds_frame_end();
     }
     ed_free(ed);
+}
+
+/* B: the programs and projects on the card (app/files.c); a chosen file opens in the editor, START there
+ * comes back to the list */
+static void editor(void) {
+    Files* fs = NULL;
+    if (!ui3ds_init() || !(fs = files_new(APP_DIR))) {
+        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
+        printf("\ncannot open the editor\n");
+        return;
+    }
+    while (aptMainLoop()) {
+        hidScanInput();
+        UiInput in;
+        ui3ds_input(&in);
+        int r = files_update(fs, &in);
+        if (r == FILES_LEAVE) break;
+        if (r == FILES_OPEN) { edit_file(files_chosen(fs)); files_scan(fs); continue; }
+        ui3ds_frame_begin(0x101418, 0x0C0C0C);
+        files_draw(fs);
+        ui3ds_frame_end();
+    }
+    files_free(fs);
     ui3ds_exit();
     consoleInit(GFX_TOP, &top);
     consoleInit(GFX_BOTTOM, &bottom);
