@@ -105,9 +105,11 @@ Po 10 dniach masz 1024 sztuk złota
 ```
 
 Uważaj: jeśli warunek nigdy nie stanie się fałszywy, pętla kręci się bez końca. Zwykle w środku zapomniano coś
-zmienić (tu: `zloto *= 2`). W terminalu taka pętla zostanie przerwana po kilku sekundach komunikatem
-`stopped: still running after 5 seconds (endless loop?)`.
-Zwykły program (nie w terminalu) nie ma tego limitu – pętla gry `while (true)` jest w nim w porządku.
+zmienić (tu: `zloto *= 2`). Taki program zatrzymasz przyciskiem **Stop**: na 3DS przytrzymaj razem START
+i SELECT, na komputerze naciśnij Ctrl+C. Program kończy się wtedy komunikatem `stopped by the user`.
+W terminalu pętla, która kręci się dłużej niż kilka sekund, jest dodatkowo przerywana sama, z komunikatem
+`stopped: still running after 5 seconds (endless loop?)`. Zwykły program nie ma tego limitu – pętla gry
+`while (true)` jest w nim w porządku, a wyjściem awaryjnym jest Stop.
 
 ## do … while – co najmniej raz
 

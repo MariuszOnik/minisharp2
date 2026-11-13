@@ -13,6 +13,8 @@ static int clock_millis(void) { return (int)((long long)clock() * 1000 / CLOCKS_
 static int (*hostMillis)(void) = clock_millis;
 void ms_set_clock(int (*millis)(void)) { hostMillis = millis ? millis : clock_millis; }
 int ms_millis(void) { return hostMillis(); }
+static int (*hostInterrupt)(void);
+void ms_set_interrupt(int (*check)(void)) { hostInterrupt = check; }
 
 static void (*resetHooks[MS_MAX_RESET_HOOKS])(void);
 static int nresetHooks;
@@ -1004,8 +1006,11 @@ static int vm_run(VM* vm, int startFp) {
                 NEXT;
             }
             CASE(OP_NOT) sp[-1].as.i = !sp[-1].as.i; NEXT;
-#define LOOP_CHECK() if (off < 0 && vm->deadline && !(++vm->loops & 0xFFFF) && time(NULL) > vm->deadline) \
-                         FAIL("stopped: still running after 5 seconds (endless loop?)")
+#define LOOP_CHECK() if (off < 0 && !(++vm->loops & 0xFFFF)) {                                     \
+                         if (hostInterrupt && hostInterrupt()) FAIL("stopped by the user");         \
+                         if (vm->deadline && time(NULL) > vm->deadline)                              \
+                             FAIL("stopped: still running after 5 seconds (endless loop?)");        \
+                     }
             CASE(OP_JMP) { int off = ARG(); ip += off; LOOP_CHECK(); NEXT; }
             CASE(OP_JZ) { int off = ARG(); if (!(--sp)->as.i) { ip += off; LOOP_CHECK(); } NEXT; }
             CASE(OP_JFALSE_KEEP) { int off = ARG(); if (!sp[-1].as.i) ip += off; else sp--; NEXT; }

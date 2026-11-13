@@ -8,6 +8,7 @@
  *   minisharp --print file.cs       the file printed again by the AST printer ("Format code"; comments are dropped)
  *   minisharp --ci folder           editor suggestions (codeindex) at every marker comment slash-star-?-star-slash
  *                                   in the project's files: "File.cs:LINE: type -> first 8 names"
+ * Ctrl+C is the Stop button: a running loop stops with "stopped by the user" (the second Ctrl+C kills the host).
  * Graphics, input and --press/--ppm come in stage 3.
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
@@ -19,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
@@ -27,6 +29,11 @@
 /* the game's clock: 60 frames per second like the 3DS, so timings (WaitForSeconds) match the console */
 static double g_ms;
 static int frame_millis(void) { return (int)g_ms; }
+
+/* Stop button (ms_set_interrupt) */
+static volatile sig_atomic_t g_stop;
+static void on_ctrl_c(int sig) { g_stop = 1; signal(sig, SIG_DFL); }
+static int stop_pressed(void) { return g_stop; }
 
 static char* read_file(const char* path) {
     FILE* f = fopen(path, "rb");
@@ -63,6 +70,7 @@ static int repl_main(void) {
         if (repl_incomplete(text)) continue;
         tlen = 0;
         if (!repl_eval(r, text, err, sizeof err)) printf("error: %s\n", err);
+        if (g_stop) { g_stop = 0; signal(SIGINT, on_ctrl_c); }     /* Ctrl+C stopped this input, not the terminal */
         fflush(stdout);
     }
     if (tlen) printf("error: the input ended with an open '{' or '('\n");
@@ -108,6 +116,8 @@ int main(int argc, char** argv) {
     _setmode(_fileno(stdout), _O_BINARY); /* "\n" not "\r\n", so output matches tests/expected */
     _setmode(_fileno(stderr), _O_BINARY);
 #endif
+    signal(SIGINT, on_ctrl_c);
+    ms_set_interrupt(stop_pressed);
     if (argc == 2 && !strcmp(argv[1], "--repl")) {
         ms_set_clock(frame_millis);
         lib_register_all();

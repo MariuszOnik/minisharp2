@@ -126,6 +126,10 @@ void ms_vm_pop_root(VM* vm);
 /* Milliseconds since some fixed moment, for WaitForSeconds. Default: the C clock(). */
 void ms_set_clock(int (*millis)(void));
 int ms_millis(void);
+/* The Stop button: while a program runs, the VM calls check() about every 65 thousand backward jumps (loops);
+ * a non-zero result stops the program with the error "stopped by the user" (3DS: START+SELECT, PC: Ctrl+C,
+ * web: a flag set by the page). NULL = no button (default). */
+void ms_set_interrupt(int (*check)(void));
 /* Called by vm_new before a program starts: layers and modules reset their state here
  * (e.g. the screen colour, sprites, the target frame rate). Up to MS_MAX_RESET_HOOKS. */
 #define MS_MAX_RESET_HOOKS 16

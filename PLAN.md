@@ -136,7 +136,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `Console.ForegroundColor`/`BackgroundColor` (`ConsoleColor.Yellow`…), `Console.Clear()`, `Console.SetCursorPosition(x, y)`,
       `Console.CursorVisible` – na tym gry tekstowe (roguelike). Logika siatki w `lib/` (testy na PC: zrzut siatki jako tekst),
       rysowanie w `platform/*`; czcionka własna albo na wolnej licencji (nie kopiujemy czcionki ROM z kart VGA).
-- [ ] **Przycisk „Stop” zamiast limitu czasu** (pytanie użytkownika 2026-11-13: pętla gry w roguelike'u to `while (true)`).
+- [x] **Przycisk „Stop” zamiast limitu czasu** (zrobione 2026-11-13: `ms_set_interrupt` w `vm.c` przy sprawdzaniu pętli, test
+      `tests/unit/test_interrupt.c`; 3DS: START+SELECT w `main_3ds.c`, PC: Ctrl+C; web – gdy powstanie `platform/web`) (pytanie użytkownika 2026-11-13: pętla gry w roguelike'u to `while (true)`).
       Dziś limit 5 s działa **tylko w terminalu** (`repl_eval` ustawia `deadline`); zwykły program kręci się, ile chce.
       Docelowo: VM co ~65 tys. skoków wstecz woła funkcję hosta `ms_set_interrupt(int (*check)(void))`; host sprawdza
       przycisk przerwania (3DS: START+SELECT, PC: Ctrl+C, web: flaga z wątku strony – wasm w Workerze) i VM kończy z

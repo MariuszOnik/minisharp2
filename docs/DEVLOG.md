@@ -90,3 +90,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   implementacja `platform/3ds/ui_3ds.c` na citro2d. Klawiatura dotykowa przeniesiona do `app/keyboard.c` bez libctru,
   ze skalowalnym obszarem i testem na PC (`test_keyboard`); na 3DS Y w menu otwiera test klawiatury. Rozdział 7 „Tablice”
   (przy nim wyszły dwa braki względem C#: przypisanie do zmiennej `foreach`, `int[,]`).
+- 2026-11-13: Przycisk Stop: `ms_set_interrupt(check)` – VM pyta hosta co ~65 tys. skoków wstecz (to samo miejsce, co
+  limit czasu terminala). 3DS: przytrzymane START+SELECT (funkcja sama woła `hidScanInput`, bo w `Main` z `while (true)`
+  nikt inny nie czyta przycisków), PC: Ctrl+C. Rozdział 5: opis Stop przy nieskończonej pętli.

@@ -5,6 +5,7 @@
  *          tools/3ds_tests.sh compares them with tests/expected/ on the PC
  *   Y      keyboard test: the touch keyboard (app/keyboard.c) through app/ui.h on citro2d (START = back)
  *   START  quit
+ * START+SELECT held = the Stop button: a running loop (also Main with while (true)) stops with "stopped by the user".
  * If sdmc:/minisharp/tests/auto exists, the tests run at start, the file is removed and the app quits (emulator runs).
  * Console output goes to the top screen and to sdmc:/minisharp/log.txt; the menu is on the bottom screen.
  * The full platform (citro2d, Gfx, Input, menu) comes in stage 3 and builds on this file. */
@@ -41,6 +42,13 @@ static int g_tests;            /* tests run so far (progress line) */
 /* the game's clock: 60 frames per second, the same as the PC host, so WaitForSeconds matches */
 static double g_ms;
 static int frame_millis(void) { return (int)g_ms; }
+
+/* the Stop button (ms_set_interrupt): the VM asks during long loops, when nobody else reads the buttons */
+static int stop_pressed(void) {
+    hidScanInput();
+    u32 h = hidKeysHeld();
+    return (h & KEY_START) && (h & KEY_SELECT);
+}
 
 static void out_write(const char* s) {
     if (g_screen) { consoleSelect(&top); fputs(s, stdout); }
@@ -260,6 +268,7 @@ int main(void) {
     ensure_main();
 
     ms_set_clock(frame_millis);
+    ms_set_interrupt(stop_pressed);
     lib_register_all();
     lib_set_output(out_write);
     ms_register_hook("Update");
@@ -281,7 +290,7 @@ int main(void) {
         if (k & KEY_START) break;
         if (k & KEY_A) {
             consoleSelect(&top); consoleClear();
-            consoleSelect(&bottom); printf("\nrunning... (START stops Update)\n");
+            consoleSelect(&bottom); printf("\nrunning... (START stops Update,\nSTART+SELECT stops any loop)\n");
             g_out = fopen(LOG_PATH, "w");
             run(MAIN_CS, 0, -1);
             if (g_out) { fclose(g_out); g_out = NULL; }
