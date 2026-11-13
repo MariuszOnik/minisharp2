@@ -253,12 +253,12 @@ int class_in(C* c, int i, const char* ns, int nsl, const char* n, int l) {
     CClass* k = &c->classes[i];
     return nameeq(k->name, k->nlen, n, l) && nameeq(k->decl->ns.s, k->decl->ns.l, ns, nsl);
 }
-/* the namespace that contains ns ("Toee.Monsters" -> "Toee" -> ""): its length */
+/* the namespace that contains ns ("Lib.Monsters" -> "Lib" -> ""): its length */
 static int ns_parent(const char* ns, int l) {
     while (l > 0 && ns[l - 1] != '.') l--;
     return l > 0 ? l - 1 : 0;
 }
-/* the class with the full name ns + "." + n ("Toee" + "Monsters.Troll"); -1 if none */
+/* the class with the full name ns + "." + n ("Lib" + "Monsters.Troll"); -1 if none */
 static int find_qualified(C* c, const char* ns, int nsl, const char* n, int l) {
     char full[256];
     if (nsl + 1 + l >= (int)sizeof full) return -1;
@@ -273,11 +273,11 @@ static int find_qualified(C* c, const char* ns, int nsl, const char* n, int l) {
 }
 /* the class a name means where c->scope is: the scope's namespace and the ones around it (the global one last),
  * then the namespaces of its 'using' (two of them with that name: ambiguous); -1 if none (maybe a built-in).
- * A name with dots is a full name (Toee.Item), relative to the namespaces around (Monsters.Troll inside Toee),
+ * A name with dots is a full name (Lib.Item), relative to the namespaces around (Monsters.Troll inside Lib),
  * or an enum declared in a class (Player.State). */
 int find_class(C* c, const char* n0, int l0) {
     char buf[256]; const char* n = n0; int l = 0;
-    for (int i = 0; i < l0 && l < (int)sizeof buf - 1; i++)           /* "Toee . Item" -> "Toee.Item" */
+    for (int i = 0; i < l0 && l < (int)sizeof buf - 1; i++)           /* "Lib . Item" -> "Lib.Item" */
         if (n0[i] != ' ' && n0[i] != '\t' && n0[i] != '\r' && n0[i] != '\n') buf[l++] = n0[i];
     if (l != l0) n = buf;
     NsName cur = { "", 0 };
@@ -289,7 +289,7 @@ int find_class(C* c, const char* n0, int l0) {
             if (ci >= 0) return ci;
             if (!pl) break;
         }
-        int dot = l - 1;                                               /* Toee.Player.State: an enum in class Toee.Player */
+        int dot = l - 1;                                               /* Lib.Player.State: an enum in class Lib.Player */
         while (n[dot] != '.') dot--;
         int outer = find_class(c, n, dot);
         if (outer < 0) return -1;
@@ -321,7 +321,7 @@ int find_class(C* c, const char* n0, int l0) {
     }
     return found;
 }
-/* for 'unknown class X' errors: " (there is Toee.X: add 'using Toee;')" or "" */
+/* for 'unknown class X' errors: " (there is Lib.X: add 'using Lib;')" or "" */
 const char* class_hint(C* c, const char* n, int l) {
     static char buf[160];
     buf[0] = 0;
@@ -377,7 +377,7 @@ Res resolve_name(C* c, const char* n, int l) {
     return r;
 }
 
-/* Toee.Item.Count(), Toee.Dir.Up: if member access m is reached through a chain of plain names that does not
+/* Lib.Item.Count(), Lib.Dir.Up: if member access m is reached through a chain of plain names that does not
  * start with a variable, field or class but makes the full name of a class, that part becomes one name */
 void fold_ns(C* c, Expr* m) {
     if (!m || m->k != E_MEMBER || m->prefix || !m->a || m->a->k != E_MEMBER || m->a->prefix) return;
@@ -389,7 +389,7 @@ void fold_ns(C* c, Expr* m) {
     char buf[256]; int len = r->nlen;
     if (len >= (int)sizeof buf) return;
     memcpy(buf, r->name, len);
-    for (int i = np - 1; i >= 0; i--) {                        /* the shortest part that is a class: Toee.Item */
+    for (int i = np - 1; i >= 0; i--) {                        /* the shortest part that is a class: Lib.Item */
         if (len + 1 + parts[i]->nlen >= (int)sizeof buf) return;
         buf[len++] = '.'; memcpy(buf + len, parts[i]->name, parts[i]->nlen); len += parts[i]->nlen;
         if (find_class(c, buf, len) >= 0) {
@@ -488,7 +488,7 @@ Type* resolve_typenode(C* c, TypeNode* tn, int extraDims) {
             if (tn->arg) cfail(c, tn->line, "'%.*s' is not generic (only List<T> is)", tn->nlen, tn->name);
             /* IEnumerator (iterator methods) and Coroutine (what StartCoroutine returns) are the same thing here */
             if (namecs(tn->name, tn->nlen, "IEnumerator") || namecs(tn->name, tn->nlen, "Coroutine")) { t = &tCoro; break; }
-            int ci = find_class(c, tn->name, tn->nlen);         /* Item, Toee.Item, Player.State (an enum in a class) */
+            int ci = find_class(c, tn->name, tn->nlen);         /* Item, Lib.Item, Player.State (an enum in a class) */
             if (ci < 0) cfail(c, tn->line, "unknown type '%.*s'%s", tn->nlen, tn->name, class_hint(c, tn->name, tn->nlen));
             t = c->classes[ci].type;
         }

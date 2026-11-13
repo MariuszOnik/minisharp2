@@ -492,7 +492,7 @@ static Expr* parse_new(P* p, int line) {
     if (t->kind == TK_VOID) fail(p->c, t->line, "cannot create 'void'");
     TypeNode* tn = (TypeNode*)nw(p, sizeof(TypeNode));
     tn->base = t->kind; tn->name = t->start; tn->nlen = t->len; tn->line = t->line;
-    while (t->kind == TK_IDENT && at(p, TK_DOT) && peekn(p, 1)->kind == TK_IDENT) {   /* new Toee.Item() */
+    while (t->kind == TK_IDENT && at(p, TK_DOT) && peekn(p, 1)->kind == TK_IDENT) {   /* new Lib.Item() */
         next(p);
         Token* u = next(p);
         tn->nlen = (int)(u->start + u->len - tn->name);
@@ -675,7 +675,7 @@ static Expr* parse_unary_(P* p) {
             return e;
         }
         /* (Enemy)x: a name in parentheses followed by something that starts an operand, as in C# */
-        int j = 2;                                  /* (Toee.Item)x: a full name */
+        int j = 2;                                  /* (Lib.Item)x: a full name */
         while (k == TK_IDENT && peekn(p, j)->kind == TK_DOT && peekn(p, j + 1)->kind == TK_IDENT) j += 2;
         if (k == TK_IDENT && peekn(p, j)->kind == TK_RPAREN) {
             int n = peekn(p, j + 1)->kind;

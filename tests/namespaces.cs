@@ -2,9 +2,9 @@
 // the same short name in several namespaces; same output as .NET
 using System;
 using System.Collections.Generic;
-using Toee.Monsters;
+using Lib.Monsters;
 
-namespace Toee
+namespace Lib
 {
     enum Size { Small, Medium, Large }
 
@@ -19,7 +19,7 @@ namespace Toee
     {
         public string Name;
         public Size Sz = Size.Medium;
-        public Item Hand = new Item("fist");        // Toee.Item: the namespace of the class comes first
+        public Item Hand = new Item("fist");        // Lib.Item: the namespace of the class comes first
         protected Creature(string n) { Name = n; }
         public virtual string Describe() { return Name + " (" + Sz + ", " + Hand.Name + ")"; }
     }
@@ -30,22 +30,22 @@ namespace Toee
     }
 }
 
-namespace Toee.Monsters
+namespace Lib.Monsters
 {
-    class Troll : Creature                          // Creature from the namespace around: Toee
+    class Troll : Creature                          // Creature from the namespace around: Lib
     {
-        public Troll() : base("Troll") { Sz = Size.Large; Hand = new Toee.Item("club"); }
+        public Troll() : base("Troll") { Sz = Size.Large; Hand = new Lib.Item("club"); }
         public override string Describe() { return "big " + base.Describe() + " mod " + Rules.Mod(23); }
     }
 
-    class Item                                      // Toee.Monsters.Item: here it hides Toee.Item
+    class Item                                      // Lib.Monsters.Item: here it hides Lib.Item
     {
         public string Tag = "monster item";
     }
 
     static class Spawn
     {
-        public static string What() { return new Item().Tag + " / " + new Toee.Item("axe").Name + " / " + Monsters.Spawn.Relative(); }
+        public static string What() { return new Item().Tag + " / " + new Lib.Item("axe").Name + " / " + Monsters.Spawn.Relative(); }
         public static string Relative() { return "relative name"; }
         public static List<Creature> Pack(int n)
         {
@@ -63,7 +63,7 @@ namespace Other
 
 namespace Scenario
 {
-    using Toee;
+    using Lib;
 
     class Hero : Creature                           // a class of the scenario derived from the library
     {
@@ -72,7 +72,7 @@ namespace Scenario
     }
 }
 
-class BigTroll : Toee.Monsters.Troll
+class BigTroll : Lib.Monsters.Troll
 {
     public override string Describe() { return "scenario " + base.Describe(); }
 }
@@ -81,21 +81,21 @@ class Program
 {
     static void Main()
     {
-        Troll t = new Troll();                      // Toee.Monsters.Troll through 'using Toee.Monsters'
+        Troll t = new Troll();                      // Lib.Monsters.Troll through 'using Lib.Monsters'
         Console.WriteLine(t.Describe());
         Console.WriteLine(new Other.Troll().Describe());
         Console.WriteLine(new BigTroll().Describe());
         Console.WriteLine(new Scenario.Hero("Lew").Describe());
-        Toee.Creature c = t;
-        Console.WriteLine(c.Hand.Name + " " + Toee.Item.Count() + " " + Toee.Rules.Mod(14));
+        Lib.Creature c = t;
+        Console.WriteLine(c.Hand.Name + " " + Lib.Item.Count() + " " + Lib.Rules.Mod(14));
         Console.WriteLine(Spawn.What());
-        Toee.Size s = Toee.Size.Small;
-        Console.WriteLine(s + " " + (int)Toee.Size.Large + " " + (s == Toee.Size.Small));
-        Console.WriteLine(new Item().Tag);          // Toee.Monsters.Item through 'using'
-        Console.WriteLine(Spawn.Pack(3).Count + " " + (c is Troll) + " " + (c is Toee.Monsters.Troll));
-        var list = new List<Toee.Item>();
-        list.Add(new Toee.Item("ring"));
-        Toee.Item[] arr = new Toee.Item[] { list[0] };
-        Console.WriteLine(arr[0].Name + " " + ((Toee.Creature)new BigTroll()).Name);
+        Lib.Size s = Lib.Size.Small;
+        Console.WriteLine(s + " " + (int)Lib.Size.Large + " " + (s == Lib.Size.Small));
+        Console.WriteLine(new Item().Tag);          // Lib.Monsters.Item through 'using'
+        Console.WriteLine(Spawn.Pack(3).Count + " " + (c is Troll) + " " + (c is Lib.Monsters.Troll));
+        var list = new List<Lib.Item>();
+        list.Add(new Lib.Item("ring"));
+        Lib.Item[] arr = new Lib.Item[] { list[0] };
+        Console.WriteLine(arr[0].Name + " " + ((Lib.Creature)new BigTroll()).Name);
     }
 }
