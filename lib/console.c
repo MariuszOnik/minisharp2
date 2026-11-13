@@ -28,4 +28,8 @@ void lib_register_console(void) { MS_REGISTER(console); }
 
 void lib_register_all(void) {
     lib_register_console();
+    lib_register_math();
+    lib_register_random();
+    lib_register_strings();
+    lib_register_convert();
 }

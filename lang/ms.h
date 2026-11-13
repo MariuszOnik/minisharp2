@@ -104,6 +104,10 @@ void ms_vm_fail(VM* vm, const char* fmt, ...);  /* built-in function: report a r
 int ms_vm_quit_requested(VM* vm);       /* App.Quit() was called */
 void ms_vm_request_quit(VM* vm);
 void ms_vm_set_deadline(VM* vm, long long deadline);   /* REPL: a loop still running at time() > deadline stops; 0 = never */
+/* Built-in function that allocates several objects: keep the first one alive (GC root on the VM stack) while
+ * making the others, then pop it. Pushes and pops must pair up within the call; a few slots are always free. */
+void ms_vm_push_root(VM* vm, Value v);
+void ms_vm_pop_root(VM* vm);
 
 /* ---------- host hooks (the language knows no platform) ---------- */
 /* Milliseconds since some fixed moment, for WaitForSeconds. Default: the C clock(). */

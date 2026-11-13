@@ -1,15 +1,8 @@
 # Testy przeniesione, które czekają na brakującą część biblioteki/platformy. run_tests.sh je uruchamia,
 # ale ich porażka nie psuje wyniku; gdy taki test już przechodzi, skrypt każe go stąd usunąć.
 # Format: nazwa (jak w wyniku: nazwa pliku albo error/nazwa)  czego brakuje
-basics          Math (etap 2)
-dict            string.Split (etap 2)
-features2       char (etap 2)
-inherit         string.ToUpper (etap 2)
-interp          string.ToUpper (etap 2)
-kurs_snippets   Random (etap 2)
-listfunc        string.Contains (etap 2)
-listfunc_gc     Random (etap 2)
-math2           Mathf (etap 2)
+basics          Gfx (etap 3)
+kurs_snippets   Input (etap 3)
 coroutines      App (etap 3)
 coro_gc         App (etap 3)
 coro_stop       App (etap 3)

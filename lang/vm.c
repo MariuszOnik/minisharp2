@@ -39,6 +39,8 @@ void ms_vm_fail(VM* vm, const char* fmt, ...) {
 int ms_vm_quit_requested(VM* vm) { return vm->quit; }
 void ms_vm_request_quit(VM* vm) { vm->quit = 1; }
 void ms_vm_set_deadline(VM* vm, long long deadline) { vm->deadline = deadline; }
+void ms_vm_push_root(VM* vm, Value v) { vm->stack[vm->sp++] = v; }   /* calls keep 64 free slots above sp */
+void ms_vm_pop_root(VM* vm) { vm->sp--; }
 
 /* rarely run helpers stay out of the interpreter loop, so the loop stays small in the CPU's instruction cache */
 #if defined(__GNUC__)

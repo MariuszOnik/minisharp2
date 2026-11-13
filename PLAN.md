@@ -53,7 +53,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [x] Przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`) – przechodzą poza czekającymi na bibliotekę (`tests/czeka.txt`).
 
 ### Etap 2 – biblioteka i projekty
-- [ ] `lib/`: Console, Math, Mathf, Random, string, char, int/float, List, Dictionary (część rdzenia z `natives.c`).
+- [x] `lib/`: Console, Math, Mathf, Random, string, char, int/float (z `natives.c`); List i Dictionary są w języku (`vm.c`).
 - [ ] `project.c` (projekt = folder, `uses.txt`, `using X;`), `repl.c` (terminal), `printer.c` (AST → kod), `codeindex.c`.
 - [ ] Testy projektów i indeksu kodu.
 
@@ -107,9 +107,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 2: `lib/` – Math, Mathf, Random, string, char, int/float, List, Dictionary (z `natives.c` z `931ad08`, każda klasa
-swoją tabelą przez `ms_register`, wzór: `lib/console.c`). Po każdej klasie skreślać z `tests/czeka.txt` testy, które
-zaczęły przechodzić. Uwaga: ostrzeżenie gcc `-Walloc-size-larger-than` w `lang/compiler.c:330` – przy okazji obejrzeć.
+Etap 2: `project.c` (projekt = folder, `uses.txt`, `using X;`) + testy projektów (`project*`, `ci*` z `931ad08`, `project_ns`
+z `a350c5e`); host PC przyjmuje folder. Potem w osobnych krokach `repl.c`, `printer.c`, `codeindex.c`.
+Uwaga: ostrzeżenie gcc `-Walloc-size-larger-than` w `lang/compiler.c:330` – przy okazji obejrzeć.
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -145,3 +145,7 @@ zaczęły przechodzić. Uwaga: ostrzeżenie gcc `-Walloc-size-larger-than` w `la
   Minimalny host `platform/pc/main_pc.c` (plik `.cs`, `--frames`, zegar 60 kl./s) i `lib/console.c` (Console; wyjście ustawia
   host przez `lib_set_output`, `lib_register_all`). Wynik: 132 przechodzi, 13 czeka (`tests/czeka.txt`: Math, string… – etap 2;
   App, Gfx – etap 3); argumenty testów w `tests/opcje.txt`.
+- 2026-11-13: `lib/`: `math.c` (Math, Mathf), `random.c`, `strings.c`, `convert.c` (int/float/char), każdy swoją tabelą;
+  wspólne pomocnicze w `lib/libvalue.h`. W `ms.h` doszło `ms_vm_push_root`/`ms_vm_pop_root` (zamiast `vm->stack` w `Split`).
+  Poprawki przenośności: `Mathf.FloorToInt` itp. nasycają jak `(int)` w VM (zwykłe rzutowanie C daje inny wynik na x86 i ARM),
+  `int.Parse` przez `strtoll` z błędem poza zakresem (`long` ma 32 bity na 3DS, 64 na Switch). Testy: 141 ok, 6 czeka (etap 3).
