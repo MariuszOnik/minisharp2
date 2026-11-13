@@ -181,6 +181,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ## Następny krok
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
+0. **Minimalny build na 3DS** (decyzja użytkownika 2026-11-13: wcześniej niż w etapie 3, żeby od razu sprawdzać przenośność
+   i budowanie pod devkitARM w Actions). `platform/3ds/main.c`: konsola tekstowa libctru (`consoleInit`) na górnym ekranie,
+   wczytuje `/minisharp/main.cs` z karty, kompiluje i uruchamia (`Console.WriteLine` na ekran), START = wyjście, błędy do
+   `/minisharp/log.txt`. `make 3ds` → `build/MiniSharp.3dsx`; na konsolę jako `/3ds/MiniSharp-test.3dsx`. Na konsoli
+   uruchomić testy z ułamkami (`math2`, `basics`…) i porównać z `expected/` (punkt „Przenośność” w etapie 3).
+   Pełne `platform/3ds` (citro2d, menu) zostaje w etapie 3 i rozbudowuje ten szkielet.
 1. `printer.c` (musi drukować modyfikatory dostępu: `access` w `FieldDecl`/`MethodDecl`/`PropDecl`, `getAccess`/`setAccess`,
    `ClassDecl.isStatic`) + rozdział 6 „Metody”.
 2. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
