@@ -68,8 +68,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 7 „Tablice” (`{ … }`, `new T[n]`, `Length`, `for`/`foreach`, suma i maksimum, tablica w metodzie, `char[][]`).
 - [x] Rozdział 8 „Napisy” (`+`, `$""`, znaki specjalne, `Length`/`s[i]`, metody, `Split`, `IsNullOrEmpty`).
 - [x] Rozdział 9 „Rozmowa z użytkownikiem” (`Console.ReadLine`, `int.Parse`/`TryParse`, zgadywanka, linie do pustej, terminal).
+- [x] Rozdział 10 „Klasy i obiekty” (pola, metody, konstruktor, `this`, obiekty w listach, referencje i `null`, `static`, właściwości, `private`).
 - [ ] Kolejne rozdziały (propozycja kolejności):
-      klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
+      dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 

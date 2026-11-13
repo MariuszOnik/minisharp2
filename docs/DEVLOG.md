@@ -131,3 +131,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   `MS_WAIT_INPUT` ze stosem i ramkami nietkniętymi, a `vm_resume_input` kładzie odpowiedź na stos i jedzie dalej – bez
   blokowania, więc nada się też do wasm. Nie wolno tego w wywołaniach zagnieżdżonych (lambda w `Sort`, `ToString`,
   korutyna) – czytelny błąd. PC czyta stdin, terminal bierze odpowiedź z następnej linii, rozdział 9 z blokiem `wejscie`.
+- 2026-11-13: Rozdział 10 „Klasy i obiekty” – 8 sprawdzanych przykładów (pola, konstruktor, `this`, lista obiektów,
+  dwie zmienne na jeden obiekt, `static`, właściwości, `private` z dokładnym komunikatem błędu).
