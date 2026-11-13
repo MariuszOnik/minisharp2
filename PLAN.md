@@ -213,5 +213,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 ## Następny krok
 
-Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
-1. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
+Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1–4 to braki względem C# z rozdziału 6
+(decyzja użytkownika 2026-11-13: przed `codeindex.c`); każdy z testami i poprawką rozdziału 6 („Dla zaawansowanych”):
+1. Skrócony inicjalizator tablicy `int[] t = { 1, 2 };` (zmienna i pole) – parser robi z tego `new int[] { … }`.
+2. Brak `return` na jakiejś drodze = błąd kompilacji (osiągalność końca metody: `return`, `if`/`else`, `while (true)`
+   bez `break`, `switch` z `default`…); `OP_NORET` w VM zostaje jako zabezpieczenie.
+3. Parametry z wartością domyślną (`int b = 10`, tylko stałe jak w C#): wartość w `Param`, uzupełnianie argumentów
+   przy wywołaniu, wybór przeciążenia, printer.
+4. `ref` / `out` we własnych metodach (na początek zmienne lokalne): przekazanie komórki jak przy zmiennych
+   z lambd; `out` musi być przypisane przed wyjściem; printer; potem `int.TryParse(s, out int n)` jak `TryGetValue`.
+5. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
