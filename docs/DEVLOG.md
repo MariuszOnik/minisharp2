@@ -76,3 +76,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Brak `return` na jakiejś drodze metody, `get` albo lambdy z wynikiem to teraz błąd kompilacji (jak CS0161
   w C#): analiza osiągalności końca instrukcji w `comp_stmt.c`, stałymi warunkami są tylko literały `true`/`false`.
   `OP_NORET` w VM zostaje jako zabezpieczenie. Rozdział 6: opis, które drogi kompilator sprawdza.
+- 2026-11-13: Parametry z wartością domyślną (`int b = 10`): wartość musi być stałą (także `const` i człon enuma), jest
+  zamieniana na literał przy rejestracji metod, więc wołający kompiluje ją bez zależności od swoich zmiennych. Działa
+  w metodach, konstruktorach i `base(...)`; printer drukuje `= wartość`. Rozdział 6: sekcja „Parametr z wartością domyślną”.

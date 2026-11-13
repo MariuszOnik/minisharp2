@@ -383,6 +383,7 @@ static void params(MsBuf* b, Param* p, int n) {
     for (int i = 0; i < n; i++) {
         if (i) puts_(b, ", ");
         ms_print_type(b, p[i].tn); putc_(b, ' '); put(b, p[i].name, p[i].nlen);
+        if (p[i].def) { puts_(b, " = "); expr(b, p[i].def, P_ASSIGN, 0); }
     }
     putc_(b, ')');
 }

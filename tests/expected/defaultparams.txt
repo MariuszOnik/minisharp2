@@ -1,0 +1,20 @@
+111
+103
+6
+Cześć, anonim!
+Cześć, Ola!
+Cześć, Ola?
+Niebieski
+DUŻY Zielony
+99
+(null)
+1.5
+-5
+Rys(int)
+Rys(int, int = 2)
+7
+10
+10
+7
+1 2.5
+4 2.5

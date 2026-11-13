@@ -235,6 +235,36 @@ class Program
 
 Znasz to już z `Console.WriteLine`. Przyjmuje napis, liczbę albo nic, bo ma kilka wersji.
 
+## Parametr z wartością domyślną
+
+Parametr może mieć **wartość domyślną**: `int ile = 1`. Przy wywołaniu można go wtedy pominąć, a metoda dostanie tę
+wartość. Parametry z wartością domyślną piszemy na końcu listy.
+
+```cs
+class Program
+{
+    static void Ulecz(string kto, int ile = 10)
+    {
+        Console.WriteLine(kto + " +" + ile + " HP");
+    }
+
+    static void Main()
+    {
+        Ulecz("Ola");
+        Ulecz("Ola", 25);
+    }
+}
+```
+
+```wynik
+Ola +10 HP
+Ola +25 HP
+```
+
+Wartość domyślna musi być stałą: liczbą, znakiem, napisem, `true` / `false`, `null`, stałą `const` albo wartością
+enuma (`Kolor k = Kolor.Zielony`). Działa też w konstruktorach. Gdy pasują dwie wersje przeciążonej metody, wygrywa
+ta, w której nic nie trzeba uzupełniać.
+
 ## Metoda woła samą siebie
 
 Metoda może wywołać samą siebie. Taka metoda jest **rekurencyjna**. Musi mieć warunek, przy którym przestaje
@@ -290,8 +320,8 @@ o klasach.
 - Jeśli ten sam kod pojawia się drugi raz, to dobry kandydat na metodę.
 - Długi `Main` podziel na kilka metod o czytelnych nazwach. Wtedy `Main` czyta się jak spis treści.
 
-> **Dla zaawansowanych:** w MiniSharpie metody nie mają jeszcze parametrów z wartością domyślną
-> (`int b = 10`), `ref` ani `out`, więc kompilator zgłosi błąd. `out` jest na razie
+> **Dla zaawansowanych:** w MiniSharpie metody nie mają jeszcze parametrów `ref` ani `out`, więc kompilator
+> zgłosi błąd. `out` jest na razie
 > tylko w `TryGetValue` słownika. Zamiast kilku wyników przez `out` oddaj jeden obiekt albo strukturę (zob. rozdział
 > o klasach). Tablice i obiekty są przekazywane **przez referencję**: metoda dostaje kopię adresu, nie kopię danych,
 > więc gdy zmieni element tablicy, wołający tę zmianę zobaczy:

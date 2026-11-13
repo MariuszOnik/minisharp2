@@ -20,6 +20,24 @@ void args_for_ro(C* c, Expr* e, Type** params, int np, const char* what, uint32_
     }
 }
 
+/* arguments of a call to method or constructor m; the ones left out get the default values of their parameters */
+static int nreq(CMethod* m) { return m->defs ? m->nreq : m->np; }
+void args_for_m(C* c, Expr* e, CMethod* m, const char* what, uint32_t ro) {
+    int req = nreq(m);
+    if (req == m->np || e->nargs > m->np) { args_for_ro(c, e, m->params, m->np, what, ro); return; }
+    if (e->nargs < req)
+        cfail(c, e->line, "%s takes %d to %d arguments, but %d %s given", what, req, m->np, e->nargs, e->nargs == 1 ? "was" : "were");
+    args_for_ro(c, e, m->params, e->nargs, what, ro);
+    for (int i = e->nargs; i < m->np; i++) {
+        Expr* d = m->defs[i];
+        Type* pt = m->params[i];
+        if (pt->k == T_ENUM) emit_op1(c, OP_ICONST, d->ival);
+        else if (d->k == E_INT && pt->k == T_FLOAT) emit_fconst(c, (float)d->ival);
+        else expr_to(c, d, pt, e->line, "default value");
+    }
+    c->line = e->line;
+}
+
 /* ---------- overloads ---------- */
 int same_params(CMethod* a, CMethod* b) {
     if (a->np != b->np) return 0;
@@ -84,7 +102,7 @@ static int is_method_group(C* c, Expr* e) {
 CMethod* pick_overload(C* c, CMethod** cand, int n, Expr* e, const char* what) {
     if (n == 1) return cand[0];
     CMethod* m[64]; int nc = 0;
-    for (int i = 0; i < n; i++) if (cand[i]->np == e->nargs && nc < 64) m[nc++] = cand[i];
+    for (int i = 0; i < n; i++) if (nreq(cand[i]) <= e->nargs && e->nargs <= cand[i]->np && nc < 64) m[nc++] = cand[i];
     if (nc == 1) return m[0];
     const char* vof = strncmp(what, "constructor", 11) ? "version of " : "";
     if (nc == 0) cfail(c, e->line, "no %s%s takes %d argument%s", vof, what, e->nargs, e->nargs == 1 ? "" : "s");
@@ -95,7 +113,7 @@ CMethod* pick_overload(C* c, CMethod** cand, int n, Expr* e, const char* what) {
         special[i] = a->k == E_LAMBDA ? 1 : is_method_group(c, a) ? 2 : 0;
         at[i] = special[i] ? NULL : peek_type(c, a);
     }
-    int best = -1, bestScore = -1;
+    int best = -1, bestScore = -1;      /* equal score: the one with fewer default values used wins (as in C#) */
     for (int k = 0; k < nc; k++) {
         int ok = 1, score = 0;
         for (int i = 0; i < e->nargs && ok; i++) {
@@ -105,7 +123,7 @@ CMethod* pick_overload(C* c, CMethod** cand, int n, Expr* e, const char* what) {
             else if (at[i] == pt) score++;
             else ok = assignable(at[i], pt);
         }
-        if (ok && score > bestScore) { best = k; bestScore = score; }
+        if (ok && (score > bestScore || (score == bestScore && m[k]->np < m[best]->np))) { best = k; bestScore = score; }
     }
     if (best < 0) {
         char list[160]; int len = 0; list[0] = 0;
@@ -132,7 +150,7 @@ static Type* call_method(C* c, Expr* e, CMethod* m, int hasThis, int virt) {
     char what[100];
     CClass* owner = &c->classes[m->owner];
     snprintf(what, sizeof what, "'%.*s.%.*s'", owner->nlen, owner->name, m->nlen, m->name);
-    args_for_ro(c, e, m->params, m->np, what, virt && m->sel >= 0 ? 0 : m->roParams);   /* an override may change it */
+    args_for_m(c, e, m, what, virt && m->sel >= 0 ? 0 : m->roParams);   /* an override may change it */
     c->line = e->line;
     if (virt && m->sel >= 0) emit_op2(c, OP_CALLV, m->sel, m->np + 1);     /* the VM looks up the function (or coroutine) */
     else {

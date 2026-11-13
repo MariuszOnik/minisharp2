@@ -89,7 +89,7 @@ struct Stmt {
     const char *s0, *s1;            /* source text incl. ';' (NULL: made up by the parser, e.g. the body of '=> expr') */
 };
 
-typedef struct Param { TypeNode* tn; const char* name; int nlen; } Param;
+typedef struct Param { TypeNode* tn; const char* name; int nlen; struct Expr* def; } Param;   /* def: 'int b = 10' (or NULL) */
 enum { MK_NONE, MK_VIRTUAL, MK_OVERRIDE, MK_ABSTRACT };
 /* access modifier of a member. AC_NONE (nothing written), AC_PUBLIC and AC_INTERNAL: every class may use it;
    AC_PRIVATE: only its own class; AC_PROTECTED: its class and the classes derived from it. */

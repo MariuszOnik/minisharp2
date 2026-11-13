@@ -61,7 +61,7 @@ static void compile_ctor(C* c, int cls, CMethod* ct) {
         c->line = bc->line;
         emit_op1(c, OP_LOAD, 0);
         c->curStatic = 1;                   /* like C#: 'this' is not ready yet in this(...) arguments */
-        args_for(c, bc, t->params, t->np, what);
+        args_for_m(c, bc, t, what, 0);
         c->curStatic = 0;
         emit_op2(c, OP_CALL, t->func, t->np + 1);
         emit_op(c, OP_POP);
@@ -87,14 +87,19 @@ static void compile_ctor(C* c, int cls, CMethod* ct) {
                 t = pick_overload(c, cand, n, bc, what);
             } else {
                 for (int i = 0; i < b->nctors && !t; i++) if (b->ctors[i].np == 0) t = &b->ctors[i];
+                for (int i = 0; i < b->nctors && !t; i++) if (b->ctors[i].defs && b->ctors[i].nreq == 0) t = &b->ctors[i];   /* Base(int hp = 10) */
                 if (!t) cfail(c, c->line, "the constructor of '%.*s' takes %d argument%s; call it with ': base(...)' after the constructor of '%.*s'",
                               b->nlen, b->name, b->ctors[0].np, b->ctors[0].np == 1 ? "" : "s", k->nlen, k->name);
             }
             emit_op1(c, OP_LOAD, 0);
             if (bc) {
                 c->curStatic = 1;               /* like C#: 'this' is not ready yet in base(...) arguments */
-                args_for(c, bc, t->params, t->np, what);
+                args_for_m(c, bc, t, what, 0);
                 c->curStatic = 0;
+            } else if (t->np) {                 /* only default values */
+                Expr none; memset(&none, 0, sizeof none);
+                none.k = E_CALL; none.line = c->line;
+                args_for_m(c, &none, t, what, 0);
             }
             emit_op2(c, OP_CALL, t->func, t->np + 1);
             emit_op(c, OP_POP);
@@ -270,6 +275,7 @@ static int struct_contains(C* c, int s, int target, int depth) {
     return 0;
 }
 
+static void resolve_defaults(C* c, CMethod* m);
 static void collect(C* c, ProgramAST* ast) {
     Program* P = c->P;
     int nc = ast->nclasses;
@@ -544,6 +550,14 @@ static void collect(C* c, ProgramAST* ast) {
         }
     }
 
+    /* default values of parameters: after every field and enum is known */
+    for (int i = 0; i < nc; i++) {
+        CClass* k = &c->classes[i];
+        c->cur = c->scope = i; c->nlocals = 0;
+        for (int j = 0; j < k->nm; j++) resolve_defaults(c, &k->methods[j]);
+        for (int j = 0; j < k->nctors; j++) resolve_defaults(c, &k->ctors[j]);
+    }
+
     /* vtables: what each selector calls for an object of this class */
     P->nsel = c->nsel;
     for (int oi = 0; oi < nc; oi++) {
@@ -595,6 +609,57 @@ static void collect(C* c, ProgramAST* ast) {
         memcpy(rt->isa, k->type->isa, nc);
         rt->toString = c->toStringSel >= 0 ? rt->vtable[c->toStringSel] : -1;
     }
+}
+
+/* The default value of parameter q of m ('int b = 10'), as a literal the caller can compile anywhere: a number,
+   char, string, true / false, null, an enum member (E_INT with the enum's value) or a const field (its literal). */
+static Expr* default_literal(C* c, CMethod* m, int q) {
+    Param* pa = &m->decl->params[q];
+    Expr* e = pa->def;
+    Type* pt = m->params[q];
+    Type* t = NULL;
+    Expr* lit = e;
+    switch (e->k) {
+        case E_INT: t = &tInt; break;
+        case E_FLOAT: t = &tFloat; break;
+        case E_BOOL: t = &tBool; break;
+        case E_CHAR: t = &tChar; break;
+        case E_STRING: t = &tString; break;
+        case E_NULL: t = &tNull; break;
+        case E_NAME: case E_MEMBER: {
+            CField* f = NULL;
+            int cls = -1;
+            if (e->k == E_NAME) {
+                Res r = resolve_name(c, e->name, e->nlen);
+                if (r.k == R_STATIC) f = r.field;
+            } else if (!e->prefix) {
+                fold_ns(c, e);
+                if (e->a->k == E_NAME) {
+                    Res r = resolve_name(c, e->a->name, e->a->nlen);
+                    if (r.k == R_CLASS) { cls = r.idx; f = find_field(c, cls, e->name, e->nlen); }
+                }
+            }
+            if (f && cls >= 0 && c->classes[cls].isEnum) {
+                lit = (Expr*)arena_alloc(&c->A, sizeof(Expr));
+                *lit = *e; lit->k = E_INT; lit->ival = f->value;
+                t = c->classes[cls].type;
+            } else if (is_const_field(f)) { lit = f->decl->init; t = f->type; }
+            break;
+        }
+    }
+    if (!t) cfail(c, e->line, "the default value of parameter '%.*s' must be a constant: a number, text, true / false, null, "
+                  "a const or an enum member", pa->nlen, pa->name);
+    if (!assignable(t, pt))
+        cfail(c, e->line, "the default value of parameter '%.*s' is %s, but the parameter is %s", pa->nlen, pa->name, type_name(c, t), type_name(c, pt));
+    return lit;
+}
+static void resolve_defaults(C* c, CMethod* m) {
+    if (!m->decl) return;
+    for (int q = 0; q < m->np; q++)
+        if (m->decl->params[q].def) {
+            if (!m->defs) { m->defs = (Expr**)arena_alloc(&c->A, sizeof(Expr*) * m->np); m->nreq = q; }
+            m->defs[q] = default_literal(c, m, q);
+        }
 }
 
 /* Properties become ordinary methods before anything else is collected: 'int Hp { get; set; }' gets a hidden field

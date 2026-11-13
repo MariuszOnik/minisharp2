@@ -1065,7 +1065,9 @@ static void parse_method_rest(P* p, MethodDecl* m) {
             if (pa->tn->base == TK_VOID && pa->tn->dims == 0) fail(p->c, pa->tn->line, "a parameter cannot be 'void'");
             Token* pn = expect(p, TK_IDENT);
             pa->name = pn->start; pa->nlen = pn->len;
-            if (at(p, TK_ASSIGN)) fail(p->c, pn->line, "default values for parameters are not supported yet; pass every argument");
+            if (accept(p, TK_ASSIGN)) pa->def = parse_expr(p);         /* int b = 10: may be left out in a call */
+            else if (m->nparams > 1 && m->params[m->nparams - 2].def)
+                fail(p->c, pn->line, "parameter '%.*s' needs a default value too: the parameters with one must come last", pn->len, pn->start);
         } while (accept(p, TK_COMMA));
     }
     expect(p, TK_RPAREN);

@@ -1,0 +1,1 @@
+compile error: line 1: the default value of parameter 'a' must be a constant: a number, text, true / false, null, a const or an enum member

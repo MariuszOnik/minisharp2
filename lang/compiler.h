@@ -26,7 +26,8 @@ typedef struct { const char* name; int nlen; Type* type; int isStatic; int slot;
 /* sel >= 0: virtual, abstract, override or interface method, called through the class's vtable[sel];
  * func < 0: abstract (no body). Constructors are CMethods too (in CClass.ctors). */
 /* roParams: bit i set = struct parameter i is never changed by the method, so callers pass it without a copy */
-typedef struct { const char* name; int nlen; int isStatic, isIter; Type* ret; Type** params; int np; int func, sel, owner; MethodDecl* decl; uint32_t roParams; } CMethod;
+typedef struct { const char* name; int nlen; int isStatic, isIter; Type* ret; Type** params; int np; int func, sel, owner; MethodDecl* decl; uint32_t roParams;
+                 int nreq; struct Expr** defs; } CMethod;   /* nreq: parameters without a default value; defs[i]: a literal or NULL */
 /* property: its get_X / set_X methods (NULL if it has none); backing: the hidden field of { get; set; } */
 typedef struct { const char* name; int nlen; Type* type; int isStatic, owner; CMethod *get, *set; CField* backing; PropDecl* decl; } CProp;
 typedef struct {
@@ -147,6 +148,8 @@ void box_params(C* c);
 int alloc_temp(C* c);
 Type* resolve_typenode(C* c, TypeNode* tn, int extraDims);
 int enum_of(C* c, Expr* e);
+int is_const_field(CField* f);
+void args_for_m(C* c, Expr* e, CMethod* m, const char* what, uint32_t ro);
 
 /* expressions (comp_expr.c) */
 void coerce(C* c, Type* from, Type* to, int line, const char* what);

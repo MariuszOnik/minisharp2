@@ -144,7 +144,7 @@ void need_bool(C* c, Type* t, int line, const char* what) {
 }
 
 /* const and static readonly fields with a literal value: the value is put in the code instead of reading the field */
-static int is_const_field(CField* f) {
+int is_const_field(CField* f) {
     if (!f || !f->isStatic || !f->decl || !f->decl->readOnly || !f->decl->init) return 0;
     int k = f->decl->init->k;
     return k == E_INT || k == E_FLOAT || k == E_BOOL || k == E_CHAR || k == E_STRING;
@@ -609,7 +609,7 @@ Type* compile_expr(C* c, Expr* e) {
             if (k->isStruct && !e->nargs && !has0) { emit_op1(c, OP_NEW, ci); return k->type; }   /* new V2(): a zeroed struct, as in C# */
             CMethod* ct = pick_overload(c, cand, n, e, what);
             emit_op1(c, OP_NEW, ci);
-            args_for_ro(c, e, ct->params, ct->np, what, ct->roParams);
+            args_for_m(c, e, ct, what, ct->roParams);
             c->line = e->line;
             emit_op2(c, OP_CALL, ct->func, ct->np + 1);
             return k->type;

@@ -89,7 +89,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - `char` to jeden bajt: `foreach (char c in "pętla")` daje dla `ę` dwa znaki (napisy w UTF-8). Do decyzji: `char` jako
         punkt kodowy Unicode (indeksowanie i `Length` po znakach) czy zostawić bajty i opisać.
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
-      - parametry z wartością domyślną (`int b = 10`) – dziś czytelny błąd „not supported yet”;
+      - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - `ref` / `out` we własnych metodach (`out` jest tylko w `TryGetValue`; `int.TryParse(s, out int n)` też nie działa);
         komunikat dla `ref` jest niejasny: `expected name, found 'int'`;
       - skrócony inicjalizator tablicy `int[] t = { 1, 2 };` – dziś `unexpected '{' in expression` (działa `new int[] { … }`);
@@ -220,8 +220,10 @@ Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1�
 2. [x] Brak `return` na jakiejś drodze = błąd kompilacji – zrobione 2026-11-13: `stmt_can_end` w `comp_stmt.c`
    (osiągalność końca: `if`/`else`, `while (true)`/`for (;;)` bez `break`, `do`, `switch` z `default`, stałe
    `true`/`false`) dla metod, `get` właściwości i lambd; `OP_NORET` zostaje; test `returns`, błędy `noret_*`.
-3. Parametry z wartością domyślną (`int b = 10`, tylko stałe jak w C#): wartość w `Param`, uzupełnianie argumentów
-   przy wywołaniu, wybór przeciążenia, printer.
+3. [x] Parametry z wartością domyślną (`int b = 10`) – zrobione 2026-11-13: `Param.def`, w `compiler.c`
+   `resolve_defaults` zamienia je na literały (liczba, znak, napis, bool, null, `const`, człon enuma), `args_for_m`
+   uzupełnia brakujące argumenty (metody, konstruktory, `base(...)`/`this(...)`, niejawne `base()`); przy remisie
+   przeciążeń wygrywa wersja bez uzupełniania; test `defaultparams`, błędy `defparam_*`.
 4. `ref` / `out` we własnych metodach (na początek zmienne lokalne): przekazanie komórki jak przy zmiennych
    z lambd; `out` musi być przypisane przed wyjściem; printer; potem `int.TryParse(s, out int n)` jak `TryGetValue`.
 5. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
