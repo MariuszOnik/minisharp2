@@ -68,6 +68,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
       dotyk/mysz, wpisany tekst, układ ekranów: jeden lub dwa, rozdzielczość). Logika edytora (bufor tekstu, kursor, zaznaczenie,
       cofanie, karty) osobno od rysowania i testowana na PC. Implementacja `ui.h` jest w `platform/<konsola>` – przeniesienie na
       inną platformę (np. Switch: `platform/switch` na libnx) = nowy folder platformy, bez zmian w `app/`.
+      Uwagi do projektu `ui.h`:
+      - 3DS ma dwa ekrany i rysik, Switch jeden duży ekran, dotyk tylko w trybie przenośnym i Joy-Cony – układ ekranów jest
+        **parametrem**, nie stałą „góra i dół”. Edytor sam rozkłada okna: przy jednym ekranie np. kod obok podpowiedzi zamiast
+        kodu na górze i klawiatury na dole;
+      - wersja web (przeglądarka i APK) zostaje osobno z interfejsem w HTML/JS i nie używa `ui.h`; ze wspólnego kodu w C bierze
+        tylko logikę: usługę języka i model grafu.
 - [ ] Usługa języka (`lang/service.h`): kolory, podpowiedzi, sygnatury, błędy – na bazie `codeindex.c`; testy na PC.
 - [ ] `editor.c` jako edytor tekstu bez wiedzy o języku (pyta usługę), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
 - [ ] **„Idź do definicji / pokaż API”** (prośba użytkownika 2026-11-13): kursor na nazwie klasy + przycisk otwiera tę klasę,
