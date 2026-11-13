@@ -1,6 +1,6 @@
 # MiniSharp2 – budowanie na PC (tylko testy).
 #   make test    buduje build/minisharp i uruchamia tests/run_tests.sh
-#   make         samo budowanie
+#   make         samo budowanie (bez hosta platform/pc: tylko kompilacja warstw do build/obj)
 #   make clean   usuwa build/
 # Na Windows uruchamiaj przez tools/test.ps1 (ustawia PATH do msys64).
 # Później (etap 3): `make 3ds` -> build/MiniSharp.3dsx – workflow woła go, gdy istnieje platform/3ds.
@@ -28,12 +28,20 @@ SRC     := $(strip $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.c)))
 HDR     := $(strip $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.h)))
 INC     := $(foreach d,$(SRCDIRS),-I$(d))
 
+OBJ     := $(SRC:%.c=$(BUILD)/obj/%.o)
+# Binarkę testową linkujemy, gdy jest host PC z main() (etap 3); wcześniej tylko kompilujemy warstwy.
+HOST    := $(wildcard platform/pc/*.c)
+
 .PHONY: all test clean
 
-all: $(if $(SRC),$(BIN),nothing)
+all: $(if $(HOST),$(BIN),$(if $(SRC),$(OBJ),nothing))
 
-$(BIN): $(SRC) $(HDR) | $(TMPDIR)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(SRC) -lm
+$(BIN): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $(OBJ) -lm
+
+$(BUILD)/obj/%.o: %.c $(HDR) | $(TMPDIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 $(TMPDIR):
 	@mkdir -p $@

@@ -1,0 +1,106 @@
+/* MiniSharp - public API: values and objects (for built-in functions), compiling, running.
+ * Hosts, the library, modules and applications use only this header; bytecode, Program and VM are in vm.h. */
+#ifndef MS_H
+#define MS_H
+
+#include <stdint.h>
+#include <stddef.h>
+
+typedef struct Program Program;         /* a compiled program (opaque outside lang/) */
+typedef struct VM VM;                   /* a running program (opaque outside lang/) */
+
+/* ---------- runtime values ---------- */
+typedef struct Obj Obj;
+enum { V_NULL, V_INT, V_FLOAT, V_BOOL, V_OBJ, V_CHAR };
+typedef struct {
+    uint8_t t;
+    union { int32_t i; float f; Obj* o; } as;
+} Value;
+
+enum { O_STRING, O_ARRAY, O_INSTANCE, O_LIST, O_CORO, O_DICT, O_CELL, O_CLOSURE };
+struct Obj { uint8_t type, marked, pinned; Obj* next; };
+typedef struct { Obj h; int32_t len; char chars[]; } ObjString;
+typedef struct { Obj h; int32_t len; Value items[]; } ObjArray;
+typedef struct { Obj h; int32_t cls; int32_t nfields; Value fields[]; } ObjInstance;
+typedef struct { Obj h; int32_t len, cap; Value* items; } ObjList;
+/* Dictionary, laid out like .NET's so foreach gives the same order: entries are kept in the order
+ * they were added, and a removed entry's place goes to a free list that the next Add reuses.
+ * 'index' is an open-addressing hash table of entry numbers (-1 empty, -2 removed). */
+typedef struct { Value key, val; uint32_t hash; int32_t live; } DictEntry;   /* free entry: hash = next free */
+typedef struct {
+    Obj h;
+    int32_t count, used, cap, icap, ntomb, freeList, freeCount;
+    DictEntry* entries; int32_t* index;
+} ObjDict;
+
+/* A local variable that a lambda uses lives in a cell, so the method and the lambda share it. */
+typedef struct { Obj h; Value v; } ObjCell;
+/* A delegate (Func / Action): a lambda with its captured cells, or a method with its object.
+ * Calling it puts 'self' in slot 0 (CL_SELF) or drops that slot (CL_STATIC, a static method). */
+enum { CL_SELF, CL_STATIC, CL_MULTI /* a += b: ups = the delegates to call in order */ };
+typedef struct { Obj h; int32_t func; uint8_t kind; int32_t nup; Value self; Value ups[]; } ObjClosure;
+
+/* A coroutine (IEnumerator). 'yield' is only allowed as a statement in the iterator method itself,
+ * so its whole state is the method's locals plus the resume position. */
+typedef struct {
+    Obj h;
+    int32_t func, ip, nlocals;
+    uint8_t started, done, running, waitKind;   /* waitKind: Y_* */
+    int32_t waitUntil, lastFrame;               /* ms for WaitForSeconds; frame of the last yield */
+    Obj* waitFor;                               /* coroutine we wait for (Y_CORO) */
+    Obj* owner;                                 /* started by the owner's 'yield return': stops with it */
+    Value locals[];
+} ObjCoro;
+
+/* ---------- static types (used by compiler and native signatures) ---------- */
+enum { T_VOID, T_INT, T_FLOAT, T_BOOL, T_STRING, T_NULL, T_CLASS, T_ARRAY, T_ANY, T_CHAR, T_LIST,
+       T_STRARR /* string[], only in native signatures */, T_CORO /* IEnumerator / Coroutine */,
+       T_DICT, T_KVP /* Dictionary<K,V> and the KeyValuePair<K,V> of its foreach */,
+       T_FUNC /* Func<...> / Action<...> / Predicate<T> / Comparison<T> */,
+       T_ENUM /* an int at run time */, T_STRUCT /* an ObjInstance that is copied when it is stored */ };
+
+/* ---------- natives ---------- */
+typedef Value (*NativeFn)(VM* vm, Value* args);
+#define MS_MAXNATIVEARGS 10
+typedef struct { const char* cls; const char* name; int np; int params[MS_MAXNATIVEARGS]; int ret; NativeFn fn; } NativeDef;
+typedef struct { const char* cls; const char* name; int isFloat; int ivalue; float fvalue; } ConstDef;
+
+/* ---------- API ---------- */
+Program* ms_compile(const char* src, char* err, int errlen);
+void ms_free_program(Program* p);
+/* REPL: like ms_compile, but in Repl.Main a variable declared at the top level becomes a static field
+ * ("static int x; " is appended to 'decls' so the next input can declare it in the class) and an
+ * expression on its own is printed */
+Program* ms_compile_repl(const char* src, char* err, int errlen, char* decls, int declsCap);
+
+VM* vm_new(Program* p);
+int vm_set_program(VM* vm, Program* p); /* REPL: go on with a newer program whose statics start with the old ones */
+void vm_free(VM* vm);
+int vm_call(VM* vm, int func);          /* 1 = ok, 0 = runtime error or quit */
+int vm_tick_coroutines(VM* vm);         /* once per frame after Update(); same result codes */
+Value vm_make_string(VM* vm, const char* s, int len);
+Value vm_make_array(VM* vm, int len);      /* filled with null */
+void ms_value_to_text(VM* vm, Value v, char* buf, int buflen);
+
+void ms_disassemble(Program* p);        /* print the bytecode (tools) */
+
+/* Entry points of a compiled program: function index for vm_call, or -1 when the program has none. */
+enum { MS_ENTRY_STATIC_INIT, MS_ENTRY_MAIN, MS_ENTRY_UPDATE, MS_ENTRY_DRAW };
+int ms_entry(const Program* p, int which);
+
+const char* ms_vm_error(VM* vm);        /* the runtime error after vm_call returned 0 ("" if none) */
+void ms_vm_fail(VM* vm, const char* fmt, ...);  /* built-in function: report a runtime error (the call then fails) */
+int ms_vm_quit_requested(VM* vm);       /* App.Quit() was called */
+void ms_vm_request_quit(VM* vm);
+void ms_vm_set_deadline(VM* vm, long long deadline);   /* REPL: a loop still running at time() > deadline stops; 0 = never */
+
+/* ---------- host hooks (the language knows no platform) ---------- */
+/* Milliseconds since some fixed moment, for WaitForSeconds. Default: the C clock(). */
+void ms_set_clock(int (*millis)(void));
+int ms_millis(void);
+/* Called by vm_new before a program starts: layers and modules reset their state here
+ * (e.g. the screen colour, sprites, the target frame rate). Up to MS_MAX_RESET_HOOKS. */
+#define MS_MAX_RESET_HOOKS 16
+void ms_on_vm_new(void (*fn)(void));
+
+#endif
