@@ -48,3 +48,4 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: rdzeń bez pętli gry: kompilator zna tylko `Main`; `Update`/`Draw` rejestruje host (`ms_register_hook`, `ms_hook`),
   on też zgłasza brak punktu wejścia; dokładana na sztywno klasa `Node` zastąpiona ogólnym `ms_register_source`.
   Test `tests/unit/test_hooks.c`; 163 ok. W planie kolejność: modyfikatory dostępu → `repl.c` → `printer.c` → `codeindex.c`.
+- 2026-11-13: dokumentacja: rozdział 3 „Rachunki” (6 przykładów sprawdzanych przez `make test`; 169 ok).

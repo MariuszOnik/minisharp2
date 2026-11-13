@@ -60,7 +60,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ### Dokumentacja języka (przez cały czas, rozdział na commit)
 - [x] Format i sprawdzanie przykładów (`sdk/docs/README.md`, `doc/*` w `make test`); rozdział 1 „Pierwszy program”.
 - [x] Rozdział 2 „Zmienne i typy”.
-- [ ] Kolejne rozdziały (propozycja kolejności): rachunki, if/else, pętle, metody, tablice, string,
+- [x] Rozdział 3 „Rachunki” (działania, `+=`/`++`, `Math`/`Mathf`, `Random`).
+- [ ] Kolejne rozdziały (propozycja kolejności): if/else, pętle, metody, tablice, string,
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
@@ -149,6 +150,6 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
 1. **Modyfikatory dostępu** (wersja łagodna) – zmieniają AST, więc przed `printer.c` (drukuje je) i `codeindex.c`
-   (nie podpowiada `private` spoza klasy). Przy okazji rozdział 3 dokumentacji („Rachunki”).
+   (nie podpowiada `private` spoza klasy). Przy okazji rozdział 4 dokumentacji („if/else”).
 2. `repl.c` (terminal) + test `repl` (opcja hosta `--repl`, wejście ze stdin).
 3. `printer.c`, potem `codeindex.c`.
