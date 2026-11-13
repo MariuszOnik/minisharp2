@@ -56,3 +56,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: `lang/repl.c` (terminal) z `931ad08`, bez nagłówka platformy; nowe wejście w kilku liniach (`repl_incomplete`),
   host PC `--repl`, test `repl` (bez `Gfx`). Dokumentacja: rozdział 5 „Pętle”. Wyszły braki: przecinek w `for`, `char` jako bajt
   (polskie litery w `foreach`). W planie etapu 3 wygląd terminala (fosfor, scanlines, klawiatura rysowana kodem). 211 ok.
+- 2026-11-13: pierwszy build na 3DS (wcześniej niż w planie): `platform/3ds` z konsolą tekstową libctru, `make 3ds`
+  (wspólne warstwy `lang lib graph` kompilują się pod devkitARM bez zmian), tryb testów z wynikami na karcie
+  i porównanie na PC (`tools/3ds_tests.sh`). Azahar: 177 ok, 6 czeka; build wysłany na konsolę jako
+  `/3ds/MiniSharp-20261113-1610.3dsx`. Dokumentacja: „Uruchamianie na 3DS” w rozdziale 1.

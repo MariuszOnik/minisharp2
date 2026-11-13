@@ -118,7 +118,18 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       dla 3DS i web, skalowalna; zapas: systemowa `swkbd`). Na web/APK opcjonalna ramka monitora CRT (obrazek albo CSS/SVG)
       w `platform/web`, w widoku dokładnie z przodu, ekran jako prostokąt o znanych współrzędnych; treść ekranu zawsze
       rysuje kod. Klawiatury z wygenerowanego obrazka nie robimy (krzywe klawisze, zmyślone litery, ręczne hitboxy).
-- [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę. Pierwszy build na konsolę.
+- [x] **Minimalny build na 3DS** (decyzja użytkownika 2026-11-13, zrobione 2026-11-13, przed resztą etapu 2):
+      `platform/3ds/main_3ds.c` (konsola tekstowa libctru, A = `sdmc:/minisharp/main.cs`, X = testy z `/minisharp/tests/`
+      do `tests/out/`, START = wyjście, log w `log.txt`), `make 3ds`, `tools/3ds_send.sh` (FTP), `tools/3ds_tests.sh`
+      (prepare/compare). Emulator Azahar: 177 ok, 6 czeka (Gfx/Input/App).
+- [ ] **Nazwa builda na konsoli** (prośba użytkownika 2026-11-13): każdy build musi dać się odróżnić na karcie. Jest:
+      tytuł w Homebrew Launcherze `MiniSharp2 RRRR-MM-DD GG:MM`, w opisie commit, w menu commit i data, plik na karcie
+      `/3ds/MiniSharp-RRRRMMDD-GGMM.3dsx` (`tools/3ds_send.sh`). Do zrobienia: to samo dla builda z Actions (wydanie
+      `3ds-latest` – nazwa pliku z datą albo numerem przebiegu `github.run_number`) i data/numer na ekranie startowym
+      pełnej wersji (etap 3).
+- [ ] Testy na prawdziwej konsoli: `sh tools/3ds_send.sh tests` (FTP konsoli: `192.168.1.90:5000`), X w menu,
+      pobrać `/minisharp/tests/out/` przez FTP i `sh tools/3ds_tests.sh compare <katalog>` (punkt „Przenośność” niżej).
+- [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę – rozbudowa minimalnego hosta.
 - [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
       przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
       - ostatnia cyfra `float`: `sinf`, `powf` i wypisywanie `%.7g` pochodzą z różnych bibliotek C (3DS: newlib, Switch, PC) –
@@ -181,12 +192,6 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ## Następny krok
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
-0. **Minimalny build na 3DS** (decyzja użytkownika 2026-11-13: wcześniej niż w etapie 3, żeby od razu sprawdzać przenośność
-   i budowanie pod devkitARM w Actions). `platform/3ds/main.c`: konsola tekstowa libctru (`consoleInit`) na górnym ekranie,
-   wczytuje `/minisharp/main.cs` z karty, kompiluje i uruchamia (`Console.WriteLine` na ekran), START = wyjście, błędy do
-   `/minisharp/log.txt`. `make 3ds` → `build/MiniSharp.3dsx`; na konsolę jako `/3ds/MiniSharp-test.3dsx`. Na konsoli
-   uruchomić testy z ułamkami (`math2`, `basics`…) i porównać z `expected/` (punkt „Przenośność” w etapie 3).
-   Pełne `platform/3ds` (citro2d, menu) zostaje w etapie 3 i rozbudowuje ten szkielet.
 1. `printer.c` (musi drukować modyfikatory dostępu: `access` w `FieldDecl`/`MethodDecl`/`PropDecl`, `getAccess`/`setAccess`,
    `ClassDecl.isStatic`) + rozdział 6 „Metody”.
 2. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).

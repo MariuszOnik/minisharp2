@@ -3,7 +3,7 @@
 #   make         samo budowanie (bez hosta platform/pc: tylko kompilacja warstw do build/obj)
 #   make clean   usuwa build/
 # Na Windows uruchamiaj przez tools/test.ps1 (ustawia PATH do msys64).
-# Później (etap 3): `make 3ds` -> build/MiniSharp.3dsx – workflow woła go, gdy istnieje platform/3ds.
+#   make 3ds     build/MiniSharp.3dsx (devkitPro, platform/3ds/Makefile); workflow woła go, gdy istnieje platform/3ds.
 
 ifeq ($(origin CC),default)
 CC := gcc
@@ -37,7 +37,11 @@ CORE_OBJ := $(filter-out $(BUILD)/obj/platform/%,$(OBJ))
 UNIT_SRC := $(wildcard tests/unit/*.c)
 UNIT_BIN := $(UNIT_SRC:tests/unit/%.c=$(BUILD)/unit/%$(EXE))
 
-.PHONY: all test clean
+.PHONY: all test clean 3ds
+
+# Nintendo 3DS (devkitPro): build/MiniSharp.3dsx; Makefile of the platform in platform/3ds.
+3ds:
+	@$(MAKE) --no-print-directory -C platform/3ds TOPDIR=$(CURDIR)
 
 all: $(if $(HOST),$(BIN),$(if $(SRC),$(OBJ),nothing))
 
