@@ -65,6 +65,14 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 ### Etap 4 – edytor kodu
 - [ ] Usługa języka (`lang/service.h`): kolory, podpowiedzi, sygnatury, błędy – na bazie `codeindex.c`; testy na PC.
 - [ ] `editor.c` jako edytor tekstu bez wiedzy o języku (pyta usługę), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
+- [ ] **„Idź do definicji / pokaż API”** (prośba użytkownika 2026-11-13): kursor na nazwie klasy + przycisk otwiera tę klasę,
+      żeby podejrzeć jej metody i pola. Usługa języka zwraca, *skąd* jest klasa:
+      - klasa z projektu (też z innego folderu, z `uses.txt`/`using X;`) – `codeindex.c` zna plik i linię deklaracji →
+        otwieramy ten plik w nowej karcie na tej linii (edytowalny);
+      - klasa wbudowana (rdzeń, `lib/`, moduł: `Console`, `Math`, `List`…) nie ma pliku `.cs` → otwieramy **podgląd API tylko
+        do odczytu**: opis z `sdk/api/*.cs` / `api.cs` modułu, a gdy go brak – wygenerowany z zarejestrowanych tabel
+        (`ms_native_at`: nazwy, parametry, typ wyniku). Ten sam podgląd posłuży Help i wyszukiwarce węzłów w grafie;
+      - przestrzeń nazw w `using` (np. `using X;`) – lista jej klas do wyboru. Działa też na nazwie metody (`Console.Write|`).
 
 ### Etap 5 – edytor grafu: Bolt jak w Unity (B)
 - [ ] Przegląd Bolta z Unity jako wzorca (bez kopiowania kodu i grafik – `docs/graphs-notes.md` w starym repo): co z niego
