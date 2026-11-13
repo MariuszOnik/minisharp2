@@ -64,3 +64,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   różnic względem PC.
 - 2026-11-13: `repl.c`/`repl.h` przeniesione z `lang/` do `app/` – terminal to narzędzie na języku, nie rdzeń.
   `app` dopisane do `SRCDIRS` (PC) i `SOURCES` (3DS); testy PC 211 ok, build 3DS przechodzi.
+- 2026-11-13: `tools/3ds_send.sh tests` wysyła tylko nowe i zmienione testy (sumy md5 w `build/3ds_sent.md5`),
+  `tests all` – wszystko od nowa. Wcześniej za każdym razem szło 206 plików.
