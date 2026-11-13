@@ -55,7 +55,8 @@ MiniSharp2/
   modules/      3d/, iso/ (opcjonalne)
   graph/        json.c, fgraph.c – model grafu, katalog węzłów, generator (graf → AST → printer); bez UI, testy na PC,
                 ten sam kod w 3DS i w wasm
-  app/          wersja 3DS w C: menu, editor, bolt (edytor grafu), terminal, help, keyboard, ui
+  app/          aplikacja natywna w C (dziś 3DS, później np. Switch): menu, editor, bolt (edytor grafu), terminal, help,
+                keyboard; rysuje i czyta wejście tylko przez app/ui.h (bez libctru) – nowa konsola = nowy platform/<konsola>
   web/          strona: edytor HTML/JS, widok grafu SVG, budowanie wasm (Zig), publikacja
   android/      projekt Gradle: WebView z wersją web (prepare-assets.sh kopiuje web/dist)
   .github/      workflow: testy PC, .3dsx, .apk, wydania 3ds-latest / android-latest

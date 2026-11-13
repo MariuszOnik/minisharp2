@@ -63,6 +63,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę. Pierwszy build na konsolę.
 
 ### Etap 4 – edytor kodu
+- [ ] **Warstwa abstrakcji edytora** (prośba użytkownika 2026-11-13): edytor, terminal, menu i edytor grafu (`app/`) nie wołają
+      libctru ani citro2d, tylko interfejsu `app/ui.h` (rysuj prostokąt/tekst/obrazek, przycinanie, zdarzenia: klawisze, przyciski,
+      dotyk/mysz, wpisany tekst, układ ekranów: jeden lub dwa, rozdzielczość). Logika edytora (bufor tekstu, kursor, zaznaczenie,
+      cofanie, karty) osobno od rysowania i testowana na PC. Implementacja `ui.h` jest w `platform/<konsola>` – przeniesienie na
+      inną platformę (np. Switch: `platform/switch` na libnx) = nowy folder platformy, bez zmian w `app/`.
 - [ ] Usługa języka (`lang/service.h`): kolory, podpowiedzi, sygnatury, błędy – na bazie `codeindex.c`; testy na PC.
 - [ ] `editor.c` jako edytor tekstu bez wiedzy o języku (pyta usługę), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
 - [ ] **„Idź do definicji / pokaż API”** (prośba użytkownika 2026-11-13): kursor na nazwie klasy + przycisk otwiera tę klasę,
