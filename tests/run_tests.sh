@@ -31,9 +31,10 @@ else
         n=$(basename "$f" .cs)
         [ -f "tests/expected/$n.txt" ] || continue
         args=$(sed -n "s/^$n //p" tests/opcje.txt)    # np. --frames 40
+        in=/dev/null; [ -f "tests/input/$n.txt" ] && in="tests/input/$n.txt"   # odpowiedzi dla Console.ReadLine
         case $n in
-            rt_*) check "$n" "$("$BIN" "$f" $args 2>&1 >/dev/null)" "tests/expected/$n.txt" ;;   # błąd wykonania: tylko stderr
-            *)    check "$n" "$("$BIN" "$f" $args 2>&1)" "tests/expected/$n.txt" ;;
+            rt_*) check "$n" "$("$BIN" "$f" $args <"$in" 2>&1 >/dev/null)" "tests/expected/$n.txt" ;;   # błąd wykonania: tylko stderr
+            *)    check "$n" "$("$BIN" "$f" $args <"$in" 2>&1)" "tests/expected/$n.txt" ;;
         esac
     done
     # Projekty: tests/projects/<nazwa>/ (folder = wszystkie jego .cs + biblioteki z uses.txt / 'using X;') z plikiem
@@ -42,7 +43,7 @@ else
         n=$(basename "$d")
         [ -f "tests/expected/$n.txt" ] || continue
         args=$(sed -n "s/^$n //p" tests/opcje.txt)
-        check "$n" "$("$BIN" "tests/projects/$n" $args 2>&1)" "tests/expected/$n.txt"
+        check "$n" "$("$BIN" "tests/projects/$n" $args </dev/null 2>&1)" "tests/expected/$n.txt"
     done
     # Podpowiedzi edytora (codeindex): tests/ci/<nazwa>/ to projekt ze znacznikami /*?*/; --ci wypisuje, co edytor
     # podpowie w każdym znaczniku (typ przed kropką i pierwsze 8 nazw) = tests/expected/<nazwa>.txt
@@ -59,17 +60,20 @@ else
         case $n in rt_*) continue ;; esac
         args=$(sed -n "s/^$n //p" tests/opcje.txt)
         "$BIN" --print "$f" > "build/print/$n.cs" 2>&1
-        check "print/$n" "$("$BIN" "build/print/$n.cs" $args 2>&1)" "tests/expected/$n.txt"
+        in=/dev/null; [ -f "tests/input/$n.txt" ] && in="tests/input/$n.txt"
+        check "print/$n" "$("$BIN" "build/print/$n.cs" $args <"$in" 2>&1)" "tests/expected/$n.txt"
     done
     # Terminal: tests/repl.txt podane na stdin hosta --repl (echo wejścia po "> ", wyniki, błędy, #complete)
     check repl "$("$BIN" --repl < tests/repl.txt 2>&1)" tests/expected/repl.txt
     # Przykłady z dokumentacji (sdk/docs/*.md): blok ```cs = cały program; po nim ```wynik = oczekiwane wyjście.
-    # Przykład bez bloku wynik musi się przynajmniej skompilować.
+    # Przykład bez bloku wynik musi się przynajmniej skompilować. Blok ```wejscie (między cs a wynik) = linie wpisane
+    # przez użytkownika dla Console.ReadLine; host z --echo wypisuje je w wyniku jak konsola.
     rm -rf build/doc; mkdir -p build/doc
     for md in sdk/docs/[0-9]*.md; do
         [ -f "$md" ] || continue
         awk -v out="build/doc/$(basename "$md" .md)" '
             /^```cs[[:space:]]*$/    { n++; f = out "_" n ".cs";  printf "" > f; inb = 1; next }
+            /^```wejscie[[:space:]]*$/ { f = out "_" n ".in"; printf "" > f; inb = 1; next }
             /^```wynik[[:space:]]*$/ { f = out "_" n ".txt"; printf "" > f; inb = 1; next }
             /^```/ && inb            { inb = 0; close(f); next }
             inb                      { sub(/$/, ""); print > f }' "$md"
@@ -77,7 +81,8 @@ else
     for f in build/doc/*.cs; do
         [ -f "$f" ] || continue
         n=${f%.cs}
-        if [ -f "$n.txt" ]; then check "doc/$(basename "$n")" "$("$BIN" "$f" 2>&1)" "$n.txt"
+        if [ -f "$n.in" ]; then check "doc/$(basename "$n")" "$("$BIN" "$f" --echo <"$n.in" 2>&1)" "$n.txt"
+        elif [ -f "$n.txt" ]; then check "doc/$(basename "$n")" "$("$BIN" "$f" </dev/null 2>&1)" "$n.txt"
         elif r=$("$BIN" "$f" --check 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: doc/$(basename "$n"): $r"; fi
     done
     # Błędy kompilacji: tests/errors/<nazwa>.cs -> komunikat na stderr = tests/errors/<nazwa>.expected

@@ -4,6 +4,7 @@
  *   minisharp file.cs --frames N    run N frames
  *   minisharp file.cs --check       only compile, report errors
  *   minisharp file.cs --dis         print the bytecode
+ *   minisharp file.cs --echo        Console.ReadLine reads stdin; --echo also prints each line read (a console session)
  *   minisharp --repl                terminal: run inputs from stdin (a line with an open '{' or '(' goes on in the next)
  *   minisharp --print file.cs       the file printed again by the AST printer ("Format code"; comments are dropped)
  *   minisharp --ci folder           editor suggestions (codeindex) at every marker comment slash-star-?-star-slash
@@ -45,6 +46,38 @@ static char* read_file(const char* path) {
     return s;
 }
 
+/* one line of stdin without the newline (any length); NULL at the end of input. The caller frees it. */
+static char* read_line(void) {
+    size_t n = 0, cap = 256;
+    char* s = (char*)malloc(cap);
+    int c = 0;
+    if (!s) return NULL;
+    while ((c = getchar()) != EOF && c != '\n') {
+        if (n + 1 >= cap) { char* t = (char*)realloc(s, cap *= 2); if (!t) { free(s); return NULL; } s = t; }
+        s[n++] = (char)c;
+    }
+    if (c == EOF && n == 0) { free(s); return NULL; }
+    if (n && s[n - 1] == '\r') n--;
+    s[n] = 0;
+    return s;
+}
+
+static int g_echo;                      /* --echo: print each line read by Console.ReadLine */
+
+/* vm_call; Console.ReadLine gets its lines from stdin until the call ends */
+static int call(VM* vm, int func) {
+    fflush(stdout);
+    int r = vm_call(vm, func);
+    while (r == MS_WAIT_INPUT) {
+        fflush(stdout);
+        char* line = read_line();
+        if (g_echo && line) printf("%s\n", line);      /* like a console shows what the user typed */
+        r = vm_resume_input(vm, line);
+        free(line);
+    }
+    return r;
+}
+
 /* terminal mode: echoes each line after "> " (or ". " when it continues an open '{'), then runs the input;
  * "#complete text" lists completions instead */
 static int repl_main(void) {
@@ -54,6 +87,12 @@ static int repl_main(void) {
     int tlen = 0;
     while (fgets(line, sizeof line, stdin)) {
         line[strcspn(line, "\r\n")] = 0;
+        if (repl_waiting(r)) {                  /* the answer to Console.ReadLine, shown after the question */
+            printf("%s\n", line);
+            if (!repl_answer(r, line, err, sizeof err)) printf("error: %s\n", err);
+            fflush(stdout);
+            continue;
+        }
         printf("%s %s\n", tlen ? "." : ">", line);
         if (!tlen && !strncmp(line, "#complete ", 10)) {
             char out[8][REPL_WORD]; int start;
@@ -144,6 +183,7 @@ int main(int argc, char** argv) {
         if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--check")) check = 1;
         else if (!strcmp(argv[i], "--dis")) dis = 1;
+        else if (!strcmp(argv[i], "--echo")) g_echo = 1;
         else { fprintf(stderr, "unknown option %s\n", argv[i]); return 2; }
     }
     char dir[256];
@@ -187,14 +227,14 @@ int main(int argc, char** argv) {
     if (check) { ms_free_program(p); project_free(&proj); return 0; }
 
     VM* vm = vm_new(p);
-    int ok = si < 0 || vm_call(vm, si);
-    if (ok && mi >= 0) ok = vm_call(vm, mi);
+    int ok = si < 0 || call(vm, si);
+    if (ok && mi >= 0) ok = call(vm, mi);
     if (ok && up >= 0) {
         for (int f = 0; f < frames && ok; f++) {
             g_ms += 1000.0 / 60;
-            ok = vm_call(vm, up);
+            ok = call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);    /* after Update, before Draw, like Unity */
-            if (ok && dr >= 0) ok = vm_call(vm, dr);
+            if (ok && dr >= 0) ok = call(vm, dr);
         }
     }
     int rc = 0;

@@ -18,11 +18,15 @@ static void print_value(VM* vm, Value v) {
 static Value n_writeline(VM* vm, Value* a) { print_value(vm, a[0]); out("\n"); return vnone(); }
 static Value n_writeline0(VM* vm, Value* a) { (void)vm; (void)a; out("\n"); return vnone(); }
 static Value n_write(VM* vm, Value* a) { print_value(vm, a[0]); return vnone(); }
+/* Console.ReadLine: the VM stops and the host asks the user (vm_call returns MS_WAIT_INPUT); the line it gets
+ * is the result, given by vm_resume_input */
+static Value n_readline(VM* vm, Value* a) { (void)a; ms_vm_wait_input(vm); return vnone(); }
 
 static const NativeDef console[] = {
     { "Console", "WriteLine", 1, { T_ANY }, T_VOID, n_writeline },
     { "Console", "WriteLine", 0, { 0 }, T_VOID, n_writeline0 },
     { "Console", "Write", 1, { T_ANY }, T_VOID, n_write },
+    { "Console", "ReadLine", 0, { 0 }, T_STRING, n_readline },
 };
 void lib_register_console(void) { MS_REGISTER(console); }
 

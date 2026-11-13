@@ -1,0 +1,10 @@
+Name? Hello, Ala!
+First number? Second number? that is not a number
+Second number? 12 + 30 = 42
+Guess: more
+Guess: less
+Guess: yes, in 3 tries
+KOT, PIES
+4 ż
+end of input
+asked 7 times

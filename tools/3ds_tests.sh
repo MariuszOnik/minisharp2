@@ -13,6 +13,7 @@ T="$sd/minisharp/tests"
 if [ "$cmd" = prepare ]; then
     rm -rf "$T/out"; mkdir -p "$T/errors" "$T/projects"
     cp tests/*.cs tests/opcje.txt "$T/"
+    mkdir -p "$T/input"; cp tests/input/*.txt "$T/input/"     # odpowiedzi dla Console.ReadLine
     cp tests/errors/*.cs "$T/errors/"
     cp -r tests/projects/* "$T/projects/"
     : > "$T/auto"

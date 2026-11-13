@@ -62,4 +62,7 @@ gry (ToEE, Fallout) to moduły w swoich repozytoriach, **nic z gier w rdzeniu**.
 - Pliki `.cs` dla MiniSharp zapisuj **bez BOM** (kompilator go nie przyjmuje; PowerShell `Set-Content -Encoding utf8` dodaje BOM).
 - Polskie znaki w skryptach Pythona podawanych heredokiem przez Bash potrafią się zepsuć – dłuższe skrypty zapisuj do
   pliku (narzędziem Write) i uruchamiaj `python -X utf8 plik.py`.
+- **Heredoc w Bash zjada `\\n`**: w skrypcie Pythona podanym heredokiem (`<<'EOF'`) zapis `'\\n'` trafia do pliku C jako
+  prawdziwy znak nowej linii (zepsute `printf("\n")`). Zmiany w kodzie C z `\n`, `\r`, `\\` rób narzędziem **Edit**
+  (albo skrypt zapisany narzędziem Write), nie Pythonem z heredoku. Nie pisz też `cat > plik` bez heredoku – czeka na stdin.
 - Wyniki testów zapisuj do plików, w czacie tylko podsumowanie.

@@ -12,8 +12,13 @@ void repl_free(Repl* r);
 void repl_set_time_limit(Repl* r, int seconds);
 
 /* Runs one input: a line, or several lines (a loop typed over a few lines, see repl_incomplete).
- * 1 = ok, 0 = error (message in err; for a one-line input without the "line N:" prefix). */
+ * 1 = ok, 0 = error (message in err; for a one-line input without the "line N:" prefix),
+ * REPL_WAIT = the input stopped in Console.ReadLine: the host's next line is the answer (repl_answer). */
+#define REPL_WAIT 2
 int repl_eval(Repl* r, const char* text, char* err, int errlen);
+/* the answer to Console.ReadLine (NULL = end of input); the same result codes as repl_eval */
+int repl_answer(Repl* r, const char* line, char* err, int errlen);
+int repl_waiting(Repl* r);              /* 1 = the last input waits in Console.ReadLine */
 
 /* 1 when the text so far leaves a '{', '(' or '[' open (outside strings, characters and comments):
  * the host then asks for the next line and joins them before repl_eval, like "for (...) {" + body + "}". */

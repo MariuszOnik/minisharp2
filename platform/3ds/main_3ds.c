@@ -80,6 +80,26 @@ static void run_fail(const char* fmt, const char* a) {
     out_write("\n");
 }
 
+/* answers for Console.ReadLine while running the tests (tests/input/<name>.txt); NULL = a program of the user */
+static FILE* g_in;
+
+/* vm_call; Console.ReadLine reads g_in. Typing an answer needs the keyboard, which the text console here has not:
+ * only the terminal (Y) can do it for now (the Console grid of stage 3 brings it to programs). */
+static int call(VM* vm, int func) {
+    int r = vm_call(vm, func);
+    while (r == MS_WAIT_INPUT) {
+        if (!g_in && !g_screen) { r = vm_resume_input(vm, NULL); continue; }    /* a test without answers: like stdin from /dev/null */
+        if (!g_in) {
+            ms_vm_fail(vm,"Console.ReadLine: typing an answer works only in the terminal (Y in the menu) for now");
+            return 0;
+        }
+        char line[1024];
+        if (fgets(line, sizeof line, g_in)) { line[strcspn(line, "\r\n")] = 0; r = vm_resume_input(vm, line); }
+        else r = vm_resume_input(vm, NULL);
+    }
+    return r;
+}
+
 static void run(const char* path, int isProject, int frames) {
     char err[300];
     g_lastErr[0] = 0;
@@ -110,8 +130,8 @@ static void run(const char* path, int isProject, int frames) {
     }
     g_ms = 0;
     VM* vm = vm_new(p);
-    int ok = si < 0 || vm_call(vm, si);
-    if (ok && mi >= 0) ok = vm_call(vm, mi);
+    int ok = si < 0 || call(vm, si);
+    if (ok && mi >= 0) ok = call(vm, mi);
     if (ok && up >= 0) {
         for (int f = 0; (frames < 0 || f < frames) && ok; f++) {
             if (frames < 0) {
@@ -121,9 +141,9 @@ static void run(const char* path, int isProject, int frames) {
                 gspWaitForVBlank();
             }
             g_ms += 1000.0 / 60;
-            ok = vm_call(vm, up);
+            ok = call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);
-            if (ok && dr >= 0) ok = vm_call(vm, dr);
+            if (ok && dr >= 0) ok = call(vm, dr);
         }
     }
     if (!ok && !ms_vm_quit_requested(vm)) {
@@ -177,8 +197,12 @@ static int run_dir(const char* dir, const char* prefix, int projects) {
         consoleSelect(&bottom);
         printf("\x1b[4;1H\x1b[2K test %d: %.30s", ++g_tests, name);   /* one progress line, not a list of names */
         g_out = fopen(outp, "w");
+        char inp[300];
+        snprintf(inp, sizeof inp, TESTS_DIR "/input/%s.txt", name);
+        g_in = projects ? NULL : fopen(inp, "r");
         run(path, projects, test_frames(name));
         if (g_out) { fclose(g_out); g_out = NULL; }
+        if (g_in) { fclose(g_in); g_in = NULL; }
         n++;
     }
     closedir(d);

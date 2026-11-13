@@ -127,3 +127,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   projekty (foldery z `.cs`) i pojedyncze programy, w projekcie jego `.cs` i `uses.txt`; nowy plik i nowy projekt z nazwą
   wpisaną na klawiaturze (plik dostaje klasę z `Main` albo pustą klasę w projekcie). Na 3DS B w menu → lista → edytor,
   START w edytorze wraca do listy, a Run pliku z projektu uruchamia cały folder.
+- 2026-11-13: `Console.ReadLine()` przez wstrzymanie VM: funkcja wbudowana prosi o linię, `vm_call` wraca z
+  `MS_WAIT_INPUT` ze stosem i ramkami nietkniętymi, a `vm_resume_input` kładzie odpowiedź na stos i jedzie dalej – bez
+  blokowania, więc nada się też do wasm. Nie wolno tego w wywołaniach zagnieżdżonych (lambda w `Sort`, `ToString`,
+  korutyna) – czytelny błąd. PC czyta stdin, terminal bierze odpowiedź z następnej linii, rozdział 9 z blokiem `wejscie`.

@@ -20,6 +20,7 @@ struct Repl {
     Program** progs; int nprogs, cap;   /* every input run so far: values may point at their string constants */
     char decls[DECLS_CAP];              /* "static int x; static string s; " */
     int timeLimit;                      /* seconds; 0 = none (the host has a Stop button) */
+    int multi;                          /* the running input has several lines (errors keep "line N:") */
 };
 
 static const char* SKELETON = "class Repl { static void Main() { } }";
@@ -117,6 +118,15 @@ int repl_incomplete(const char* s) {
     return depth > 0 || header;
 }
 
+/* after vm_call / vm_resume_input: the result code of repl_eval */
+static int finish(Repl* r, int ok, char* err, int errlen) {
+    VM* vm = r->vm;
+    vm->deadline = 0;
+    if (ok == MS_WAIT_INPUT) return REPL_WAIT;
+    if (!ok && !vm->quit) { snprintf(err, errlen, "%s", vm->err); strip_line(err, r->multi); return 0; }
+    return 1;
+}
+
 int repl_eval(Repl* r, const char* text, char* err, int errlen) {
     err[0] = 0;
     int n = (int)strlen(text);
@@ -153,12 +163,19 @@ int repl_eval(Repl* r, const char* text, char* err, int errlen) {
 
     VM* vm = r->vm;
     vm->sp = 0; vm->fp = 0; vm->quit = 0;       /* a failed input may have left frames and its error behind */
-    vm->err[0] = 0;
+    vm->err[0] = 0; vm->waitInput = 0;          /* ... or an unanswered Console.ReadLine */
+    r->multi = multi;
     vm->deadline = r->timeLimit ? (long long)time(NULL) + r->timeLimit : 0;
-    int ok = vm_call(vm, p->entryMain);
-    vm->deadline = 0;
-    if (!ok && !vm->quit) { snprintf(err, errlen, "%s", vm->err); strip_line(err, multi); return 0; }
-    return 1;
+    return finish(r, vm_call(vm, p->entryMain), err, errlen);
+}
+
+int repl_waiting(Repl* r) { return r->vm->waitInput; }
+
+int repl_answer(Repl* r, const char* line, char* err, int errlen) {
+    err[0] = 0;
+    if (!r->vm->waitInput) { snprintf(err, errlen, "nothing is waiting for input"); return 0; }
+    r->vm->deadline = r->timeLimit ? (long long)time(NULL) + r->timeLimit : 0;   /* time counts from the answer */
+    return finish(r, vm_resume_input(r->vm, line), err, errlen);
 }
 
 /* ---------- completion ---------- */

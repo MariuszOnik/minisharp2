@@ -7,6 +7,8 @@ jako Help, więc format jest celowo **mały** – podzbiór Markdown, który ła
 - Zwykłe akapity (pusta linia między nimi), listy z `- `, `kod w tekście` w odwróconych apostrofach, **pogrubienie**.
 - Blok ` ```cs ` – **cały program**, który się kompiluje. Zaraz po nim może być blok ` ```wynik ` z tym, co program
   wypisze. `make test` sprawdza każdy taki przykład (`doc/<rozdział>_<numer>`), więc dokumentacja nie kłamie.
+- Blok ` ```wejscie ` (między ` ```cs ` a ` ```wynik `) – linie, które użytkownik wpisuje dla `Console.ReadLine()`,
+  po jednej na odpowiedź. W ` ```wynik ` każda wpisana linia stoi tam, gdzie pokazałaby ją konsola (po pytaniu).
 - Blok ` ```text ` – fragment, którego nie sprawdzamy (np. pół programu, komunikat błędu).
 - Akapit zaczynający się od `> **Dla zaawansowanych:**` – dopisek, który edytor może zwinąć albo pokazać innym kolorem.
 - Bez tabel, obrazków, HTML i linków zewnętrznych. Odwołanie do innego rozdziału: „zob. rozdział 3”.

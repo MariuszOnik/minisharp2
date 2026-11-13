@@ -67,6 +67,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 6 „Metody” (parametry, `return`, `=>`, przeciążanie, rekurencja, zasięg zmiennych).
 - [x] Rozdział 7 „Tablice” (`{ … }`, `new T[n]`, `Length`, `for`/`foreach`, suma i maksimum, tablica w metodzie, `char[][]`).
 - [x] Rozdział 8 „Napisy” (`+`, `$""`, znaki specjalne, `Length`/`s[i]`, metody, `Split`, `IsNullOrEmpty`).
+- [x] Rozdział 9 „Rozmowa z użytkownikiem” (`Console.ReadLine`, `int.Parse`/`TryParse`, zgadywanka, linie do pustej, terminal).
 - [ ] Kolejne rozdziały (propozycja kolejności):
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
@@ -92,6 +93,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         `lang/text.c`, napisy dalej w UTF-8, `ObjString.ulen` liczone leniwie + pamięć ostatniej pozycji; `Length`, `s[i]`,
         `Substring`, `IndexOf`, `Split`, `ToUpper/ToLower` z polskimi literami, grekiem i cyrylicą; testy `unicode`,
         `rt_strindex`). Zostało: sortowanie napisów po polsku (dziś `ą` po `z`, kolejność kodów).
+      - brak `string.Join(sep, lista)` (znalezione przy teście `readline`, 2026-11-13) – `'string' has no method 'Join'`.
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,
@@ -105,11 +107,17 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         z `rank = 2`, `ObjArray.rows/cols`, w VM `NEWARR2`, `IDX2` – dwa indeksy w jeden, potem zwykłe `GETELEM`/`SETELEM`,
         więc `=`, `+=`, `++` bez zmian – i `ARRDIM` dla `GetLength`; `new T[r, c]`, `{ {..}, {..} }`, printer, podpowiedzi;
         testy `rect`, `rt_rect*`, `ci_rect`, błędy `rect_*`). Tylko dwa wymiary i tylko `T[,]` (nie `T[,][]`, `T[][,]`).
-- [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
+- [x] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
       stanąć w połowie) i na PC (stdin, testy z plikiem odpowiedzi). `ReadLine` w lambdzie wołanej z funkcji wbudowanej
       (np. `Sort`) = czytelny błąd. Rozdział dokumentacji „Rozmowa z użytkownikiem” (np. zgadywanka liczby).
+      Zrobione 2026-11-13: `vm_call` zwraca `MS_WAIT_INPUT`, `vm_resume_input(vm, linia)` (NULL = koniec wejścia → `null`),
+      `ms_vm_wait_input` dla funkcji wbudowanych, `vm->depth` pilnuje zagnieżdżenia; host PC czyta stdin (`--echo`),
+      testy `readline` (+ `tests/input/readline.txt`), `rt_readline_lambda`, `repl`; terminal: następna linia to
+      odpowiedź (`repl_answer`); dokumentacja: blok ` ```wejscie `, rozdział 9. **Zostało:** na 3DS zwykły program
+      (konsola tekstowa) kończy się błędem „tylko w terminalu” – pole wpisywania przyjdzie z siatką `Console` (etap 3);
+      testy na 3DS biorą odpowiedzi z `tests/input/`.
 - [x] `printer.c` (AST → kod) z testami `print/*` (2026-11-13): `lang/printer.c` + `ms_format` („Formatuj kod”),
       host `--print`, `tests/unit/test_printer.c` (każdy plik testów, projektów i przykład z dokumentacji: wydruk daje
       to samo drzewo i ten sam tekst przy drugim wydruku). Nowe: dostęp, `static class`, `const`/`readonly`

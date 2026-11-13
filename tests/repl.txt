@@ -59,3 +59,9 @@ if (x > 5) {
 #complete li
 #complete Mathf.P
 #complete 12
+Console.Write("Name? "); var imie = Console.ReadLine(); Console.WriteLine("Hi " + imie);
+Ola
+for (int i = 0; i < 2; i++) { Console.Write("n? "); Console.WriteLine(int.Parse(Console.ReadLine()) * 2); }
+5
+21
+imie

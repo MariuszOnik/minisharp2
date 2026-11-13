@@ -1,0 +1,1 @@
+runtime error: line 9 (Program.Main.lambda): Console.ReadLine cannot wait for input here (in a lambda called by a built-in function, in ToString() or in a coroutine)

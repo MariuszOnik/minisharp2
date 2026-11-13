@@ -103,6 +103,10 @@ struct VM {
     ObjCoro* curCoro;                           /* the one running right now */
     int frameNo;                                /* counts vm_tick_coroutines calls */
     long long deadline; unsigned loops;         /* REPL: a loop still running at time() > deadline stops (0 = never) */
+    int depth;                                  /* vm_run calls in progress (1 = run by the host, more = nested) */
+    uint8_t waitInput;                          /* Console.ReadLine asked: vm_run stops with MS_WAIT_INPUT */
+    uint8_t waitResult;                         /* ... and the native returns a value (the line goes on the stack) */
+    int waitFp;                                 /* the startFp of the stopped vm_run, for vm_resume_input */
     /* small objects (up to MS_POOL_MAX bytes) come from 16 KB blocks; a freed one goes to the list of its size */
     void* pool[17]; void* blocks; char* bump; size_t bumpLeft;
 };

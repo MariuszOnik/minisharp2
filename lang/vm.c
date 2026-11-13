@@ -500,6 +500,7 @@ static MS_COLD void enum_text(Program* P, int ci, int32_t v, char* buf, int n) {
 static int vm_run(VM* vm, int startFp);
 
 int vm_call(VM* vm, int func) {
+    if (vm->waitInput) { snprintf(vm->err, sizeof vm->err, "the program is waiting for input (vm_resume_input)"); return 0; }
     Program* P = vm->p;
     if (func < 0 || func >= P->nfuncs) return 1;
     int startFp = vm->fp;
@@ -720,7 +721,44 @@ static MS_COLD int merge_sort(VM* vm, Value* a, Value* tmp, int n, ObjClosure* c
 }
 
 /* Runs from the top frame until the frame at startFp returns (1), yields (2) or fails (0). */
+static int vm_run_loop(VM* vm, int startFp);
+
+/* vm->depth tells Console.ReadLine whether it may stop the VM: only in code the host runs directly, not in a
+ * lambda called by a built-in function (Sort, Find), a ToString() or a coroutine, which run nested here */
 static int vm_run(VM* vm, int startFp) {
+    vm->depth++;
+    int r = vm_run_loop(vm, startFp);
+    vm->depth--;
+    return r;
+}
+
+int ms_vm_wait_input(VM* vm) {
+    if (vm->depth != 1 || vm->curCoro) {
+        ms_vm_fail(vm, "Console.ReadLine cannot wait for input here (in a lambda called by a built-in function, "
+                       "in ToString() or in a coroutine)");
+        return 0;
+    }
+    vm->waitInput = 1;
+    return 1;
+}
+
+int ms_vm_waiting(VM* vm) { return vm->waitInput; }
+
+int vm_resume_input(VM* vm, const char* line) {
+    if (!vm->waitInput) { snprintf(vm->err, sizeof vm->err, "the program is not waiting for input"); return 0; }
+    vm->waitInput = 0;
+    if (vm->waitResult) {
+        Value v; v.t = V_NULL; v.as.o = NULL;
+        if (line) {
+            v = vm_make_string(vm, line, (int)strlen(line));
+            if (v.t == V_NULL) { snprintf(vm->err, sizeof vm->err, "out of memory"); vm->fp = vm->waitFp; return 0; }
+        }
+        vm->stack[vm->sp++] = v;
+    }
+    return vm_run(vm, vm->waitFp);
+}
+
+static int vm_run_loop(VM* vm, int startFp) {
     Program* P = vm->p;
     g_prog = P;
     Frame* fr = &vm->frames[vm->fp - 1];
@@ -1220,6 +1258,12 @@ static int vm_run(VM* vm, int startFp) {
                 sp -= argc;
                 if (vm->err[0]) { char m[256]; snprintf(m, sizeof m, "%s", vm->err); FAIL(m); }
                 if (vm->quit) { vm->fp = startFp; vm->sp = (int)(sp - stack); return 0; }
+                if (vm->waitInput) {            /* Console.ReadLine: stop here, vm_resume_input pushes the line */
+                    vm->waitResult = ms_natives[ni].ret != T_VOID;
+                    vm->waitFp = startFp;
+                    SYNC();
+                    return MS_WAIT_INPUT;
+                }
                 if (ms_natives[ni].ret != T_VOID) *sp++ = r;
                 NEXT;
             }

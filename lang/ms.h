@@ -101,7 +101,12 @@ Program* ms_compile_repl(const char* src, char* err, int errlen, char* decls, in
 VM* vm_new(Program* p);
 int vm_set_program(VM* vm, Program* p); /* REPL: go on with a newer program whose statics start with the old ones */
 void vm_free(VM* vm);
-int vm_call(VM* vm, int func);          /* 1 = ok, 0 = runtime error or quit */
+/* 1 = ok, 0 = runtime error or quit, MS_WAIT_INPUT = stopped in Console.ReadLine: the host gets a line from the
+ * user (an input field, stdin) and calls vm_resume_input, which goes on and returns the same codes. Until then
+ * the program is paused (its stack is kept); the host must not vm_call it again. */
+#define MS_WAIT_INPUT 3
+int vm_call(VM* vm, int func);
+int vm_resume_input(VM* vm, const char* line);     /* line without the newline; NULL = end of input (ReadLine gives null) */
 int vm_tick_coroutines(VM* vm);         /* once per frame after Update(); same result codes */
 Value vm_make_string(VM* vm, const char* s, int len);
 Value vm_make_array(VM* vm, int len);      /* filled with null */
@@ -131,6 +136,10 @@ const char* ms_vm_error(VM* vm);        /* the runtime error after vm_call retur
 void ms_vm_fail(VM* vm, const char* fmt, ...);  /* built-in function: report a runtime error (the call then fails) */
 int ms_vm_quit_requested(VM* vm);       /* App.Quit() was called */
 void ms_vm_request_quit(VM* vm);
+/* Built-in function that needs a line from the user (Console.ReadLine): 1 = the VM stops after this call and
+ * vm_call returns MS_WAIT_INPUT; 0 = not possible here (a nested call), the error is set. */
+int ms_vm_wait_input(VM* vm);
+int ms_vm_waiting(VM* vm);              /* 1 = stopped in Console.ReadLine */
 void ms_vm_set_deadline(VM* vm, long long deadline);   /* REPL: a loop still running at time() > deadline stops; 0 = never */
 /* Built-in function that allocates several objects: keep the first one alive (GC root on the VM stack) while
  * making the others, then pop it. Pushes and pops must pair up within the call; a few slots are always free. */

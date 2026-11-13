@@ -123,9 +123,35 @@ static void history_move(Terminal* t, int dir) {
     set_line(t, pos == t->nhist ? t->draft : t->hist[pos % HISTORY]);
 }
 
-/* Enter: echo the line, then run it (or wait for more lines while a '{' or '(' is open) */
+static void show_result(Terminal* t, int ok, const char* err) {
+    end_output_line(t);
+    if (ok) return;
+    t->kind = K_ERROR;
+    term_print(t, "error: ");
+    term_print(t, err);
+    term_print(t, "\n");
+    t->kind = K_OUT;
+}
+
+/* Enter: echo the line, then run it (or wait for more lines while a '{' or '(' is open); while the last input
+ * waits in Console.ReadLine the line is its answer, shown after the question like in a console */
 static void submit(Terminal* t) {
     char echo[TERM_LINE_CAP + 8], err[300];
+    if (repl_waiting(t->repl)) {
+        char answer[TERM_LINE_CAP];
+        snprintf(answer, sizeof answer, "%s", t->line);
+        t->kind = K_INPUT;
+        term_print(t, answer);
+        term_print(t, "\n");
+        t->kind = K_OUT;
+        t->view = 0;
+        set_line(t, "");
+        int ok = repl_answer(t->repl, answer, err, sizeof err);
+        if (ok == REPL_WAIT) { refresh_suggestions(t); return; }
+        show_result(t, ok, err);
+        refresh_suggestions(t);
+        return;
+    }
     end_output_line(t);
     t->kind = K_INPUT;
     snprintf(echo, sizeof echo, "%s %s\n", t->plen ? "." : ">", t->line);
@@ -150,14 +176,7 @@ static void submit(Terminal* t) {
 
     t->plen = 0;
     int ok = repl_eval(t->repl, t->pending, err, sizeof err);
-    end_output_line(t);
-    if (!ok) {
-        t->kind = K_ERROR;
-        term_print(t, "error: ");
-        term_print(t, err);
-        term_print(t, "\n");
-        t->kind = K_OUT;
-    }
+    if (ok != REPL_WAIT) show_result(t, ok, err);    /* waiting: the question stays open for the answer */
     refresh_suggestions(t);
 }
 
