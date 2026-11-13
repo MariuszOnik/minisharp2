@@ -70,3 +70,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   i `namespace`; test jednostkowy przepuszcza przez wydruk 202 pliki, a `print/*` sprawdza, że wydrukowany program
   działa tak samo. Pułapka MinGW: `return ms_parse(...)` jako wywołanie ogonowe zabiera ramkę `setjmp` i `longjmp`
   kończy się `0xC0000028`. Rozdział 6 „Metody”.
+- 2026-11-13: Skrócony inicjalizator tablicy `int[] t = { 1, 2 };` dla zmiennej, pola i właściwości (parser → `new int[] { … }`,
+  printer zachowuje krótki zapis); `var t = { … }` i `{ … }` dla nie-tablicy to czytelne błędy. Rozdział 6: przykład
+  tablicy przekazanej do metody.

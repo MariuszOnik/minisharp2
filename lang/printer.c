@@ -222,6 +222,12 @@ static void expr(MsBuf* b, Expr* e, int minprec, int level) {
             if (e->args) { puts_(b, " { "); args(b, e->args, e->nargs, level); puts_(b, " }"); }
             break;
         case E_NEWARR:
+            if (e->prefix == 2) {           /* int[] t = { 1, 2 }; */
+                puts_(b, e->nargs ? "{ " : "{");
+                args(b, e->args, e->nargs, level);
+                puts_(b, " }");
+                break;
+            }
             puts_(b, "new "); print_type_base(b, e->tn);
             if (e->prefix) {
                 puts_(b, "[]"); print_dims(b, e->tn->dims);

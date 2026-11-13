@@ -1,0 +1,1 @@
+compile error: line 3: 'var' cannot be initialized with { ... }; write the type (int[] t = { 1, 2 };) or new int[] { 1, 2 }

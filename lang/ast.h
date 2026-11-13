@@ -69,7 +69,7 @@ struct Expr {
     Expr *a, *b, *c;
     Expr** args; int nargs;
     TypeNode* tn;
-    int prefix;                     /* ++x vs x++ ; for E_NEWARR: has initializer list; E_MEMBER: a?.name */
+    int prefix;                     /* ++x vs x++ ; for E_NEWARR: 1 has initializer list, 2 written short (int[] t = { 1, 2 }); E_MEMBER: a?.name */
     struct Param* params; int nparams; struct Stmt* body;      /* E_LAMBDA */
     const char *s0, *s1;            /* source text [s0, s1) this node was parsed from (NULL: made up by the parser) */
 };

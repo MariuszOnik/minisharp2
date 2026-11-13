@@ -846,6 +846,29 @@ static Stmt* parse_block_(P* p) {
     return b;
 }
 
+/* The value after '=' in a declaration of a variable or a field of type tn (NULL: 'var').
+   'int[] t = { 1, 2 };' is short for 'new int[] { 1, 2 }' (E_NEWARR with prefix = 2, so the printer keeps it short). */
+static Expr* parse_init(P* p, TypeNode* tn) {
+    if (!at(p, TK_LBRACE)) return parse_expr(p);
+    int st = p->pos, line = peek(p)->line;
+    if (!tn) fail(p->c, line, "'var' cannot be initialized with { ... }; write the type (int[] t = { 1, 2 };) or new int[] { 1, 2 }");
+    if (tn->dims == 0) fail(p->c, line, "{ ... } as an initial value works only for arrays (int[] t = { 1, 2 };)");
+    next(p);
+    TypeNode* el = (TypeNode*)nw(p, sizeof(TypeNode));
+    *el = *tn; el->dims--;
+    Expr* e = mkexpr(p, E_NEWARR, line);
+    e->tn = el; e->prefix = 2;
+    Expr** items = NULL; int n = 0, cap = 0;
+    while (!at(p, TK_RBRACE)) {
+        items = (Expr**)arena_grow(p->c->A, items, n, &cap, sizeof(Expr*));
+        items[n++] = parse_expr(p);
+        if (!accept(p, TK_COMMA)) break;
+    }
+    expect(p, TK_RBRACE);
+    e->args = items; e->nargs = n;
+    return espan(p, e, st);
+}
+
 static Stmt* parse_var_decl(P* p) {
     Token* t = peek(p);
     Stmt* s = mkstmt(p, S_VAR, t->line);
@@ -854,7 +877,7 @@ static Stmt* parse_var_decl(P* p) {
     if (s->tn && s->tn->base == TK_VOID && s->tn->dims == 0) fail(p->c, t->line, "a variable cannot be 'void'");
     Token* id = expect(p, TK_IDENT);
     s->name = id->start; s->nlen = id->len;
-    if (accept(p, TK_ASSIGN)) s->e = parse_expr(p);
+    if (accept(p, TK_ASSIGN)) s->e = parse_init(p, s->tn);
     else if (!s->tn) fail(p->c, t->line, "'var' needs an initial value");
     /* int a = 1, b, c = 3;  -> chained through 'els' */
     Stmt* last = s;
@@ -865,7 +888,7 @@ static Stmt* parse_var_decl(P* p) {
         int nst = p->pos;
         Token* nid = expect(p, TK_IDENT);
         n->name = nid->start; n->nlen = nid->len;
-        if (accept(p, TK_ASSIGN)) n->e = parse_expr(p);
+        if (accept(p, TK_ASSIGN)) n->e = parse_init(p, n->tn);
         sspan(p, n, nst);
         last->els = n; last = n;
     }
@@ -1179,7 +1202,7 @@ static void parse_property(P* p, PropDecl* pr) {
         fail(p->c, pr->line, "property '%.*s': an access modifier on 'get' or 'set' needs both of them in the property", pr->nlen, pr->name);
     if (accept(p, TK_ASSIGN)) {
         if (what || bodies) fail(p->c, pr->line, "only an automatic property { get; set; } can have an initial value");
-        pr->init = parse_expr(p);
+        pr->init = parse_init(p, pr->tn);
         expect(p, TK_SEMI);
     }
 }
@@ -1294,7 +1317,7 @@ static void parse_class(P* p, ClassDecl* cd) {
             cd->fields = (FieldDecl*)arena_grow(p->c->A, cd->fields, cd->nfields, &fcap, sizeof(FieldDecl));
             FieldDecl* f = &cd->fields[cd->nfields++];
             f->line = name->line; f->isStatic = isStatic; f->tn = tn; f->name = name->start; f->nlen = name->len; f->attrs = mattrs; f->readOnly = readOnly; f->access = access;
-            f->init = accept(p, TK_ASSIGN) ? parse_expr(p) : NULL;
+            f->init = accept(p, TK_ASSIGN) ? parse_init(p, tn) : NULL;
             if (!accept(p, TK_COMMA)) break;
             name = expect(p, TK_IDENT);
         }

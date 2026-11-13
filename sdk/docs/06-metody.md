@@ -285,4 +285,29 @@ o klasach.
 > (`int b = 10`), `ref` ani `out`, więc kompilator zgłosi błąd. `out` jest na razie
 > tylko w `TryGetValue` słownika. Zamiast kilku wyników przez `out` oddaj jeden obiekt albo strukturę (zob. rozdział
 > o klasach). Tablice i obiekty są przekazywane **przez referencję**: metoda dostaje kopię adresu, nie kopię danych,
-> więc gdy zmieni element tablicy, wołający tę zmianę zobaczy.
+> więc gdy zmieni element tablicy, wołający tę zmianę zobaczy:
+
+```cs
+class Program
+{
+    static void Podwoj(int[] t)
+    {
+        for (int i = 0; i < t.Length; i++) t[i] *= 2;
+    }
+
+    static void Main()
+    {
+        int[] hp = { 10, 25, 40 };
+        Podwoj(hp);
+        Console.WriteLine(hp[0] + " " + hp[1] + " " + hp[2]);
+    }
+}
+```
+
+```wynik
+20 50 80
+```
+
+> `int[] hp = { 10, 25, 40 };` to skrót od `new int[] { 10, 25, 40 }`. Działa tylko w deklaracji zmiennej, pola
+> albo właściwości z podanym typem tablicy; przy `var` i w zwykłym wyrażeniu (np. argument `Podwoj({ 1, 2 })`)
+> trzeba napisać pełne `new int[] { 1, 2 }`, tak jak w C#.

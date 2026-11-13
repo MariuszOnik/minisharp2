@@ -215,7 +215,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1–4 to braki względem C# z rozdziału 6
 (decyzja użytkownika 2026-11-13: przed `codeindex.c`); każdy z testami i poprawką rozdziału 6 („Dla zaawansowanych”):
-1. Skrócony inicjalizator tablicy `int[] t = { 1, 2 };` (zmienna i pole) – parser robi z tego `new int[] { … }`.
+1. [x] Skrócony inicjalizator tablicy `int[] t = { 1, 2 };` (zmienna, pole, właściwość) – zrobione 2026-11-13:
+   `parse_init` w parserze robi `E_NEWARR` z `prefix = 2`, printer drukuje krótko; test `arrayinit`, błędy `arrinit_*`.
 2. Brak `return` na jakiejś drodze = błąd kompilacji (osiągalność końca metody: `return`, `if`/`else`, `while (true)`
    bez `break`, `switch` z `default`…); `OP_NORET` w VM zostaje jako zabezpieczenie.
 3. Parametry z wartością domyślną (`int b = 10`, tylko stałe jak w C#): wartość w `Param`, uzupełnianie argumentów

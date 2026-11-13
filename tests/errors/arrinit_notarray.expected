@@ -1,0 +1,1 @@
+compile error: line 3: { ... } as an initial value works only for arrays (int[] t = { 1, 2 };)
