@@ -73,6 +73,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę. Pierwszy build na konsolę.
+- [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
+      przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
+      - ostatnia cyfra `float`: `sinf`, `powf` i wypisywanie `%.7g` pochodzą z różnych bibliotek C (3DS: newlib, Switch, PC) –
+        uruchomić na konsoli testy wypisujące ułamki (`math2`, `basics`…) i porównać z `expected/`;
+      - flush-to-zero na 3DS: jeśli FPU zeruje bardzo małe liczby, `Mathf.Epsilon` (1.4e-45) wyjdzie 0 – sprawdzić;
+      - pamięć: `Value` ma 8 bajtów na 3DS, 16 na Switch/PC (na 3DS mieści się więcej obiektów); głęboka rekurencja
+        parsera i kompilatora ma na 3DS mniej stosu – sprawdzić głęboko zagnieżdżony program (limit i czytelny błąd zamiast awarii).
 
 ### Etap 4 – edytor kodu
 - [ ] **Warstwa abstrakcji edytora** (prośba użytkownika 2026-11-13): edytor, terminal, menu i edytor grafu (`app/`) nie wołają
