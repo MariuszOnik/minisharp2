@@ -1,0 +1,4 @@
+Game.cs:11: Konto -> saldo limit Wlasciciel numer Przelicz Zablokuj Wplac
+Game.cs:16: Oszczednosciowe -> Odsetki limit Wlasciciel numer Zablokuj Wplac
+Game.cs:24: Konto -> Wlasciciel numer Wplac
+Game.cs:26: Oszczednosciowe -> Odsetki Wlasciciel numer Wplac

@@ -44,6 +44,12 @@ else
         args=$(sed -n "s/^$n //p" tests/opcje.txt)
         check "$n" "$("$BIN" "tests/projects/$n" $args 2>&1)" "tests/expected/$n.txt"
     done
+    # Podpowiedzi edytora (codeindex): tests/ci/<nazwa>/ to projekt ze znacznikami /*?*/; --ci wypisuje, co edytor
+    # podpowie w każdym znaczniku (typ przed kropką i pierwsze 8 nazw) = tests/expected/<nazwa>.txt
+    for d in tests/ci/*/; do
+        n=$(basename "$d")
+        check "$n" "$("$BIN" --ci "tests/ci/$n" 2>&1)" "tests/expected/$n.txt"
+    done
     # Printer AST: program wydrukowany przez --print działa tak samo jak oryginał (print/<nazwa>; bez rt_*,
     # bo ich komunikaty mają numery linii, które po wydruku są inne)
     rm -rf build/print; mkdir -p build/print

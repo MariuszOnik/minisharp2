@@ -6,6 +6,8 @@
  *   minisharp file.cs --dis         print the bytecode
  *   minisharp --repl                terminal: run inputs from stdin (a line with an open '{' or '(' goes on in the next)
  *   minisharp --print file.cs       the file printed again by the AST printer ("Format code"; comments are dropped)
+ *   minisharp --ci folder           editor suggestions (codeindex) at every marker comment slash-star-?-star-slash
+ *                                   in the project's files: "File.cs:LINE: type -> first 8 names"
  * Graphics, input and --press/--ppm come in stage 3.
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
@@ -13,6 +15,7 @@
 #include "project.h"
 #include "repl.h"
 #include "printer.h"
+#include "codeindex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +70,39 @@ static int repl_main(void) {
     return 0;
 }
 
+/* editor suggestions test: at every marker comment in the project's files, what the editor would offer there */
+static int ci_main(const char* dir) {
+    Project pr;
+    char err[300];
+    if (!project_load(dir, &pr, err, sizeof err)) { fprintf(stderr, "%s\n", err); return 2; }
+    const char** texts = (const char**)calloc(pr.nfiles, sizeof *texts);
+    char** own = (char**)calloc(pr.nfiles, sizeof *own);
+    if (!texts || !own) { fprintf(stderr, "out of memory\n"); return 2; }
+    for (int i = 0; i < pr.nfiles; i++) {
+        texts[i] = own[i] = read_file(pr.files[i].path);
+        if (!own[i]) { fprintf(stderr, "cannot read %s\n", pr.files[i].path); return 2; }
+    }
+    CodeIndex ci = { 0 };
+    ci_build(&ci, texts, pr.nfiles);
+    for (int t = 0; t < pr.nfiles; t++)
+        for (const char* m = texts[t]; (m = strstr(m, "/*?*/")); m += 5) {
+            int pos = (int)(m - texts[t]), line = 1;
+            for (const char* q = texts[t]; q < m; q++) line += *q == '\n';
+            char out[8][CI_WORD], type[48] = "?";
+            int start, n = ci_complete(&ci, t, pos, &start, out, 8);
+            if (start > 0 && texts[t][start - 1] == '.') ci_type_before(&ci, t, start - 1, type, sizeof type);
+            printf("%s:%d: %s ->", pr.files[t].name, line, type);
+            for (int i = 0; i < n; i++) printf(" %s", out[i]);
+            if (n < 0) printf(" (none)");
+            printf("\n");
+        }
+    ci_free(&ci);
+    for (int i = 0; i < pr.nfiles; i++) free(own[i]);
+    free(own); free(texts);
+    project_free(&pr);
+    return 0;
+}
+
 int main(int argc, char** argv) {
 #ifdef _WIN32
     _setmode(_fileno(stdout), _O_BINARY); /* "\n" not "\r\n", so output matches tests/expected */
@@ -76,6 +112,10 @@ int main(int argc, char** argv) {
         ms_set_clock(frame_millis);
         lib_register_all();
         return repl_main();
+    }
+    if (argc == 3 && !strcmp(argv[1], "--ci")) {
+        lib_register_all();
+        return ci_main(argv[2]);
     }
     if (argc == 3 && !strcmp(argv[1], "--print")) {
         char* src = read_file(argv[2]);

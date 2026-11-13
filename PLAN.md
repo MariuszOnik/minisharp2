@@ -105,7 +105,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       (`readOnly = 2` dla `const`), `using`/`namespace`. Wydruk gubi komentarze (nie ma ich w AST) – przed „Formatuj
       kod” w edytorze trzeba je zachować (np. komentarze w AST albo formatowanie tylko wcięć). Test `spans` nie
       przeniesiony: był dla grafu A (łatki po zakresach), wróci, jeśli przyda się edytorowi.
-- [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
+- [x] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`) – zrobione 2026-11-13:
+      `lang/codeindex.c` (czyta tekst, nie AST – działa na kodzie z błędami), testy w `tests/ci/<nazwa>/`, nowy `ci_access`
+      (podpowiedzi bez `private`/`protected` spoza klasy, ta sama zasada co `can_access`). Zakresy klas w strukturze
+      zamiast tablicy globalnej, bez zależności od `repl.h` (`CI_WORD`).
 - [x] **Rdzeń bez pętli gry** (uwaga użytkownika 2026-11-13, zrobione 2026-11-13). Kompilator zna tylko `Main`; warstwy wyżej
       rejestrują hooki (`ms_register_hook("Update")`, `ms_hook(p, "Update")`) i swoje klasy C# (`ms_register_source`, np. `Node`
       grafu – `graph/` zarejestruje go w etapie 5). Brak punktu wejścia zgłasza host. Test jednostkowy `tests/unit/test_hooks.c`.
@@ -229,4 +232,15 @@ Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1�
    komórkę (`Local.refMode`, w lambdzie błąd); `check_out_params` w `comp_stmt.c` sprawdza przypisanie `out` na każdej
    drodze; przeciążenia z `ref` i bez; `int.TryParse` / `float.TryParse` przez ukryte natywne `#int` / `#float`;
    test `refout`, błędy `refout_*`, `tryparse_*`. Na razie tylko zmienne lokalne i parametry (nie pola, elementy).
-5. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).
+5. [x] `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`) – zrobione 2026-11-13.
+
+**Szybsza ścieżka do pisania na konsoli** (decyzja użytkownika 2026-11-13): po `codeindex.c` edytor i terminal na 3DS
+idą wcześniej, **na przemian z rdzeniem** (sesja edytor/terminal, sesja rdzeń: `Console.ReadLine`, Stop, rozdziały
+dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowana kodem (wzór: stare `keyboard.c`).
+6. Minimalny `app/ui.h` (prostokąt, tekst, przycinanie, klawisze, dotyk; tylko to, czego potrzebuje terminal) +
+   implementacja w `platform/3ds` + własna klawiatura dotykowa (`app/keyboard.c`, układ i trafienia testowane na PC).
+7. Terminal na 3DS: `terminal.c` ze starego repo na `ui.h` + `app/repl.c`; podpowiedzi z `repl_complete`; przycisk Stop
+   (START+SELECT, `ms_set_interrupt` z punktu „Przycisk Stop” w etapie 3), żeby `while (true)` nie wieszało konsoli.
+8. (rdzeń) usługa języka `lang/service.h` na `codeindex.c`: podpowiedzi w miejscu kursora, sygnatura, kolory linii.
+9. Edytor tekstu bez podpowiedzi: bufor (kursor, zaznaczenie, cofanie – logika z testami na PC), widok z numerami
+   linii, kolorowanie, zapis/otwieranie z karty, „Uruchom” i skok do linii błędu; potem podpowiedzi z usługi języka.

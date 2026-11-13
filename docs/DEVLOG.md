@@ -83,3 +83,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   z lambd), więc `ref` działa też razem z lambdami i przy przekazaniu parametru dalej. `out` musi dostać wartość na każdej
   drodze (prosta analiza jak CS0177). `int.TryParse` / `float.TryParse` bez zmian w VM: dwie ukryte funkcje natywne.
   Rozdział 6: sekcja „ref i out”.
+- 2026-11-13: `codeindex.c` w `lang/` (podpowiedzi edytora po kropce, typ nazwy z deklaracji, dziedziczenie, przestrzenie
+  nazw) z testami `tests/ci/*` przez host `--ci`. Nowość: nie podpowiada `private`/`protected` spoza klasy (`ci_access`).
+  Ustalona szybsza ścieżka do pisania na konsoli: własna klawiatura + terminal, potem edytor, na przemian z rdzeniem.

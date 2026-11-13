@@ -1,0 +1,6 @@
+Game.cs:6: namespace World -> Weapon Monsters
+Game.cs:7: Weapon -> Info Damage
+Game.cs:8: Weapon -> Info Damage
+Game.cs:9: Troll -> Hp Make Roar
+Game.cs:11: Troll -> Hp Make Roar
+Game.cs:12: ? -> (none)
