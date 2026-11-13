@@ -1,0 +1,1 @@
+compile error: line 3: 'Trzy' must be static: 'Narzedzia' is a static class (write 'static' before it, or remove 'static' from the class)

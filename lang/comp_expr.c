@@ -166,7 +166,10 @@ typedef struct { int kind, idx; Type* type; CProp* prop; int virt; } LV;
 /* calls the getter of a property; the object (if it is not static) is on the stack. virt 0: base.X */
 void emit_get(C* c, CProp* pp, int virt, int line) {
     CMethod* g = pp->get;
+    check_access(c, pp->owner, pp->decl->access, pp->name, pp->nlen, line);
     if (!g) cfail(c, line, "property '%.*s' has no 'get', so it can only be assigned", pp->nlen, pp->name);
+    if (pp->decl->getAccess && !can_access(c, pp->owner, pp->decl->getAccess))
+        cfail(c, line, "'get' of property '%.*s' is %s, so it cannot be read here", pp->nlen, pp->name, pp->decl->getAccess == AC_PRIVATE ? "private" : "protected");
     if (pp->backing && g->sel < 0 && g->owner == pp->owner) {      /* { get; set; } that nothing overrides: read the field */
         if (pp->isStatic) emit_op1(c, OP_GETSTATIC, pp->backing->slot);
         else emit_op1(c, OP_GETFIELD, pp->backing->slot);
@@ -182,6 +185,10 @@ void emit_get(C* c, CProp* pp, int virt, int line) {
 /* a property as the target of an assignment. In a constructor, a property { get; } of this class sets its hidden field. */
 static LV prop_lvalue(C* c, CProp* pp, int virt, int viaThis, int line) {
     LV lv = { LV_PROP, 0, pp->type, pp, virt };
+    check_access(c, pp->owner, pp->decl->access, pp->name, pp->nlen, line);
+    if (pp->set && pp->decl->setAccess && !can_access(c, pp->owner, pp->decl->setAccess))
+        cfail(c, line, "'set' of property '%.*s' is %s, so it cannot be assigned here (only read)", pp->nlen, pp->name,
+              pp->decl->setAccess == AC_PRIVATE ? "private" : "protected");
     if (!pp->set) {
         if (pp->backing && viaThis && pp->owner == c->cur && c->isCtor && !pp->isStatic) {
             lv.kind = pp->isStatic ? LV_STATIC : LV_FIELD; lv.idx = pp->backing->slot; lv.prop = NULL;
@@ -243,7 +250,7 @@ static LV lvalue(C* c, Expr* e) {
             Res r = resolve_name(c, e->a->name, e->a->nlen);
             if (r.k == R_CLASS) {
                 if (c->classes[r.idx].isEnum) cfail(c, e->line, "enum members cannot be changed");
-                CField* f = find_field(c, r.idx, e->name, e->nlen);
+                CField* f = use_field(c, find_field(c, r.idx, e->name, e->nlen), e->line);
                 CProp* pp = f ? NULL : find_prop(c, r.idx, e->name, e->nlen);
                 if (pp) {
                     if (!pp->isStatic) cfail(c, e->line, "'%.*s' is not static; use an object", e->nlen, e->name);
@@ -262,7 +269,7 @@ static LV lvalue(C* c, Expr* e) {
             cfail(c, e->line, "cannot change '%.*s' of a copy: this %s is a value given back by a method, property or List; "
                   "put it in a variable, change it there and store it back", e->nlen, e->name, type_name(c, t));
         if (type_isobj(t)) {
-            CField* f = find_field(c, t->cls, e->name, e->nlen);
+            CField* f = use_field(c, find_field(c, t->cls, e->name, e->nlen), e->line);
             CProp* pp = f ? NULL : find_prop(c, t->cls, e->name, e->nlen);
             if (pp) {
                 if (pp->isStatic) cfail(c, e->line, "'%.*s' is static; use %s.%.*s", e->nlen, e->name, type_name(c, t), e->nlen, e->name);
@@ -503,7 +510,7 @@ Type* compile_expr(C* c, Expr* e) {
                 }
                 if (r.k == R_CLASS) {
                     CClass* k = &c->classes[r.idx];
-                    CField* f = find_field(c, r.idx, e->name, e->nlen);
+                    CField* f = use_field(c, find_field(c, r.idx, e->name, e->nlen), e->line);
                     if (k->isEnum) {                    /* Dir.Up: a constant */
                         if (!f) cfail(c, e->line, "enum '%.*s' has no member '%.*s'", e->a->nlen, e->a->name, e->nlen, e->name);
                         emit_op1(c, OP_ICONST, f->value);
@@ -542,7 +549,7 @@ Type* compile_expr(C* c, Expr* e) {
             if (t->k == T_LIST && namecs(e->name, e->nlen, "Length")) cfail(c, e->line, "a List has 'Count', not 'Length'");
             if (t->k == T_ARRAY && namecs(e->name, e->nlen, "Count")) cfail(c, e->line, "an array has 'Length', not 'Count'");
             if (type_isobj(t)) {
-                CField* f = find_field(c, t->cls, e->name, e->nlen);
+                CField* f = use_field(c, find_field(c, t->cls, e->name, e->nlen), e->line);
                 CProp* pp = f ? NULL : find_prop(c, t->cls, e->name, e->nlen);
                 if (pp) {
                     if (pp->isStatic) cfail(c, e->line, "'%.*s' is static; use %s.%.*s", e->nlen, e->name, type_name(c, t), e->nlen, e->name);
@@ -593,9 +600,12 @@ Type* compile_expr(C* c, Expr* e) {
                                  k->decl->nfields ? k->decl->fields[0].nlen : 1, k->decl->nfields ? k->decl->fields[0].name : "X");
             if (k->isInterface) cfail(c, e->line, "'%.*s' is an interface; create an object of a class that implements it", k->nlen, k->name);
             if (k->isAbstract) cfail(c, e->line, "'%.*s' is abstract; create an object of a class derived from it", k->nlen, k->name);
+            if (k->decl->isStatic) cfail(c, e->line, "'%.*s' is a static class, so no object of it can be made; use its members directly: %.*s.Name",
+                                         k->nlen, k->name, k->nlen, k->name);
             char what[80]; snprintf(what, sizeof what, "constructor of '%.*s'", k->nlen, k->name);
             CMethod* cand[64]; int n = 0, has0 = 0;
             for (int i = 0; i < k->nctors && n < 64; i++) { cand[n++] = &k->ctors[i]; has0 |= k->ctors[i].np == 0; }
+            n = accessible_cands(c, cand, n, e->line);
             if (k->isStruct && !e->nargs && !has0) { emit_op1(c, OP_NEW, ci); return k->type; }   /* new V2(): a zeroed struct, as in C# */
             CMethod* ct = pick_overload(c, cand, n, e, what);
             emit_op1(c, OP_NEW, ci);

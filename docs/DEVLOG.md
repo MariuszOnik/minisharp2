@@ -49,3 +49,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   on też zgłasza brak punktu wejścia; dokładana na sztywno klasa `Node` zastąpiona ogólnym `ms_register_source`.
   Test `tests/unit/test_hooks.c`; 163 ok. W planie kolejność: modyfikatory dostępu → `repl.c` → `printer.c` → `codeindex.c`.
 - 2026-11-13: dokumentacja: rozdział 3 „Rachunki” (6 przykładów sprawdzanych przez `make test`; 169 ok).
+- 2026-11-13: modyfikatory dostępu (wersja łagodna): `protected`/`internal` mają własne tokeny, AST pamięta `access`
+  (też `private set;` i `static class`); kompilator sprawdza je przy użyciu pola, właściwości, metody, delegata i konstruktora
+  (`can_access`/`check_access`, przeciążenia tylko spośród dostępnych). Bez słówka – dostęp wszędzie jak dotąd. Test `access.cs`
+  + 24 testy błędów; dokumentacja: rozdział 4 „Warunki: if i else”, uwaga o `public` w rozdziale 1 (202 ok).

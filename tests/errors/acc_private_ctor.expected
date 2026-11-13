@@ -1,0 +1,1 @@
+compile error: line 7: the constructor of 'Gra' is private; only code inside class Gra can use 'new Gra(...)'

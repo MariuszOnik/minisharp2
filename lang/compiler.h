@@ -22,7 +22,7 @@ extern Type tVoid, tInt, tFloat, tBool, tString,
             tNull, tAny, tChar, tCoro;
 
 /* enum member: isStatic, slot unused, value = its number */
-typedef struct { const char* name; int nlen; Type* type; int isStatic; int slot; FieldDecl* decl; int32_t value; } CField;
+typedef struct { const char* name; int nlen; Type* type; int isStatic; int slot; FieldDecl* decl; int32_t value; int owner; } CField;
 /* sel >= 0: virtual, abstract, override or interface method, called through the class's vtable[sel];
  * func < 0: abstract (no body). Constructors are CMethods too (in CClass.ctors). */
 /* roParams: bit i set = struct parameter i is never changed by the method, so callers pass it without a copy */
@@ -130,6 +130,10 @@ void push_default(C* c, Type* t);
 CField* find_field(C* c, int cls, const char* n, int l);
 CMethod* find_method(C* c, int cls, const char* n, int l);
 CProp* find_prop(C* c, int cls, const char* n, int l);
+int can_access(C* c, int owner, int access);
+void check_access(C* c, int owner, int access, const char* n, int l, int line);
+CField* use_field(C* c, CField* f, int line);
+int method_access(CMethod* m);
 int class_in(C* c, int i, const char* ns, int nsl, const char* n, int l);
 int find_class(C* c, const char* n0, int l0);
 const char* class_hint(C* c, const char* n, int l);
@@ -159,6 +163,7 @@ void args_for(C* c, Expr* e, Type** params, int np, const char* what);
 void args_for_ro(C* c, Expr* e, Type** params, int np, const char* what, uint32_t ro);
 int same_params(CMethod* a, CMethod* b);
 int method_cands(C* c, int cls, const char* n, int l, CMethod** out, int k, int max);
+int accessible_cands(C* c, CMethod** cand, int k, int line);
 CMethod* pick_overload(C* c, CMethod** cand, int n, Expr* e, const char* what);
 Type* compile_call(C* c, Expr* e);
 

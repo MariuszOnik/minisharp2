@@ -1,0 +1,1 @@
+compile error: line 6: 'klik' is private in Przycisk; only code inside class Przycisk can use it

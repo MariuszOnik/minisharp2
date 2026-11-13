@@ -1,0 +1,1 @@
+compile error: line 2: use only one of 'public', 'private', 'protected' and 'internal'

@@ -62,7 +62,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Format i sprawdzanie przykładów (`sdk/docs/README.md`, `doc/*` w `make test`); rozdział 1 „Pierwszy program”.
 - [x] Rozdział 2 „Zmienne i typy”.
 - [x] Rozdział 3 „Rachunki” (działania, `+=`/`++`, `Math`/`Mathf`, `Random`).
-- [ ] Kolejne rozdziały (propozycja kolejności): if/else, pętle, metody, tablice, string,
+- [x] Rozdział 4 „Warunki: if i else” (porównania, `&& || !`, `?:`, `switch`).
+- [ ] Kolejne rozdziały (propozycja kolejności): pętle, metody, tablice, string,
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
@@ -71,7 +72,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] `lib/`: Console, Math, Mathf, Random, string, char, int/float (z `natives.c`); List i Dictionary są w języku (`vm.c`).
 - [x] `lang/project.c` (projekt = folder, `uses.txt`, `using X;` dołącza `../x/lib`), host PC przyjmuje folder; 12 testów
       projektów w `tests/projects/` (2026-11-13).
-- [ ] **Modyfikatory dostępu, wersja łagodna** (decyzja użytkownika 2026-11-13). Dziś `public`/`private`/`protected`/`internal`
+- [x] **Modyfikatory dostępu, wersja łagodna** (decyzja użytkownika 2026-11-13, zrobione 2026-11-13; test `access.cs`, 24 testy
+      `errors/acc_*`, `errors/static_*`; też `private set;`, prywatny konstruktor, przeciążenia wybierane tylko spośród dostępnych). Dziś `public`/`private`/`protected`/`internal`
       i `static class` są przyjmowane i pomijane. Zasady: brak słówka = dostęp z każdej klasy (jak dziś, nic się nie psuje);
       jawne `private` – tylko w swojej klasie (błąd w rodzaju `'ile' is private in Licznik`); `protected` – w klasie i pochodnych;
       `internal` = brak słówka; `static class` – zakaz `new` i wszystkie składniki `static`. Każdy program poprawny w C# jest
@@ -160,9 +162,6 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ## Następny krok
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
-1. **Modyfikatory dostępu** (wersja łagodna) – zmieniają AST, więc przed `printer.c` (drukuje je) i `codeindex.c`
-   (nie podpowiada `private` spoza klasy). Po zmianie **przejrzeć całą dokumentację `sdk/docs/`** (prośba użytkownika
-   2026-11-13): czy opisy i przykłady zgadzają się z nowymi zasadami (`public`/`private`, `static class`). Przy okazji
-   rozdział 4 dokumentacji („if/else”).
-2. `repl.c` (terminal) + test `repl` (opcja hosta `--repl`, wejście ze stdin).
-3. `printer.c`, potem `codeindex.c`.
+1. `repl.c` (terminal) + test `repl` (opcja hosta `--repl`, wejście ze stdin). Przy okazji rozdział 5 dokumentacji („Pętle”).
+2. `printer.c` (musi drukować modyfikatory dostępu: `access` w `FieldDecl`/`MethodDecl`/`PropDecl`, `getAccess`/`setAccess`,
+   `ClassDecl.isStatic`), potem `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).

@@ -60,9 +60,9 @@ void scan_captures(C* c, Stmt* body, Expr* extra) {
 static void emit_closure(C* c, int kind, int idx, int nup) { emit_op(c, OP_CLOSURE); emit1(c, kind); emit1(c, idx); emit1(c, nup); }
 
 /* the overload of method n that fits delegate type ft (or the first one, whose mismatch is then reported) */
-static CMethod* group_method(C* c, int cls, const char* n, int l, Type* ft) {
+static CMethod* group_method(C* c, int cls, const char* n, int l, Type* ft, int line) {
     CMethod* cand[64];
-    int k = method_cands(c, cls, n, l, cand, 0, 64);
+    int k = accessible_cands(c, cand, method_cands(c, cls, n, l, cand, 0, 64), line);
     for (int i = 0; i < k; i++) {
         int ok = cand[i]->np == ft->np && cand[i]->ret == ft->elem;
         for (int j = 0; ok && j < ft->np; j++) ok = cand[i]->params[j] == ft->params[j];
@@ -77,7 +77,7 @@ static int method_group(C* c, Expr* e, Type* ft, int line) {
     int self = 0;                               /* 0 static method, 1 this, 2 the object of e->a */
     if (e->k == E_NAME) {
         if (resolve_name(c, e->name, e->nlen).k != R_METHOD) return 0;
-        m = group_method(c, c->cur, e->name, e->nlen, ft);
+        m = group_method(c, c->cur, e->name, e->nlen, ft, line);
         if (!m->isStatic) {
             if (c->curStatic) cfail(c, line, "cannot use instance method '%.*s' in a static method", e->nlen, e->name);
             self = 1;
@@ -89,7 +89,7 @@ static int method_group(C* c, Expr* e, Type* ft, int line) {
             Res r = resolve_name(c, e->a->name, e->a->nlen);
             if (r.k == R_CLASS) {
                 if (find_field(c, r.idx, e->name, e->nlen) || find_prop(c, r.idx, e->name, e->nlen)) return 0;
-                m = group_method(c, r.idx, e->name, e->nlen, ft);
+                m = group_method(c, r.idx, e->name, e->nlen, ft, line);
                 if (!m) return 0;
                 if (!m->isStatic) cfail(c, line, "'%.*s' is not static; use an object: obj.%.*s", e->nlen, e->name, e->nlen, e->name);
             }
@@ -99,7 +99,7 @@ static int method_group(C* c, Expr* e, Type* ft, int line) {
         if (!m) {
             Type* t = peek_type(c, e->a);
             if (!type_isobj(t) || find_field(c, t->cls, e->name, e->nlen) || find_prop(c, t->cls, e->name, e->nlen)) return 0;
-            m = group_method(c, t->cls, e->name, e->nlen, ft);
+            m = group_method(c, t->cls, e->name, e->nlen, ft, line);
             if (!m) return 0;
             if (m->isStatic) cfail(c, line, "'%.*s' is static; use %s.%.*s", e->nlen, e->name, type_name(c, t), e->nlen, e->name);
             self = 2;

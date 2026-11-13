@@ -1,0 +1,10 @@
+42
+4 2
+2 20 licznik
+60
+7
+40
+0 True
+2 72 podwojny
+3
+miau

@@ -53,7 +53,7 @@ static const struct { const char* s; int k; } keywords[] = {
     {"do", TK_DO}, {"return", TK_RETURN}, {"new", TK_NEW}, {"true", TK_TRUE}, {"false", TK_FALSE},
     {"null", TK_NULL}, {"break", TK_BREAK}, {"continue", TK_CONTINUE}, {"this", TK_THIS},
     {"public", TK_PUBLIC}, {"private", TK_PRIVATE}, {"using", TK_USING}, {"namespace", TK_NAMESPACE},
-    {"const", TK_CONST}, {"readonly", TK_READONLY}, {"protected", TK_PRIVATE}, {"internal", TK_PRIVATE},
+    {"const", TK_CONST}, {"readonly", TK_READONLY}, {"protected", TK_PROTECTED}, {"internal", TK_INTERNAL},
     {"char", TK_KCHAR}, {"foreach", TK_FOREACH}, {"in", TK_IN}, {"switch", TK_SWITCH}, {"case", TK_CASE},
     {"default", TK_DEFAULT}, {"out", TK_OUT},
     {"abstract", TK_ABSTRACT}, {"virtual", TK_VIRTUAL}, {"override", TK_OVERRIDE}, {"sealed", TK_SEALED},
@@ -1095,6 +1095,24 @@ static void parse_enum(P* p, ClassDecl* cd) {
     expect(p, TK_RBRACE);
 }
 
+/* an access modifier at the current token (0: none). Two of them: 'protected internal' is AC_INTERNAL,
+   'private protected' is AC_PROTECTED (both are allowed in C#); a word written twice or another pair is an error. */
+static int parse_access(P* p, int* acc) {
+    Token* m = peek(p);
+    int a = m->kind == TK_PUBLIC ? AC_PUBLIC : m->kind == TK_PRIVATE ? AC_PRIVATE : m->kind == TK_PROTECTED ? AC_PROTECTED :
+            m->kind == TK_INTERNAL ? AC_INTERNAL : AC_NONE;
+    if (!a) return 0;
+    next(p);
+    if (*acc) {
+        int pi = (*acc == AC_PROTECTED && a == AC_INTERNAL) || (*acc == AC_INTERNAL && a == AC_PROTECTED);
+        int pp = (*acc == AC_PRIVATE && a == AC_PROTECTED) || (*acc == AC_PROTECTED && a == AC_PRIVATE);
+        if (!pi && !pp) fail(p->c, m->line, "use only one of 'public', 'private', 'protected' and 'internal'");
+        a = pi ? AC_INTERNAL : AC_PROTECTED;
+    }
+    *acc = a;
+    return 1;
+}
+
 /* made-up body of '=> expr' (a method, a property or an accessor): { return expr; } or { expr; } */
 static Stmt* arrow_body(P* p, int isVoid) {
     Token* t = expect(p, TK_ARROW);
@@ -1117,7 +1135,9 @@ static void parse_property(P* p, PropDecl* pr) {
     }
     expect(p, TK_LBRACE);
     while (!at(p, TK_RBRACE)) {
-        while (accept(p, TK_PUBLIC) || accept(p, TK_PRIVATE)) {}      /* 'private set;' is accepted and ignored, like other access modifiers */
+        int acc = 0;
+        Token* am = peek(p);
+        while (parse_access(p, &acc)) {}                    /* 'private set;' */
         Token* a = peek(p);
         int isGet = a->kind == TK_IDENT && a->len == 3 && !memcmp(a->start, "get", 3);
         int isSet = a->kind == TK_IDENT && ((a->len == 3 && !memcmp(a->start, "set", 3)) || (a->len == 4 && !memcmp(a->start, "init", 4)));
@@ -1136,8 +1156,18 @@ static void parse_property(P* p, PropDecl* pr) {
             if (p->sawYield) fail(p->c, a->line, "a property cannot use 'yield'");
         }
         if (body && what) fail(p->c, a->line, "%s property has no bodies: { get; set; }", p->inInterface ? "an interface" : "an abstract");
-        if (isGet) { pr->hasGet = 1; pr->getBody = body; pr->getExpr = ex; }
-        else { pr->hasSet = 1; pr->setBody = body; pr->setExpr = ex; }
+        if (acc && p->inInterface) acc = 0;                 /* interface members are public */
+        if (acc) {
+            if ((isGet ? pr->hasSet : pr->hasGet) && (isGet ? pr->setAccess : pr->getAccess))
+                fail(p->c, am->line, "only one of 'get' and 'set' can have its own access modifier");
+            if (acc == pr->access || acc == AC_PUBLIC || (acc == AC_INTERNAL && !pr->access))
+                fail(p->c, am->line, "'%.*s' of property '%.*s' can only be more hidden than the property (e.g. 'private set;')", a->len, a->start, pr->nlen, pr->name);
+            if (pr->access == AC_PRIVATE || (pr->access == AC_PROTECTED && acc != AC_PRIVATE))
+                fail(p->c, am->line, "property '%.*s' is already %s, so its '%.*s' cannot be more hidden", pr->nlen, pr->name,
+                     pr->access == AC_PRIVATE ? "private" : "protected", a->len, a->start);
+        }
+        if (isGet) { pr->hasGet = 1; pr->getBody = body; pr->getExpr = ex; pr->getAccess = acc; }
+        else { pr->hasSet = 1; pr->setBody = body; pr->setExpr = ex; pr->setAccess = acc; }
     }
     next(p);
     if (!pr->hasGet && !pr->hasSet) fail(p->c, pr->line, "property '%.*s' needs 'get' or 'set'", pr->nlen, pr->name);
@@ -1145,6 +1175,8 @@ static void parse_property(P* p, PropDecl* pr) {
     if (!what && bodies && ((pr->hasGet && !pr->getBody) || (pr->hasSet && !pr->setBody)))
         fail(p->c, pr->line, "property '%.*s': write a body for every accessor, or for none ({ get; set; })", pr->nlen, pr->name);
     if (!what && !bodies && !pr->hasGet) fail(p->c, pr->line, "an automatic property needs 'get': { get; set; }");
+    if ((pr->getAccess || pr->setAccess) && !(pr->hasGet && pr->hasSet))
+        fail(p->c, pr->line, "property '%.*s': an access modifier on 'get' or 'set' needs both of them in the property", pr->nlen, pr->name);
     if (accept(p, TK_ASSIGN)) {
         if (what || bodies) fail(p->c, pr->line, "only an automatic property { get; set; } can have an initial value");
         pr->init = parse_expr(p);
@@ -1171,7 +1203,7 @@ static void parse_class(P* p, ClassDecl* cd) {
     int fcap = 0, mcap = 0, pcap = 0;
     while (!at(p, TK_RBRACE)) {
         if (at(p, TK_EOF)) fail(p->c, cd->line, "%s '%.*s' is never closed with '}'", what, cd->nlen, cd->name);
-        int isStatic = 0, kind = cd->isInterface ? MK_ABSTRACT : MK_NONE, readOnly = 0;
+        int isStatic = 0, kind = cd->isInterface ? MK_ABSTRACT : MK_NONE, readOnly = 0, access = 0;
         int mst = p->pos;
         int morder = 0, mattrs = parse_attributes(p, &morder);
         if (mattrs & FA_ORDER) fail(p->c, p->t[mst].line, "[Order(n)] goes before a class, not before its members");
@@ -1181,7 +1213,7 @@ static void parse_class(P* p, ClassDecl* cd) {
             if (accept(p, TK_STATIC)) isStatic = 1;
             else if (accept(p, TK_CONST)) isStatic = readOnly = 1;                /* const fields are static */
             else if (accept(p, TK_READONLY)) readOnly = 1;
-            else if (accept(p, TK_PUBLIC) || accept(p, TK_PRIVATE) || accept(p, TK_SEALED)) {}
+            else if (parse_access(p, &access) || accept(p, TK_SEALED)) {}
             else if (m->kind == TK_IDENT && m->len == 5 && !memcmp(m->start, "event", 5) && peekn(p, 1)->kind == TK_IDENT) next(p);   /* 'event Action x;' is a delegate field */
             else if (accept(p, TK_VIRTUAL) || accept(p, TK_OVERRIDE) || accept(p, TK_ABSTRACT)) {
                 if (cd->isInterface) fail(p->c, m->line, "interface members cannot be '%.*s'", m->len, m->start);
@@ -1194,6 +1226,7 @@ static void parse_class(P* p, ClassDecl* cd) {
             fail(p->c, mod->line, "class '%.*s' has an abstract method, so it must be 'abstract class'", cd->nlen, cd->name);
         if (kind != MK_NONE && !cd->isInterface && isStatic) fail(p->c, mod->line, "a static method cannot be virtual, override or abstract");
         if (cd->isInterface && isStatic) fail(p->c, mod->line, "interfaces cannot have static members here");
+        if (cd->isInterface) access = AC_NONE;              /* interface members are public */
         Token* t = peek(p);
         if (accept(p, TK_SEMI)) continue;               /* the optional ';' after a nested enum */
         if ((mattrs & FA_FLAGS) && t->kind != TK_ENUM) fail(p->c, t->line, "[Flags] goes before an enum");
@@ -1212,6 +1245,7 @@ static void parse_class(P* p, ClassDecl* cd) {
         /* constructor */
         if (t->kind == TK_IDENT && t->len == cd->nlen && !memcmp(t->start, cd->name, t->len) && peekn(p, 1)->kind == TK_LPAREN) {
             if (isStatic) fail(p->c, t->line, "static constructors are not supported");
+            if (cd->isStatic) fail(p->c, t->line, "static class '%.*s' cannot have a constructor (no object of it is ever made)", cd->nlen, cd->name);
             if (cd->isInterface) fail(p->c, t->line, "an interface cannot have a constructor");
             if (kind != MK_NONE) fail(p->c, t->line, "a constructor cannot be virtual, override or abstract");
             if (mattrs) fail(p->c, t->line, "[In] and [Out] go before a field (a port of a node), not before a constructor");
@@ -1219,7 +1253,7 @@ static void parse_class(P* p, ClassDecl* cd) {
             cd->methods = (MethodDecl*)arena_grow(p->c->A, cd->methods, cd->nmethods, &mcap, sizeof(MethodDecl));
             MethodDecl* m = &cd->methods[cd->nmethods++];
             memset(m, 0, sizeof *m);
-            m->line = t->line; m->isCtor = 1; m->name = t->start; m->nlen = t->len;
+            m->line = t->line; m->isCtor = 1; m->name = t->start; m->nlen = t->len; m->access = access;
             parse_method_rest(p, m);
             m->s0 = p->t[mst].start; m->s1 = prev_end(p);
             continue;
@@ -1227,12 +1261,15 @@ static void parse_class(P* p, ClassDecl* cd) {
         if (t->kind == TK_CLASS || t->kind == TK_INTERFACE || t->kind == TK_STRUCT) fail(p->c, t->line, "nested classes are not supported (only enums can be declared inside a class)");
         TypeNode* tn = parse_type(p);
         Token* name = expect(p, TK_IDENT);
+        if (cd->isStatic && !isStatic)
+            fail(p->c, name->line, "'%.*s' must be static: '%.*s' is a static class (write 'static' before it, or remove 'static' from the class)",
+                 name->len, name->start, cd->nlen, cd->name);
         if (at(p, TK_LPAREN)) {
             if (mattrs) fail(p->c, name->line, "[In] and [Out] go before a field (a port of a node), not before a method");
             cd->methods = (MethodDecl*)arena_grow(p->c->A, cd->methods, cd->nmethods, &mcap, sizeof(MethodDecl));
             MethodDecl* m = &cd->methods[cd->nmethods++];
             memset(m, 0, sizeof *m);
-            m->line = name->line; m->isStatic = isStatic; m->ret = tn; m->name = name->start; m->nlen = name->len; m->kind = kind;
+            m->line = name->line; m->isStatic = isStatic; m->ret = tn; m->name = name->start; m->nlen = name->len; m->kind = kind; m->access = access;
             parse_method_rest(p, m);
             m->s0 = p->t[mst].start; m->s1 = prev_end(p);
             continue;
@@ -1244,7 +1281,7 @@ static void parse_class(P* p, ClassDecl* cd) {
             cd->props = (PropDecl*)arena_grow(p->c->A, cd->props, cd->nprops, &pcap, sizeof(PropDecl));
             PropDecl* pr = &cd->props[cd->nprops++];
             memset(pr, 0, sizeof *pr);
-            pr->line = name->line; pr->isStatic = isStatic; pr->kind = kind; pr->tn = tn; pr->name = name->start; pr->nlen = name->len;
+            pr->line = name->line; pr->isStatic = isStatic; pr->kind = kind; pr->tn = tn; pr->name = name->start; pr->nlen = name->len; pr->access = access;
             parse_property(p, pr);
             pr->s0 = p->t[mst].start; pr->s1 = prev_end(p);
             continue;
@@ -1256,7 +1293,7 @@ static void parse_class(P* p, ClassDecl* cd) {
         for (;;) {
             cd->fields = (FieldDecl*)arena_grow(p->c->A, cd->fields, cd->nfields, &fcap, sizeof(FieldDecl));
             FieldDecl* f = &cd->fields[cd->nfields++];
-            f->line = name->line; f->isStatic = isStatic; f->tn = tn; f->name = name->start; f->nlen = name->len; f->attrs = mattrs; f->readOnly = readOnly;
+            f->line = name->line; f->isStatic = isStatic; f->tn = tn; f->name = name->start; f->nlen = name->len; f->attrs = mattrs; f->readOnly = readOnly; f->access = access;
             f->init = accept(p, TK_ASSIGN) ? parse_expr(p) : NULL;
             if (!accept(p, TK_COMMA)) break;
             name = expect(p, TK_IDENT);
@@ -1335,11 +1372,13 @@ ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
         }
         if (nsDepth > 0 && accept(&p, TK_RBRACE)) { nsDepth--; ns = outer[nsDepth].ns; nus = outer[nsDepth].nus; continue; }
         if (accept(&p, TK_SEMI)) continue;          /* 'enum E { A, B };' */
-        int isAbstract = 0, cst = p.pos, order = 0;
+        int isAbstract = 0, isStatic = 0, cst = p.pos, order = 0;
         int attrs = parse_attributes(&p, &order);
         if (attrs & (FA_IN | FA_OUT)) fail(c, toks[cst].line, "[In] and [Out] go before a field (a port of a node); before a class only [Order(n)]");
         for (;;) {
-            if (accept(&p, TK_PUBLIC) || accept(&p, TK_PRIVATE) || accept(&p, TK_STATIC) || accept(&p, TK_SEALED) || accept(&p, TK_READONLY)) {}
+            if (accept(&p, TK_PUBLIC) || accept(&p, TK_PRIVATE) || accept(&p, TK_PROTECTED) || accept(&p, TK_INTERNAL) ||
+                accept(&p, TK_SEALED) || accept(&p, TK_READONLY)) {}
+            else if (accept(&p, TK_STATIC)) isStatic = 1;
             else if (accept(&p, TK_ABSTRACT)) isAbstract = 1;
             else break;
         }
@@ -1348,6 +1387,8 @@ ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
             fail(c, t->line, "expected 'class', 'struct', 'interface' or 'enum' at top level, found '%.*s'", t->len, t->start);
         if (t->kind == TK_INTERFACE && isAbstract) fail(c, t->line, "an interface is already abstract");
         if ((t->kind == TK_STRUCT || t->kind == TK_ENUM) && isAbstract) fail(c, t->line, "a %s cannot be abstract", t->kind == TK_ENUM ? "enum" : "struct");
+        if (isStatic && t->kind != TK_CLASS) fail(c, t->line, "only a class can be static");
+        if (isStatic && isAbstract) fail(c, t->line, "a class cannot be both static and abstract");
         if ((attrs & FA_FLAGS) && t->kind != TK_ENUM) fail(c, t->line, "[Flags] goes before an enum");
         if ((attrs & FA_ORDER) && t->kind == TK_ENUM) fail(c, t->line, "[Order(n)] goes before a class, not before an enum");
         next(&p);
@@ -1355,7 +1396,7 @@ ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
         ClassDecl* cd = &prog->classes[prog->nclasses++];
         memset(cd, 0, sizeof *cd);
         cd->isAbstract = isAbstract; cd->isInterface = t->kind == TK_INTERFACE; cd->isStruct = t->kind == TK_STRUCT; cd->order = order;
-        cd->isFlags = !!(attrs & FA_FLAGS);
+        cd->isFlags = !!(attrs & FA_FLAGS); cd->isStatic = isStatic;
         if (t->kind == TK_ENUM) parse_enum(&p, cd); else parse_class(&p, cd);
         cd->s0 = toks[cst].start; cd->s1 = prev_end(&p);
         cd->ns = ns;

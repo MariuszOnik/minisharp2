@@ -1,0 +1,1 @@
+compile error: line 6: 'Narzedzia' is a static class, so no object of it can be made; use its members directly: Narzedzia.Name

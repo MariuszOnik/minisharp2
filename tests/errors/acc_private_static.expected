@@ -1,0 +1,1 @@
+compile error: line 6: 'tajne' is private in Ustawienia; only code inside class Ustawienia can use it

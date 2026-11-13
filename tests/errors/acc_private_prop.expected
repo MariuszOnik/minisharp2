@@ -1,0 +1,1 @@
+compile error: line 7: 'Zycie' is private in Gracz; only code inside class Gracz can use it

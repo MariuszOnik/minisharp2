@@ -1,0 +1,1 @@
+compile error: line 7: 'set' of property 'Punkty' is private, so it cannot be assigned here (only read)

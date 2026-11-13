@@ -33,7 +33,8 @@ enum {
     TK_QDOT, TK_QQ,                     /* ?. ?? */
     TK_ENUM, TK_STRUCT,
     TK_INTERP,                          /* $"...{x}...": the whole literal; the parser lexes the holes again */
-    TK_FILESEP                          /* byte 0x1C that project.c puts between files: 'using' ends there */
+    TK_FILESEP,                         /* byte 0x1C that project.c puts between files: 'using' ends there */
+    TK_PROTECTED, TK_INTERNAL
 };
 
 typedef struct { int kind; const char* start; int len; int line; int32_t ival; float fval; } Token;
@@ -90,9 +91,13 @@ struct Stmt {
 
 typedef struct Param { TypeNode* tn; const char* name; int nlen; } Param;
 enum { MK_NONE, MK_VIRTUAL, MK_OVERRIDE, MK_ABSTRACT };
+/* access modifier of a member. AC_NONE (nothing written), AC_PUBLIC and AC_INTERNAL: every class may use it;
+   AC_PRIVATE: only its own class; AC_PROTECTED: its class and the classes derived from it. */
+enum { AC_NONE, AC_PUBLIC, AC_PRIVATE, AC_PROTECTED, AC_INTERNAL };
 typedef struct {
     int line, isStatic, isCtor, isIter;     /* isIter: the body uses 'yield' */
     int kind;                               /* MK_*; interface methods are MK_ABSTRACT */
+    int access;                             /* AC_* */
     TypeNode* ret; const char* name; int nlen;
     Param* params; int nparams;
     Stmt* body;                             /* NULL for abstract and interface methods */
@@ -103,10 +108,11 @@ typedef struct {
 } MethodDecl;
 enum { FA_IN = 1, FA_OUT = 2, FA_ORDER = 4, FA_FLAGS = 8 };   /* attributes: [In] / [Out] on a field, [Order(n)] on a class, [Flags] on an enum */
 /* readOnly: const or readonly. An enum member is a FieldDecl with tn = NULL (init = its value or NULL). */
-typedef struct { int line, isStatic; TypeNode* tn; const char* name; int nlen; Expr* init; const char *s0, *s1; int attrs, readOnly; } FieldDecl;
+typedef struct { int line, isStatic; TypeNode* tn; const char* name; int nlen; Expr* init; const char *s0, *s1; int attrs, readOnly, access; } FieldDecl;
 /* A property. The compiler turns it into methods get_Name / set_Name (and a hidden field for { get; set; }). */
 typedef struct {
     int line, isStatic, kind;               /* kind: MK_*; interface properties are MK_ABSTRACT */
+    int access, getAccess, setAccess;       /* AC_*: of the property and of 'private set;' (AC_NONE: as the property) */
     TypeNode* tn; const char* name; int nlen;
     int hasGet, hasSet;
     Stmt *getBody, *setBody;                /* NULL: automatic ({ get; set; }) or abstract */
@@ -121,6 +127,7 @@ typedef struct {
     NsName ns;                              /* namespace it is declared in (l = 0: the global one) */
     NsName* usings; int nusings;            /* 'using X;' in effect where it is declared (its file and namespace blocks) */
     int isAbstract, isInterface, isEnum, isStruct, isFlags;
+    int isStatic;                           /* 'static class': no 'new', every member static */
     TypeNode** bases; int nbases;           /* ': Base, IFoo, IBar' (which one is the class is decided later) */
     FieldDecl* fields; int nfields;
     MethodDecl* methods; int nmethods;

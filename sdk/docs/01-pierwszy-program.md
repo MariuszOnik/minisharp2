@@ -27,6 +27,10 @@ Co tu jest:
 - Nawiasy klamrowe `{ }` pokazują, co jest w środku czego: metoda w klasie, polecenia w metodzie.
 - Każde polecenie kończy się średnikiem `;`.
 
+W przykładach C# z internetu często zobaczysz `public class Program` albo `public static void Main()`. To też
+działa: słówka `public` i `private` mówią, kto może używać danej części programu. Bez nich wszystko jest dostępne
+wszędzie, więc na początek można je pomijać – wrócimy do nich w rozdziale o klasach.
+
 Uruchomienie: w edytorze naciśnij **Uruchom**. Tekst pojawi się na ekranie.
 
 ## Kilka linii i Write

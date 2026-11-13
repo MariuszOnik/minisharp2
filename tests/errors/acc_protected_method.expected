@@ -1,0 +1,1 @@
+compile error: line 6: 'Spij' is protected in Zwierze; only Zwierze and classes derived from it can use it

@@ -1,0 +1,1 @@
+compile error: line 2: static class 'Narzedzia' cannot have a constructor (no object of it is ever made)

@@ -45,6 +45,24 @@ int method_cands(C* c, int cls, const char* n, int l, CMethod** out, int k, int 
     return k;
 }
 
+/* keeps the methods of cand[0..k) that the code being compiled may call (C# picks an overload only among those);
+   when none is left, the error is about the first one */
+int accessible_cands(C* c, CMethod** cand, int k, int line) {
+    int n = 0;
+    for (int i = 0; i < k; i++) if (can_access(c, cand[i]->owner, method_access(cand[i]))) cand[n++] = cand[i];
+    if (k && !n) {
+        CMethod* m = cand[0];
+        CClass* o = &c->classes[m->owner];
+        if (m->decl && m->decl->isCtor) {
+            if (method_access(m) == AC_PRIVATE) cfail(c, line, "the constructor of '%.*s' is private; only code inside class %.*s can use 'new %.*s(...)'",
+                                                      o->nlen, o->name, o->nlen, o->name, o->nlen, o->name);
+            cfail(c, line, "the constructor of '%.*s' is protected; only %.*s and classes derived from it can use it", o->nlen, o->name, o->nlen, o->name);
+        }
+        check_access(c, m->owner, method_access(m), m->name, m->nlen, line);
+    }
+    return n;
+}
+
 /* is e the name of a method used as a value (a delegate)? */
 static int is_method_group(C* c, Expr* e) {
     if (e->k == E_NAME) return resolve_name(c, e->name, e->nlen).k == R_METHOD;
@@ -103,6 +121,7 @@ static CMethod* find_call(C* c, int cls, const char* n, int l, Expr* e) {
     CMethod* cand[64];
     int k = method_cands(c, cls, n, l, cand, 0, 64);
     if (!k) return NULL;
+    k = accessible_cands(c, cand, k, e->line);
     char what[100];
     snprintf(what, sizeof what, "'%.*s.%.*s'", c->classes[cls].nlen, c->classes[cls].name, l, n);
     return pick_overload(c, cand, k, e, what);
@@ -337,7 +356,7 @@ Type* compile_call(C* c, Expr* e) {
             if (r.k == R_CLASS) {
                 if (c->classes[r.idx].isEnum) cfail(c, e->line, "enum '%.*s' has no methods", f->a->nlen, f->a->name);
                 CMethod* m = find_call(c, r.idx, f->name, f->nlen, e);
-                CField* df = m ? NULL : find_field(c, r.idx, f->name, f->nlen);
+                CField* df = m ? NULL : use_field(c, find_field(c, r.idx, f->name, f->nlen), e->line);
                 CProp* dp = m || df ? NULL : find_prop(c, r.idx, f->name, f->nlen);
                 if ((df && df->type->k == T_FUNC) || (dp && dp->type->k == T_FUNC)) { Type* ft = compile_expr(c, f); return invoke(c, e, ft); }      /* Game.onWin() */
                 if (!m) cfail(c, e->line, "class '%.*s' has no method '%.*s'", f->a->nlen, f->a->name, f->nlen, f->name);
@@ -362,7 +381,7 @@ Type* compile_call(C* c, Expr* e) {
         if (t->k == T_FUNC && namecs(f->name, f->nlen, "Invoke")) return invoke(c, e, t);
         if (type_isobj(t)) {
             CMethod* m = find_call(c, t->cls, f->name, f->nlen, e);
-            CField* df = m ? NULL : find_field(c, t->cls, f->name, f->nlen);
+            CField* df = m ? NULL : use_field(c, find_field(c, t->cls, f->name, f->nlen), e->line);
             CProp* dp = m || df ? NULL : find_prop(c, t->cls, f->name, f->nlen);
             if (df && df->type->k == T_FUNC && !df->isStatic) { emit_op1(c, OP_GETFIELD, df->slot); return invoke(c, e, df->type); }
             if (dp && dp->type->k == T_FUNC && !dp->isStatic) { emit_get(c, dp, f->a->k != E_BASE, e->line); return invoke(c, e, dp->type); }

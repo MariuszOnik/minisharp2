@@ -248,6 +248,30 @@ CProp* find_prop(C* c, int cls, const char* n, int l) {
         }
     return NULL;
 }
+/* ---- access modifiers (the gentle version: a member without one is open to every class, as before) ---- */
+/* may the code being compiled (class c->cur, its lambdas too) use a member of class owner with this access (AC_*)? */
+int can_access(C* c, int owner, int access) {
+    if (access == AC_PRIVATE) return c->cur == owner;
+    if (access == AC_PROTECTED) {
+        for (int k = c->cur; k >= 0; k = c->classes[k].base) if (k == owner) return 1;
+        return 0;
+    }
+    return 1;
+}
+void check_access(C* c, int owner, int access, const char* n, int l, int line) {
+    if (can_access(c, owner, access)) return;
+    CClass* k = &c->classes[owner];
+    if (access == AC_PRIVATE)
+        cfail(c, line, "'%.*s' is private in %.*s; only code inside class %.*s can use it", l, n, k->nlen, k->name, k->nlen, k->name);
+    cfail(c, line, "'%.*s' is protected in %.*s; only %.*s and classes derived from it can use it", l, n, k->nlen, k->name, k->nlen, k->name);
+}
+/* f (or NULL) after checking that the code being compiled may use it */
+CField* use_field(C* c, CField* f, int line) {
+    if (f && f->decl) check_access(c, f->owner, f->decl->access, f->name, f->nlen, line);
+    return f;
+}
+int method_access(CMethod* m) { return m->decl ? m->decl->access : AC_NONE; }
+
 /* ---- namespaces: a class has a short name and the namespace of its declaration (decl->ns, "" = global) ---- */
 int class_in(C* c, int i, const char* ns, int nsl, const char* n, int l) {
     CClass* k = &c->classes[i];
@@ -366,7 +390,7 @@ Res resolve_name(C* c, const char* n, int l) {
     }
     for (int i = 0; i < c->nreplVars; i++)
         if (nameeq(c->replVars[i].name, c->replVars[i].nlen, n, l)) { r.k = R_STATIC; r.idx = c->replVars[i].slot; r.type = c->replVars[i].type; return r; }
-    CField* f = find_field(c, c->cur, n, l);
+    CField* f = use_field(c, find_field(c, c->cur, n, l), c->line);
     if (f) { r.k = f->isStatic ? R_STATIC : R_FIELD; r.idx = f->slot; r.type = f->type; r.field = f; return r; }
     CProp* pp = find_prop(c, c->cur, n, l);
     if (pp) { r.k = R_PROP; r.prop = pp; r.type = pp->type; return r; }

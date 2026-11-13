@@ -1,0 +1,1 @@
+compile error: line 7: 'ile' is private in Licznik; only code inside class Licznik can use it

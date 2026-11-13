@@ -1,0 +1,1 @@
+compile error: line 5: 'wiek' is private in Zwierze; only code inside class Zwierze can use it

@@ -298,6 +298,8 @@ static void collect(C* c, ProgramAST* ast) {
             if (bi == i) cfail(c, b->line, "'%.*s' cannot derive from itself", d->nlen, d->name);
             CClass* bk = &c->classes[bi];
             if (bk->isEnum || bk->isStruct) cfail(c, b->line, "cannot derive from %s '%.*s'", bk->isEnum ? "enum" : "struct", b->nlen, b->name);
+            if (bk->decl->isStatic) cfail(c, b->line, "cannot derive from static class '%.*s'", b->nlen, b->name);
+            if (d->isStatic) cfail(c, b->line, "static class '%.*s' cannot derive from a class or implement an interface", d->nlen, d->name);
             if (!bk->isInterface) {
                 if (k->isInterface) cfail(c, b->line, "an interface can only extend interfaces, and '%.*s' is a class", b->nlen, b->name);
                 if (j > 0) cfail(c, b->line, "a class has only one base class, and it must come first after ':' ('%.*s')", b->nlen, b->name);
@@ -344,7 +346,7 @@ static void collect(C* c, ProgramAST* ast) {
                 if (nameeq(k->fields[q].name, k->fields[q].nlen, fd->name, fd->nlen)) cfail(c, fd->line, "enum member '%.*s' is defined twice", fd->nlen, fd->name);
             int32_t v = fd->init ? const_int(c, fd->init, i) : next;
             CField* f = &k->fields[k->nf++];
-            f->name = fd->name; f->nlen = fd->nlen; f->isStatic = 1; f->decl = fd; f->type = k->type; f->value = v; f->slot = -1;
+            f->name = fd->name; f->nlen = fd->nlen; f->isStatic = 1; f->decl = fd; f->type = k->type; f->value = v; f->slot = -1; f->owner = i;
             next = (int32_t)((uint32_t)v + 1u);
         }
     }
@@ -367,7 +369,7 @@ static void collect(C* c, ProgramAST* ast) {
                 cfail(c, fd->line, "field '%.*s' is already in base class '%.*s'; use a different name", fd->nlen, fd->name,
                       c->classes[k->base].nlen, c->classes[k->base].name);
             CField* f = &k->fields[k->nf++];
-            f->name = fd->name; f->nlen = fd->nlen; f->isStatic = fd->isStatic; f->decl = fd;
+            f->name = fd->name; f->nlen = fd->nlen; f->isStatic = fd->isStatic; f->decl = fd; f->owner = i;
             f->type = resolve_typenode(c, fd->tn, 0);
             f->slot = fd->isStatic ? nstatics++ : k->ninst++;
         }

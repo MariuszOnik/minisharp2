@@ -1,0 +1,1 @@
+compile error: line 2: property 'X': an access modifier on 'get' or 'set' needs both of them in the property

@@ -1,0 +1,1 @@
+compile error: line 2: 'set' of property 'X' can only be more hidden than the property (e.g. 'private set;')
