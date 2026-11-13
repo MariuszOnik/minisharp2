@@ -266,5 +266,7 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    z `codeindex`, wbudowane z tabel z „(+N)” dla przeciążeń), `svc_complete_line` dla terminala (dawne `ms_complete`
    z `app/repl.c`); test `tests/unit/test_service.c`. Brak: sygnatury konstruktorów (`codeindex` ich nie zapisuje),
    błędy z liniami (dojdą z „Uruchom” w edytorze).
-9. Edytor tekstu bez podpowiedzi: bufor (kursor, zaznaczenie, cofanie – logika z testami na PC), widok z numerami
+9. Edytor tekstu bez podpowiedzi: ~~bufor (kursor, zaznaczenie, cofanie – logika z testami na PC)~~ (zrobione
+   2026-11-13: `app/textbuf.c`, test `test_textbuf`: UTF-8, Home/End/słowa, wcięcia po Enter i `}`, wcięcie
+   zaznaczonych linii, cofanie krokami, „zmieniony”); dalej: widok z numerami
    linii, kolorowanie, zapis/otwieranie z karty, „Uruchom” i skok do linii błędu; potem podpowiedzi z usługi języka.

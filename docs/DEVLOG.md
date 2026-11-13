@@ -99,3 +99,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Usługa języka `lang/service.c`: kolory linii, podpowiedzi w miejscu kursora i sygnatura wywołania
   z numerem argumentu – wszystko na tekście (`codeindex` + tabele wbudowanych), więc działa na kodzie z błędami.
   Uzupełnianie słów terminala przeniesione z `app/repl.c` do usługi: jedna logika dla terminala i edytora.
+- 2026-11-13: Bufor tekstu edytora `app/textbuf.c` (bez rysowania i bez wiedzy o języku): kursor po znakach UTF-8,
+  zaznaczanie, automatyczne wcięcia, cofanie/ponawianie (pisanie i kasowanie z rzędu = jeden krok), znacznik
+  „zmieniony” zgodny z cofaniem do zapisanego stanu. Test `test_textbuf`.
