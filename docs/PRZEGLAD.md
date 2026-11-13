@@ -104,7 +104,12 @@ Rdzeń (parser, kompilator, VM, biblioteka) to ten sam kod C skompilowany do Web
 | testy grafów (`graph_*`, `fgraph`) | decyzja | 3 z nich padają od dawna (`graph_edit`, `graph_edit_run` na MinGW; `fgraph` – nieaktualne dane z przeglądarki) |
 | `minisharp-apk-files.zip` (w gicie) | wyrzucić | śmieć w repozytorium |
 
-## Edytory grafów – porównanie (do decyzji)
+## Edytory grafów – porównanie
+
+**Decyzja użytkownika (2026-11-13): B – „Bolt jak w Unity”.** Graf A (`graph.c`, `graphedit.c`, `gview.c`,
+`grapheditor.c`, `graphview.c`, testy `graph_*`) nie przechodzi do nowego repo; `printer.c` i `pc/astcheck.c` tylko
+jeśli przydadzą się do czegoś innego (formatowanie kodu, testy zakresów dla edytora). Słabości B z tabeli niżej
+(dwie implementacje, ręczny katalog węzłów) rozwiązuje plan: generator tylko w C, katalog węzłów z zarejestrowanego API.
 
 | | **A: graf jako widok kodu** | **B: „mini Bolt”** |
 |---|---|---|
@@ -117,10 +122,18 @@ Rdzeń (parser, kompilator, VM, biblioteka) to ten sam kod C skompilowany do Web
 | Słabość | graf instrukcji bywa gęsty, mniej „wizualny” | dwa światy (graf/kod), duży katalog węzłów do utrzymania; dziś dwie implementacje (C i JS) |
 | Testy | `graph_kinds*`, `graph_ship`, `spans`, `graph_edit*` (2 padają na MinGW) | `fgraph` (pada – dane z przeglądarki nieaktualne) |
 
-Oba są w C, więc każdy może działać na 3DS i w przeglądarce (przez wasm) – web nie przesądza wyboru.
-Moja rekomendacja: **A jako podstawa** (kod jest jedynym źródłem, działa dla wszystkiego, jeden świat), a z B przenieść
-to, co było w nim dobre dla dotyku: wygląd węzłów i portów, gesty, dodawanie węzła z katalogu jako wstawianie gotowego
-fragmentu kodu. W przeglądarce ten sam model z C, widok w SVG. Decyzja należy do użytkownika.
+(Przed decyzją rekomendowałem A z wyglądem B; użytkownik wybrał B.)
+
+## Baza przenoszenia (propozycja, do potwierdzenia)
+
+Historia języka (`D:\...\minisharp`, 93 commity od 2026-11-04): język i edytor (4.11) → web, dziedziczenie, lambdy
+(5.11) → grafy A i B (6.11) → język v4 i przyspieszenie VM, Iso, atlasy (7.11) → **Fallout** (7–9.11) → **ToEE**
+(11–12.11). Gałąź `jezyk-v4` kończy się na `931ad08` – ostatni stan przed grami. Propozycja: przenosić z `931ad08`,
+a późniejsze ogólne zmiany osobno: przestrzenie nazw (`a350c5e`), `using` dołączające biblioteki (`3a17195`),
+`uses.txt` (`638ee93`, `fb958e6`), `File.*` (`ff4efc5`, `ce18cb9`, `bd46eca`), `Input.Text`/`Audio.PlayMusic`
+(`3b71138`), `App.Platform` (`7f1a463`), szerokość tekstu UTF-8 (`75039e0`), przewijanie listy plików w edytorze
+(`99cc162`), API osadzania (`6ab15e9`), rysowanie do obrazka (`cc96674`), przewijanie menu (`7dbb29d`).
+Folder `E:\minsharpProject\minisharp\minisharp` (v1) to kopia sprzed pierwszego commita – bez wartości jako baza.
 
 ## Znane problemy do naprawy przy przenoszeniu
 

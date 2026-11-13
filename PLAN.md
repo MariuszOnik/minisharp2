@@ -30,8 +30,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 ### Etap 0 – przegląd i plan
 - [x] Przegląd starego kodu z werdyktami: `docs/PRZEGLAD.md` (2026-11-12).
 - [x] Architektura warstw i modułów: `docs/ARCHITEKTURA.md`.
-- [ ] **Decyzje użytkownika** (lista „decyzja” w przeglądzie): który edytor grafu (A, B czy połączenie – rekomendacja
-      A + dotykowy wygląd z B), terminal/REPL na 3DS (zostaje?), `printer.c` (zależy od grafu).
+- [x] **Edytor grafu: B – „Bolt jak w Unity”** (decyzja użytkownika 2026-11-13). Graf jest źródłem (JSON w pliku),
+      kod C# generowany z niego. Zostają `fgraph.c`, `json.c`, `bolt.c`; graf A (`graph.c`, `graphedit.c`, `gview.c`,
+      `grapheditor.c`, `graphview.c`) odpada.
+- [ ] Pozostałe decyzje: terminal/REPL na 3DS (zostaje?), `printer.c` (graf B go nie potrzebuje – formatowanie kodu
+      w edytorze albo wyrzucić), **baza przenoszenia**: commit `931ad08` (gałąź `jezyk-v4`, stan sprzed Fallouta i ToEE)
+      zamiast `toee-3d` + lista późniejszych ogólnych zmian do przeniesienia osobno (przestrzenie nazw, `using`
+      dołączające biblioteki, `File.WriteLines`, `Input.Text`, `Audio.PlayMusic`, rysowanie do obrazka, przewijanie menu).
 - [ ] Przejrzeć architekturę z użytkownikiem i ją zatwierdzić (układ folderów, nazwy).
 
 ### Etap 1 – język (lang/) + testy na PC
@@ -55,8 +60,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [ ] Usługa języka (`lang/service.h`): kolory, podpowiedzi, sygnatury, błędy – na bazie `codeindex.c`; testy na PC.
 - [ ] `editor.c` jako edytor tekstu bez wiedzy o języku (pyta usługę), klawiatura, UI, Help z `sdk/` (bez wzmianek o grach), przykłady.
 
-### Etap 5 – edytor grafu
-- [ ] Wg decyzji z etapu 0.
+### Etap 5 – edytor grafu: Bolt jak w Unity (B)
+- [ ] Przegląd Bolta z Unity jako wzorca (bez kopiowania kodu i grafik – `docs/graphs-notes.md` w starym repo): co z niego
+      mamy (graf przepływu, zdarzenia, węzły z pamięcią, zdarzenia klasy bazowej), czego brak (np. graf stanów, zmienne
+      grafu/obiektu, superjednostki = podgrafy, wyszukiwarka węzłów) – lista i kolejność do ustalenia z użytkownikiem.
+- [ ] `json.c`, `fgraph.c` (katalog węzłów + generator kodu) z testami na PC; katalog węzłów budowany z API
+      zarejestrowanych funkcji (moduły dokładają swoje węzły same, bez ręcznego katalogu).
+- [ ] `bolt.c` – edytor na 3DS; potem ten sam model i generator w przeglądarce przez wasm (widok SVG), bez `graph.js`.
 
 ### Etap 5b – przeglądarka
 - [ ] `platform/web` (`main_web.c`) + budowanie wasm (Zig) z listy modułów; `Gfx.NewImage` w JS.
@@ -70,9 +80,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 0: decyzje użytkownika (edytor grafu, terminal) i zatwierdzenie architektury. Potem etap 1 od szkieletu repo.
+Etap 0: pozostałe decyzje (baza `931ad08`?, terminal, `printer.c`) i zatwierdzenie architektury. Potem etap 1 od
+szkieletu repo.
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
   przenoszenie z przeglądem, tylko 3DS (PC do testów). Zrobiony przegląd starego kodu i szkic architektury.
 - 2026-11-12: web jednak zostaje (rdzeń w C → wasm, różni się tylko platforma); zasada: logika edytora tylko w C.
+- 2026-11-13: edytor grafu B („Bolt jak w Unity”). Historia języka przejrzana: proponowana baza `931ad08` (`jezyk-v4`).
