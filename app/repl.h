@@ -7,6 +7,9 @@ typedef struct Repl Repl;
 
 Repl* repl_new(void);
 void repl_free(Repl* r);
+/* A loop still running after this many seconds (+ up to one) stops with an error; default 4. 0 = no limit: for hosts
+ * with a Stop button (ms_set_interrupt), where a game loop typed in the terminal may run as long as it likes. */
+void repl_set_time_limit(Repl* r, int seconds);
 
 /* Runs one input: a line, or several lines (a loop typed over a few lines, see repl_incomplete).
  * 1 = ok, 0 = error (message in err; for a one-line input without the "line N:" prefix). */

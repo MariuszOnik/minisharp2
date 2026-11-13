@@ -93,3 +93,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Przycisk Stop: `ms_set_interrupt(check)` – VM pyta hosta co ~65 tys. skoków wstecz (to samo miejsce, co
   limit czasu terminala). 3DS: przytrzymane START+SELECT (funkcja sama woła `hidScanInput`, bo w `Main` z `while (true)`
   nikt inny nie czyta przycisków), PC: Ctrl+C. Rozdział 5: opis Stop przy nieskończonej pętli.
+- 2026-11-13: Terminal w `app/terminal.c` na `ui.h` (bez libctru): logika linii, historii, podpowiedzi i przewijanego
+  wyjścia testowana na PC (`test_terminal`, też układ na jeden ekran). Na 3DS Y w menu otwiera terminal; host z przyciskiem
+  Stop wyłącza limit 5 s (`repl_set_time_limit`). Rozdział 1: sekcja „Terminal na 3DS”.

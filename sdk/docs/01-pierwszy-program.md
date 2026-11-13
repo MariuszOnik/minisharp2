@@ -89,6 +89,34 @@ pojawia się na górnym ekranie i trafia też do pliku `sdmc:/minisharp/log.txt`
 wywołuje się ona co klatkę, dopóki nie naciśniesz START. Plik `main.cs` możesz edytować na komputerze i skopiować na kartę,
 na przykład przez FTP. Edytor na samej konsoli dojdzie później.
 
+Program, który kręci się bez końca, zatrzymasz, przytrzymując razem **START i SELECT**.
+
+## Terminal na 3DS
+
+Krótkie polecenia możesz wypróbować bez pliku, w **terminalu** (w menu przycisk **Y**). Na dolnym ekranie jest
+klawiatura dotykowa: wpisz linię i dotknij **Run** (albo naciśnij **A**). Wynik pojawi się na górnym ekranie:
+
+```text
+> 1 + 2
+3
+> var imie = "Ala"
+> "Cześć, " + imie
+Cześć, Ala
+```
+
+Wpisanie samego wyrażenia (`1 + 2`) pokazuje jego wartość. Zmienne zostają na kolejne linie. Pętlę albo `if`
+możesz wpisać w kilku liniach – dopóki klamra `{` nie jest zamknięta, terminal pokazuje `.` i czeka na resztę
+(zob. rozdział 5).
+
+Przydatne przyciski:
+
+- **Shift** na klawiaturze – jedna wielka litera; dotknięty drugi raz – same wielkie litery; **#+=** – znaki
+  używane w kodzie (`{ } [ ] && ==`…).
+- Pod linią są **podpowiedzi**: dotknij jednej albo naciśnij **R**, a dokończy słowo (`Con` → `Console`).
+- **B** kasuje znak, **lewo/prawo** przesuwa kursor, **góra/dół** przywołuje poprzednie linie.
+- **L + góra/dół** przewija wcześniejsze wyniki, **Y** czyści ekran, **START** wraca do menu.
+- **START + SELECT** zatrzymuje pętlę, która się nie kończy.
+
 ## Gdy coś jest źle
 
 Jeśli w programie jest błąd, MiniSharp nie uruchomi go, tylko pokaże **numer linii** i opis. Na przykład gdy

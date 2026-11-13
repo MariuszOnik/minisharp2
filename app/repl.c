@@ -18,6 +18,7 @@ struct Repl {
     VM* vm;
     Program** progs; int nprogs, cap;   /* every input run so far: values may point at their string constants */
     char decls[DECLS_CAP];              /* "static int x; static string s; " */
+    int timeLimit;                      /* seconds; 0 = none (the host has a Stop button) */
 };
 
 static const char* SKELETON = "class Repl { static void Main() { } }";
@@ -36,11 +37,14 @@ static int keep(Repl* r, Program* p) {
 Repl* repl_new(void) {
     Repl* r = (Repl*)calloc(1, sizeof(Repl));
     if (!r) return NULL;
+    r->timeLimit = TIME_LIMIT;
     char err[200];
     Program* p = ms_compile(SKELETON, err, sizeof err);
     if (!p || !keep(r, p) || !(r->vm = vm_new(p))) { if (p && !r->nprogs) ms_free_program(p); repl_free(r); return NULL; }
     return r;
 }
+
+void repl_set_time_limit(Repl* r, int seconds) { r->timeLimit = seconds > 0 ? seconds : 0; }
 
 void repl_free(Repl* r) {
     if (!r) return;
@@ -149,7 +153,7 @@ int repl_eval(Repl* r, const char* text, char* err, int errlen) {
     VM* vm = r->vm;
     vm->sp = 0; vm->fp = 0; vm->quit = 0;       /* a failed input may have left frames and its error behind */
     vm->err[0] = 0;
-    vm->deadline = (long long)time(NULL) + TIME_LIMIT;
+    vm->deadline = r->timeLimit ? (long long)time(NULL) + r->timeLimit : 0;
     int ok = vm_call(vm, p->entryMain);
     vm->deadline = 0;
     if (!ok && !vm->quit) { snprintf(err, errlen, "%s", vm->err); strip_line(err, multi); return 0; }

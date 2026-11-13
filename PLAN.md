@@ -255,8 +255,11 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    rysowanie). Na 3DS: Y w menu = test klawiatury (ekrany na chwilę przechodzą z konsoli tekstowej na citro2d).
    **Sprawdzić na konsoli**: czy test klawiatury działa i wraca do menu; czy rysowanie co klatkę (bez tekstury
    z klawiszami jak w starym kodzie) jest dość szybkie.
-7. Terminal na 3DS: `terminal.c` ze starego repo na `ui.h` + `app/repl.c`; podpowiedzi z `repl_complete`; przycisk Stop
-   (START+SELECT, `ms_set_interrupt` z punktu „Przycisk Stop” w etapie 3), żeby `while (true)` nie wieszało konsoli.
+7. [x] Terminal na 3DS – zrobione 2026-11-13: `app/terminal.c` (linia z kursorem, historia, wejście w kilku liniach,
+   podpowiedzi `repl_complete`, przewijane wyjście zawijane po 56 znakach UTF-8, 200 linii, układ na 1 lub 2 ekrany),
+   test `tests/unit/test_terminal.c`; Y w menu 3DS; Stop START+SELECT, wtedy bez limitu 5 s (`repl_set_time_limit`).
+   Brak jeszcze płótna `Gfx` (etap 3). **Sprawdzić na konsoli**: wejście/wyjście z terminala, czytelność czcionki 13 px,
+   czy wiersze po 56 znaków mieszczą się na 400 px (czcionka systemowa jest proporcjonalna), Stop w `while (true) { }`.
 8. (rdzeń) usługa języka `lang/service.h` na `codeindex.c`: podpowiedzi w miejscu kursora, sygnatura, kolory linii.
 9. Edytor tekstu bez podpowiedzi: bufor (kursor, zaznaczenie, cofanie – logika z testami na PC), widok z numerami
    linii, kolorowanie, zapis/otwieranie z karty, „Uruchom” i skok do linii błędu; potem podpowiedzi z usługi języka.

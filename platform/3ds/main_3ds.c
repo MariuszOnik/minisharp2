@@ -3,7 +3,7 @@
  *   X      run the test files from sdmc:/minisharp/tests/ (the .cs files there and in errors/, the folders in projects/)
  *          and write each result to sdmc:/minisharp/tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
  *          tools/3ds_tests.sh compares them with tests/expected/ on the PC
- *   Y      keyboard test: the touch keyboard (app/keyboard.c) through app/ui.h on citro2d (START = back)
+ *   Y      terminal (app/terminal.c, touch keyboard, app/ui.h on citro2d; START = back)
  *   START  quit
  * START+SELECT held = the Stop button: a running loop (also Main with while (true)) stops with "stopped by the user".
  * If sdmc:/minisharp/tests/auto exists, the tests run at start, the file is removed and the app quits (emulator runs).
@@ -13,7 +13,7 @@
 #include "ms.h"
 #include "lib.h"
 #include "project.h"
-#include "keyboard.h"
+#include "terminal.h"
 #include "ui_3ds.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -209,51 +209,31 @@ static void menu(void) {
     printf("MiniSharp2 (" BUILD_ID ")\n\n");
     printf("A      run " MAIN_CS "\n");
     printf("X      run tests from " TESTS_DIR "\n");
-    printf("Y      keyboard test\n");
+    printf("Y      terminal\n");
     printf("START  quit\n");
 }
 
-/* Y: typing on the touch keyboard, the lines on the top screen (a preview of the terminal). The screens go to
- * citro2d for the time of the test and back to the text console after it. */
-static void keyboard_test(void) {
-    enum { LINES = 11, COLS = 120 };
-    static char lines[LINES][COLS];
-    char cur[COLS] = "";
-    int n = 0;
-    if (!ui3ds_init()) { consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu(); printf("\nno citro2d\n"); return; }
-    kbd_reset();
-    kbd_set_enter_label("Enter");
+/* Y: the terminal (app/terminal.c): lines typed on the touch keyboard run at once, the output scrolls on the top
+ * screen. The screens go to citro2d for the time of the terminal and back to the text console after it. */
+static void terminal(void) {
+    Terminal* t = NULL;
+    if (!ui3ds_init() || !(t = term_new())) {
+        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
+        printf("\ncannot open the terminal\n");
+        return;
+    }
+    term_set_stop_hint(t, "START+SELECT: stop a loop");
     while (aptMainLoop()) {
         hidScanInput();
         UiInput in;
         ui3ds_input(&in);
-        if (in.down & UI_BTN_START) break;
-        const char* t = kbd_update(&in);
-        if (t && !strcmp(t, KBD_BACKSPACE)) { if (*cur) cur[strlen(cur) - 1] = 0; }
-        else if (t && !strcmp(t, KBD_ENTER)) {
-            if (n == LINES) { memmove(lines[0], lines[1], sizeof lines[0] * (LINES - 1)); n--; }
-            snprintf(lines[n++], COLS, "%s", cur);
-            cur[0] = 0;
-        } else if (t && strlen(cur) + strlen(t) < COLS - 1) strcat(cur, t);
-
-        ui3ds_frame_begin(0x0C1A10, 0x101216);
-        ui_rect(0, 0, 400, 18, 0x1E3A28);
-        ui_text(4, 2, "Keyboard test  (START = back)", 14, 0xB0FFB0);
-        ui_clip(4, 20, 392, 216);                        /* long lines are cut at the edge, not drawn outside */
-        for (int i = 0; i < n; i++) ui_text(4, 22 + i * 18, lines[i], 16, 0x40FF60);
-        char line[COLS + 4];
-        snprintf(line, sizeof line, "> %s", cur);
-        float y = 22 + n * 18;
-        ui_text(4, y, line, 16, 0x80FF90);
-        if ((in.ms / 500) & 1) ui_rect(4 + ui_text_width(line, 16) + 1, y + 2, 8, 14, 0x40FF60);   /* blinking cursor */
-        ui_unclip();
-        ui_screen(1);
-        ui_text(4, 4, "MiniSharp2 " BUILD_ID, 12, 0x8090A0);
-        ui_text(4, 22, "Shift: once / locked, #+= symbols", 12, 0x8090A0);
-        ui_text(4, 40, "hold Del or a letter to repeat", 12, 0x8090A0);
-        kbd_draw();
+        if (!term_update(t, &in)) break;
+        ui3ds_frame_begin(0x101418, 0x0C0C0C);
+        term_draw(t);
         ui3ds_frame_end();
     }
+    term_free(t);
+    lib_set_output(out_write);
     ui3ds_exit();
     consoleInit(GFX_TOP, &top);
     consoleInit(GFX_BOTTOM, &bottom);
@@ -298,7 +278,7 @@ int main(void) {
             printf("\ndone (output also in log.txt)\n");
         }
         if (k & KEY_X) run_tests();
-        if (k & KEY_Y) keyboard_test();
+        if (k & KEY_Y) terminal();
         gspWaitForVBlank();
     }
     gfxExit();
