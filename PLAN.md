@@ -101,6 +101,16 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ### Etap 3 – platforma 3DS i host testów PC
 - [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
+- [ ] **Podział `Console` na warstwy** (decyzja użytkownika 2026-11-13): `Console` to biblioteka, nie część języka ani platformy.
+      (1) API jak w C# (`Write`, `WriteLine`, `ReadLine`, `Clear`, kolory, `SetCursorPosition`) w `lib/`, w C; wygodne dodatki
+      (przeciążenia, formatowanie) mogą być w MiniSharpie przez `ms_register_source`. (2) Logika: siatka znaków, kursor, kolory,
+      przewijanie, zawijanie – jedna w `lib/`, testowana na PC. (3) Umowa z platformą – kilka funkcji: narysuj siatkę, daj
+      wpisaną linię, czy naciśnięto Stop (`platform/3ds`, `web`, `pc`). Host decyduje, gdzie siatka jest widoczna (cały ekran,
+      okienko w menu/edytorze, tekst w testach). Kompilator i VM widzą `Console` jak każdą zarejestrowaną klasę.
+- [ ] **Przenieść `repl.c` z `lang/` do `app/`** (decyzja użytkownika 2026-11-13): terminal to narzędzie na języku (jak edytor),
+      klient `Console`, nie rdzeń. Test `repl` i host `--repl` zostają. Pomysł na później: `Script.Run(kod)` (kompilacja
+      i uruchomienie tekstu w trakcie działania, zmienne żyją między wywołaniami) – wtedy terminal może być zwykłym
+      programem w MiniSharpie (`Console.ReadLine` + `Script.Run`), który każdy przerobi.
 - [ ] **Terminal i `Console` w stylu DOS** (pomysł użytkownika 2026-11-13): ekran jako siatka znaków (górny ekran 3DS
       przy czcionce 8×8 = 50×30), 16 kolorów, migający kursor-blok, znak zachęty w stylu `C:\>`. API jak w C#:
       `Console.ForegroundColor`/`BackgroundColor` (`ConsoleColor.Yellow`…), `Console.Clear()`, `Console.SetCursorPosition(x, y)`,

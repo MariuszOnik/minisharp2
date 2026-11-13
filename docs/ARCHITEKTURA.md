@@ -44,9 +44,9 @@ Kolejność prac się nie zmienia: usługa stoi na rdzeniu, więc najpierw języ
 ```
 MiniSharp2/
   lang/         ms.h (publiczne API), vm.h (wnętrze: bajtkod, Program, VM), parser, kompilator (kilka plików), vm, gc, korutyny, disasm, printer (AST → kod),
-                repl (terminal),
                 service.h/.c – usługa języka dla edytorów (kolory, podpowiedzi, błędy; z codeindex)
-  lib/          funkcje wbudowane niezależne od platformy
+  lib/          funkcje wbudowane niezależne od platformy; Console = API jak w C# + siatka znaków (kursor, kolory,
+                przewijanie); platforma tylko rysuje siatkę i podaje wpisaną linię
   platform/
     platform.h  czego warstwy wyżej chcą od hosta
     3ds/        libctru + citro2d/citro3d: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka
@@ -55,7 +55,8 @@ MiniSharp2/
   modules/      3d/, iso/ (opcjonalne)
   graph/        json.c, fgraph.c – model grafu, katalog węzłów, generator (graf → AST → printer); bez UI, testy na PC,
                 ten sam kod w 3DS i w wasm
-  app/          aplikacja natywna w C (dziś 3DS, później np. Switch): menu, editor, bolt (edytor grafu), terminal, help,
+  app/          aplikacja natywna w C (dziś 3DS, później np. Switch): menu, editor, bolt (edytor grafu), terminal (repl – klient
+                Console, nie część języka), help,
                 keyboard; rysuje i czyta wejście tylko przez app/ui.h (bez libctru) – nowa konsola = nowy platform/<konsola>
   web/          strona: edytor HTML/JS, widok grafu SVG, budowanie wasm (Zig), publikacja
   android/      projekt Gradle: WebView z wersją web (prepare-assets.sh kopiuje web/dist)
