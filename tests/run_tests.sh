@@ -11,7 +11,7 @@ check() { # nazwa, wynik, plik z oczekiwanym wynikiem
 }
 
 if [ -z "$BIN" ]; then
-    echo "Brak binarki testowej (jeszcze nie ma kodu w lang/) - 0 testow."
+    echo "Brak binarki testowej (nie ma jeszcze hosta platform/pc z main) - 0 testow."
 else
     # Programy z tests/*.cs, które mają plik tests/expected/<nazwa>.txt (bez dodatkowych opcji).
     for f in tests/*.cs; do

@@ -47,7 +47,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ### Etap 1 – język (lang/) + testy na PC
 - [x] Szkielet repo: foldery, `Makefile` dla testów PC (sam ustawia `TMP`), skrypt `tools/test.ps1`, `.gitignore`.
-- [ ] Przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
+- [x] Przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
 - [ ] Przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania.
 - [ ] Rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli.
 - [ ] Przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`) – wszystkie mają przejść.
@@ -88,7 +88,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 1: przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
+Etap 1: przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania (razem z przestrzeniami nazw `a350c5e`:
+zmieniają też `parser.c` i `ast.h`).
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -105,3 +106,8 @@ Etap 1: przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h`
 - 2026-11-13: szkielet repo: `Makefile` (`make test` buduje `build/minisharp` z `lang/ lib/ graph/ platform/pc`, TMP w `build/tmp`),
   `tests/run_tests.sh` (testy `tests/*.cs` + `expected/`, `errors/`), `tools/test.ps1` (log w `build/test.log`).
   `platform/3ds` i `platform/web` celowo jeszcze nie istnieją – ich foldery włączają buildy w Actions.
+- 2026-11-13: `lang/`: `ast.h`, `parser.c`, `vm.c`, `disasm.c` z `931ad08`. `ms.h` = publiczne API (wartości, obiekty, `NativeDef`,
+  nieprzezroczyste `Program`/`VM`, akcesory `ms_entry`, `ms_vm_error`, `ms_vm_fail`…), `vm.h` = wnętrze (bajtkod, `Program`, `VM`).
+  `vm.c` nie zna już platformy: reset grafiki/Iso/FPS przez hooki `ms_on_vm_new`, zegar `ms_set_clock`; `ms_natives` to na razie
+  pusty wskaźnik (wypełni `ms_register`). Parser sprawdzony lokalnie: 158 plików `.cs` starego repo OK, 18 błędów = `.expected`.
+  Uwaga: testy `.cs` potrzebują `main` – do kroku „testy języka” trzeba minimalnego hosta PC (Console), nie czekać na etap 3.

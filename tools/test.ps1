@@ -1,6 +1,6 @@
 # Testy na PC z PowerShell (Windows): make test z gcc i make z msys64.
-#   powershell -File tools\test.ps1          pełny wynik w build\test.log, na ekranie podsumowanie i FAIL-e
-#   powershell -File tools\test.ps1 clean    najpierw make clean
+#   powershell -ExecutionPolicy Bypass -File tools\test.ps1          pełny wynik w build\test.log, na ekranie podsumowanie i FAIL-e
+#   powershell -ExecutionPolicy Bypass -File tools\test.ps1 clean    najpierw make clean
 param([string]$Action)
 
 $ErrorActionPreference = 'Stop'
