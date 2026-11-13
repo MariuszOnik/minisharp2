@@ -18,6 +18,17 @@ static void begin_func(C* c, int func, int cls, const char* mname, int mlen, int
     c->loop = NULL; c->lastOp = c->prevOp = c->prevOp2 = -1; c->lastLabel = -1;
 }
 
+/* 'ref' / 'out' parameters arrive as cells: they are read and written like locals that a lambda uses (but a lambda
+   cannot use them, as in C#: see resolve_name). Call between declaring the parameters and box_params (with 0: they
+   are not boxed again), and after it (with 1). */
+static void ref_params(C* c, MethodDecl* d, int after) {
+    for (int i = 0; d && i < d->nparams; i++) {
+        if (!d->params[i].mode) continue;
+        c->locals[i].boxed = after;
+        c->locals[i].refMode = d->params[i].mode;
+    }
+}
+
 static void compile_method(C* c, int cls, CMethod* m) {
     MethodDecl* d = m->decl;
     begin_func(c, m->func, cls, m->name, m->nlen, m->isStatic);
@@ -25,8 +36,11 @@ static void compile_method(C* c, int cls, CMethod* m) {
     c->isCtor = 0; c->retType = m->ret; c->isIter = m->isIter;
     scan_captures(c, d->body, NULL);
     for (int i = 0; i < m->np; i++) declare_local(c, d->params[i].name, d->params[i].nlen, m->params[i], d->line);
+    ref_params(c, d, 0);
     box_params(c);
+    ref_params(c, d, 1);
     compile_stmt(c, d->body);
+    if (m->outs) check_out_params(c, d);
     c->line = d->line;
     if (m->ret->k == T_VOID || m->isIter) emit_op(c, OP_RET);
     else {
@@ -48,7 +62,9 @@ static void compile_ctor(C* c, int cls, CMethod* ct) {
     c->isCtor = 1; c->retType = &tVoid;
     scan_captures(c, d ? d->body : NULL, d ? d->baseCall : NULL);
     if (d) for (int i = 0; i < d->nparams; i++) declare_local(c, d->params[i].name, d->params[i].nlen, ct->params[i], d->line);
+    ref_params(c, d, 0);
     box_params(c);
+    ref_params(c, d, 1);
     Expr* bc = d ? d->baseCall : NULL;
     char what[80];
     if (bc && d->thisCall) {
@@ -106,6 +122,7 @@ static void compile_ctor(C* c, int cls, CMethod* ct) {
         } else if (bc) cfail(c, bc->line, "'%.*s' has no base class, so it cannot call base(...)", k->nlen, k->name);
     }
     if (d) compile_stmt(c, d->body);
+    if (ct->outs) check_out_params(c, d);
     c->line = d ? d->line : k->decl->line;
     emit_op1(c, OP_LOAD, 0);
     emit_op(c, OP_RETV);
@@ -445,8 +462,14 @@ static void collect(C* c, ProgramAST* ast) {
         for (int j = 0; j < d->nmethods; j++) {
             MethodDecl* md = &d->methods[j];
             Type** params = (Type**)arena_alloc(&c->A, sizeof(Type*) * (md->nparams ? md->nparams : 1));
+            uint32_t refs = 0, outs = 0;
             for (int q = 0; q < md->nparams; q++) {
                 params[q] = resolve_typenode(c, md->params[q].tn, 0);
+                if (md->params[q].mode) {
+                    if (q >= 32) cfail(c, md->line, "'ref' / 'out' can only be used on the first 32 parameters");
+                    if (md->isIter) cfail(c, md->line, "'%.*s' uses 'yield', so it cannot have 'ref' or 'out' parameters", md->nlen, md->name);
+                    if (md->params[q].mode == PM_REF) refs |= 1u << q; else outs |= 1u << q;
+                }
                 for (int r = 0; r < q; r++)
                     if (nameeq(md->params[r].name, md->params[r].nlen, md->params[q].name, md->params[q].nlen))
                         cfail(c, md->line, "parameter '%.*s' is listed twice", md->params[q].nlen, md->params[q].name);
@@ -456,7 +479,7 @@ static void collect(C* c, ProgramAST* ast) {
                 CMethod* ct = &k->ctors[k->nctors];
                 memset(ct, 0, sizeof *ct);
                 ct->name = k->name; ct->nlen = k->nlen; ct->ret = &tVoid; ct->params = params; ct->np = md->nparams;
-                ct->owner = i; ct->sel = -1; ct->decl = md;
+                ct->owner = i; ct->sel = -1; ct->decl = md; ct->refs = refs; ct->outs = outs;
                 for (int q = 0; q < k->nctors; q++)
                     if (same_params(&k->ctors[q], ct)) cfail(c, md->line, "two constructors of '%.*s' have the same parameters", k->nlen, k->name);
                 ct->func = fi++;
@@ -468,7 +491,7 @@ static void collect(C* c, ProgramAST* ast) {
             CMethod* m = &k->methods[k->nm];
             memset(m, 0, sizeof *m);
             m->name = md->name; m->nlen = md->nlen; m->isStatic = md->isStatic; m->decl = md;
-            m->params = params; m->np = md->nparams;
+            m->params = params; m->np = md->nparams; m->refs = refs; m->outs = outs;
             for (int q = 0; q < k->nm; q++)
                 if (nameeq(k->methods[q].name, k->methods[q].nlen, md->name, md->nlen) && same_params(&k->methods[q], m))
                     cfail(c, md->line, "method '%.*s' is defined twice with the same parameters", md->nlen, md->name);

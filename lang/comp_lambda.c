@@ -35,6 +35,10 @@ static void scan_expr(C* c, Expr* e, NameList* uses, NameList* decls) {
     }
     if (e->k == E_NAME) nl_add(c, uses, e->name, e->nlen);
     if ((e->k == E_OUT && e->prefix) || (e->k == E_IS && e->name)) nl_add(c, decls, e->name, e->nlen);
+    if (e->k == E_OUT) {                        /* F(ref x), F(out var y): the method gets the variable's cell */
+        if (e->prefix) nl_add(c, &c->caps, e->name, e->nlen);
+        else if (e->a && e->a->k == E_NAME) nl_add(c, &c->caps, e->a->name, e->a->nlen);
+    }
     scan_expr(c, e->a, uses, decls); scan_expr(c, e->b, uses, decls); scan_expr(c, e->c, uses, decls);
     for (int i = 0; i < e->nargs; i++) scan_expr(c, e->args[i], uses, decls);
 }
@@ -105,6 +109,7 @@ static int method_group(C* c, Expr* e, Type* ft, int line) {
             self = 2;
         }
     } else return 0;
+    if (m->refs | m->outs) cfail(c, line, "method '%.*s' has 'ref' or 'out' parameters, so it cannot be used as a delegate", m->nlen, m->name);
     int ok = m->np == ft->np && m->ret == ft->elem;
     for (int i = 0; ok && i < m->np; i++) ok = m->params[i] == ft->params[i];
     if (!ok) cfail(c, line, "method '%.*s' does not fit %s (it needs the same parameter types and return type)", m->nlen, m->name, type_name(c, ft));

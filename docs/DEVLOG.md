@@ -79,3 +79,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Parametry z wartością domyślną (`int b = 10`): wartość musi być stałą (także `const` i człon enuma), jest
   zamieniana na literał przy rejestracji metod, więc wołający kompiluje ją bez zależności od swoich zmiennych. Działa
   w metodach, konstruktorach i `base(...)`; printer drukuje `= wartość`. Rozdział 6: sekcja „Parametr z wartością domyślną”.
+- 2026-11-13: `ref` i `out` we własnych metodach: zmienna przekazana tak żyje w komórce (ten sam mechanizm co zmienne
+  z lambd), więc `ref` działa też razem z lambdami i przy przekazaniu parametru dalej. `out` musi dostać wartość na każdej
+  drodze (prosta analiza jak CS0177). `int.TryParse` / `float.TryParse` bez zmian w VM: dwie ukryte funkcje natywne.
+  Rozdział 6: sekcja „ref i out”.

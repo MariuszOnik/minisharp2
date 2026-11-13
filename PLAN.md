@@ -90,8 +90,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         punkt kodowy Unicode (indeksowanie i `Length` po znakach) czy zostawić bajty i opisać.
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
-      - `ref` / `out` we własnych metodach (`out` jest tylko w `TryGetValue`; `int.TryParse(s, out int n)` też nie działa);
-        komunikat dla `ref` jest niejasny: `expected name, found 'int'`;
+      - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,
+        elementy tablic i właściwości przez `ref`, błąd przy czytaniu `out` przed przypisaniem);
       - skrócony inicjalizator tablicy `int[] t = { 1, 2 };` – dziś `unexpected '{' in expression` (działa `new int[] { … }`);
       - ~~brak `return` na jakiejś drodze to błąd w czasie działania, w C# – błąd kompilacji~~ (zrobione 2026-11-13).
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
@@ -224,6 +224,9 @@ Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1�
    `resolve_defaults` zamienia je na literały (liczba, znak, napis, bool, null, `const`, człon enuma), `args_for_m`
    uzupełnia brakujące argumenty (metody, konstruktory, `base(...)`/`this(...)`, niejawne `base()`); przy remisie
    przeciążeń wygrywa wersja bez uzupełniania; test `defaultparams`, błędy `defparam_*`.
-4. `ref` / `out` we własnych metodach (na początek zmienne lokalne): przekazanie komórki jak przy zmiennych
-   z lambd; `out` musi być przypisane przed wyjściem; printer; potem `int.TryParse(s, out int n)` jak `TryGetValue`.
+4. [x] `ref` / `out` we własnych metodach – zrobione 2026-11-13: `ref` to słowo kluczowe, `Param.mode`,
+   `CMethod.refs/outs`; zmienne przekazane przez `ref`/`out` trafiają do komórek (skan jak dla lambd), metoda dostaje
+   komórkę (`Local.refMode`, w lambdzie błąd); `check_out_params` w `comp_stmt.c` sprawdza przypisanie `out` na każdej
+   drodze; przeciążenia z `ref` i bez; `int.TryParse` / `float.TryParse` przez ukryte natywne `#int` / `#float`;
+   test `refout`, błędy `refout_*`, `tryparse_*`. Na razie tylko zmienne lokalne i parametry (nie pola, elementy).
 5. `codeindex.c` (nie podpowiada `private`/`protected` spoza klasy – `can_access`).

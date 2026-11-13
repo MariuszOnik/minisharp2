@@ -1,0 +1,22 @@
+2 1
+abab
+3 r 2
+False 0
+-2..9
+7
+7
+dwa dużo
+3
+lambda widzi 1
+3
+10
+0 5
+9
+int, ref int
+0 104
+42
+124
+False 0
+True -7
+False 0
+True 2.5

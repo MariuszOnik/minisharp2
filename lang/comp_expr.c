@@ -359,7 +359,7 @@ Type* compile_expr(C* c, Expr* e) {
         case E_FLOAT: emit_fconst(c, e->fval); return &tFloat;
         case E_BOOL: emit_op(c, e->ival ? OP_TRUE : OP_FALSE); return &tBool;
         case E_CHAR: emit_op1(c, OP_ICONST, e->ival); emit_op(c, OP_I2C); return &tChar;
-        case E_OUT: cfail(c, e->line, "'out' is only supported in TryGetValue for now");
+        case E_OUT: cfail(c, e->line, "'%s' can only be used for an argument of a method with a '%s' parameter", e->op ? "ref" : "out", e->op ? "ref" : "out");
         case E_PAIR: cfail(c, e->line, "{ key, value } is only allowed in a Dictionary initializer");
         case E_LAMBDA: cfail(c, e->line, "a lambda needs a known type here, e.g. Func<int, int> f = x => x * 2;");
         case E_STACK: return c->stackType;

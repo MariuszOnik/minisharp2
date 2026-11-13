@@ -1,0 +1,1 @@
+compile error: line 1: 'out' parameter 'x' must get a value before 'return'

@@ -7,27 +7,65 @@
 
 /* ---------- calls ---------- */
 void args_for(C* c, Expr* e, Type** params, int np, const char* what) { args_for_ro(c, e, params, np, what, 0); }
+static void one_arg(C* c, Expr* e, int i, Type* pt, const char* what, uint32_t ro) {
+    char buf[120]; snprintf(buf, sizeof buf, "argument %d of %s", i + 1, what);
+    if (pt->k == T_FUNC || (pt->k == T_CLASS && e->args[i]->k == E_COND)) { expr_to(c, e->args[i], pt, e->args[i]->line, buf); c->line = e->line; return; }
+    Type* t = compile_expr(c, e->args[i]);
+    c->line = e->line;
+    if (pt->k == T_ANY && (type_isobj(t) || t->k == T_ENUM)) { emit_tostr(c, t, 0, e->line); t = &tString; }   /* may call an override of ToString */
+    coerce(c, t, pt, e->args[i]->line, buf);
+    if (!(i < 32 && (ro >> i & 1))) copy_struct(c, e->args[i], pt);
+}
 void args_for_ro(C* c, Expr* e, Type** params, int np, const char* what, uint32_t ro) {
     if (e->nargs != np) cfail(c, e->line, "%s takes %d argument%s, but %d were given", what, np, np == 1 ? "" : "s", e->nargs);
-    for (int i = 0; i < np; i++) {
-        char buf[120]; snprintf(buf, sizeof buf, "argument %d of %s", i + 1, what);
-        if (params[i]->k == T_FUNC || (params[i]->k == T_CLASS && e->args[i]->k == E_COND)) { expr_to(c, e->args[i], params[i], e->args[i]->line, buf); c->line = e->line; continue; }
-        Type* t = compile_expr(c, e->args[i]);
-        c->line = e->line;
-        if (params[i]->k == T_ANY && (type_isobj(t) || t->k == T_ENUM)) { emit_tostr(c, t, 0, e->line); t = &tString; }   /* may call an override of ToString */
-        coerce(c, t, params[i], e->args[i]->line, buf);
-        if (!(i < 32 && (ro >> i & 1))) copy_struct(c, e->args[i], params[i]);
+    for (int i = 0; i < np; i++) one_arg(c, e, i, params[i], what, ro);
+}
+
+/* PM_* of parameter i of m */
+static int pmode(CMethod* m, int i) { return i >= 32 ? PM_NONE : (m->refs >> i & 1) ? PM_REF : (m->outs >> i & 1) ? PM_OUT : PM_NONE; }
+
+/* 'ref x' / 'out x' / 'out var x' for a ref / out parameter: pushes the variable's cell (the scan before the method
+   put every variable passed this way in a cell). For now only local variables and parameters, not fields or elements. */
+static void ref_arg(C* c, Expr* a, int i, Type* pt, int mode, const char* what) {
+    const char* kw = mode == PM_REF ? "ref" : "out";
+    if (a->k != E_OUT || (a->op == 1) != (mode == PM_REF))
+        cfail(c, a->line, "argument %d of %s must be passed with '%s', e.g. %s x", i + 1, what, kw, kw);
+    if (a->prefix) {                            /* out var x / out int x: a new variable */
+        Type* t = a->tn ? resolve_typenode(c, a->tn, 0) : pt;
+        if (t != pt) cfail(c, a->line, "'out %s %.*s' does not fit argument %d of %s, which is %s", type_name(c, t), a->nlen, a->name, i + 1, what, type_name(c, pt));
+        int slot = declare_local(c, a->name, a->nlen, t, a->line);
+        c->locals[c->nlocals - 1].boxed = 1;
+        push_default(c, t);
+        init_local(c, slot, 1);
+        emit_op1(c, OP_LOAD, slot);
+        return;
     }
+    Expr* v = a->a;
+    if (v->k != E_NAME) cfail(c, a->line, "'%s' works only with a variable name for now, not a field, an element or an expression", kw);
+    Res r = resolve_name(c, v->name, v->nlen);
+    if (r.k == R_LOCAL) cfail(c, a->line, "'%s %.*s': this variable cannot be passed with '%s'", kw, v->nlen, v->name, kw);
+    if (r.k != R_CELL && r.k != R_UPVAL)
+        cfail(c, a->line, "'%s %.*s': only a local variable or a parameter can be passed with '%s' for now, not a field or a property", kw, v->nlen, v->name, kw);
+    if (r.type != pt)
+        cfail(c, a->line, "'%s %.*s' is %s, but argument %d of %s must be exactly %s", kw, v->nlen, v->name, type_name(c, r.type), i + 1, what, type_name(c, pt));
+    emit_op1(c, r.k == R_CELL ? OP_LOAD : OP_UPVAL, r.idx);
 }
 
 /* arguments of a call to method or constructor m; the ones left out get the default values of their parameters */
 static int nreq(CMethod* m) { return m->defs ? m->nreq : m->np; }
 void args_for_m(C* c, Expr* e, CMethod* m, const char* what, uint32_t ro) {
     int req = nreq(m);
-    if (req == m->np || e->nargs > m->np) { args_for_ro(c, e, m->params, m->np, what, ro); return; }
-    if (e->nargs < req)
+    if (req == m->np && e->nargs != m->np)
+        cfail(c, e->line, "%s takes %d argument%s, but %d were given", what, m->np, m->np == 1 ? "" : "s", e->nargs);
+    if (e->nargs < req || e->nargs > m->np)
         cfail(c, e->line, "%s takes %d to %d arguments, but %d %s given", what, req, m->np, e->nargs, e->nargs == 1 ? "was" : "were");
-    args_for_ro(c, e, m->params, e->nargs, what, ro);
+    for (int i = 0; i < e->nargs; i++) {
+        int mode = pmode(m, i);
+        Expr* a = e->args[i];
+        if (mode) { ref_arg(c, a, i, m->params[i], mode, what); c->line = e->line; continue; }
+        if (a->k == E_OUT) cfail(c, a->line, "parameter %d has no '%s' in %s; remove '%s' from the argument", i + 1, a->op ? "ref" : "out", what, a->op ? "ref" : "out");
+        one_arg(c, e, i, m->params[i], what, ro);
+    }
     for (int i = e->nargs; i < m->np; i++) {
         Expr* d = m->defs[i];
         Type* pt = m->params[i];
@@ -40,7 +78,7 @@ void args_for_m(C* c, Expr* e, CMethod* m, const char* what, uint32_t ro) {
 
 /* ---------- overloads ---------- */
 int same_params(CMethod* a, CMethod* b) {
-    if (a->np != b->np) return 0;
+    if (a->np != b->np || a->refs != b->refs || a->outs != b->outs) return 0;
     for (int i = 0; i < a->np; i++) if (a->params[i] != b->params[i]) return 0;
     return 1;
 }
@@ -107,18 +145,24 @@ CMethod* pick_overload(C* c, CMethod** cand, int n, Expr* e, const char* what) {
     const char* vof = strncmp(what, "constructor", 11) ? "version of " : "";
     if (nc == 0) cfail(c, e->line, "no %s%s takes %d argument%s", vof, what, e->nargs, e->nargs == 1 ? "" : "s");
     if (e->nargs > 32) cfail(c, e->line, "too many arguments");
-    Type* at[32]; int special[32];            /* special: 1 lambda, 2 method name */
+    Type* at[32]; int special[32];            /* special: 1 lambda, 2 method name, 3 ref / out */
     for (int i = 0; i < e->nargs; i++) {
         Expr* a = e->args[i];
-        special[i] = a->k == E_LAMBDA ? 1 : is_method_group(c, a) ? 2 : 0;
-        at[i] = special[i] ? NULL : peek_type(c, a);
+        special[i] = a->k == E_OUT ? 3 : a->k == E_LAMBDA ? 1 : is_method_group(c, a) ? 2 : 0;
+        at[i] = special[i] == 3 ? (a->prefix ? (a->tn ? resolve_typenode(c, a->tn, 0) : NULL) : peek_type(c, a->a))
+              : special[i] ? NULL : peek_type(c, a);
     }
     int best = -1, bestScore = -1;      /* equal score: the one with fewer default values used wins (as in C#) */
     for (int k = 0; k < nc; k++) {
         int ok = 1, score = 0;
-        for (int i = 0; i < e->nargs && ok; i++) {
+        for (int i = 0; i < e->nargs && i < 32 && ok; i++) {
             Type* pt = m[k]->params[i];
-            if (special[i] == 1) ok = pt->k == T_FUNC && pt->np == e->args[i]->nparams;
+            int mode = pmode(m[k], i);
+            if (special[i] == 3) {           /* ref / out: the same kind and exactly the same type */
+                ok = mode && (e->args[i]->op == 1) == (mode == PM_REF) && (!at[i] || at[i] == pt);
+                score++;
+            } else if (mode) ok = 0;
+            else if (special[i] == 1) ok = pt->k == T_FUNC && pt->np == e->args[i]->nparams;
             else if (special[i] == 2) ok = pt->k == T_FUNC;
             else if (at[i] == pt) score++;
             else ok = assignable(at[i], pt);
@@ -128,7 +172,7 @@ CMethod* pick_overload(C* c, CMethod** cand, int n, Expr* e, const char* what) {
     if (best < 0) {
         char list[160]; int len = 0; list[0] = 0;
         for (int i = 0; i < e->nargs && len < 140; i++)
-            len += snprintf(list + len, sizeof list - len, "%s%s", i ? ", " : "", special[i] == 1 ? "lambda" : special[i] == 2 ? "method" : type_name(c, at[i]));
+            len += snprintf(list + len, sizeof list - len, "%s%s", i ? ", " : "", special[i] == 1 ? "lambda" : special[i] == 2 ? "method" : special[i] == 3 ? (e->args[i]->op ? "ref" : "out") : type_name(c, at[i]));
         cfail(c, e->line, "no %s%s takes (%s)", vof, what, list);
     }
     return m[best];
@@ -160,10 +204,39 @@ static Type* call_method(C* c, Expr* e, CMethod* m, int hasThis, int virt) {
     return m->ret;
 }
 
+static void store_out(C* c, Expr* o, Type* vt);
+static int native_index(const char* cls, const char* name) {
+    for (int i = 0; i < ms_nnatives; i++) if (!strcmp(ms_natives[i].cls, cls) && !strcmp(ms_natives[i].name, name)) return i;
+    return -1;
+}
+/* int.TryParse(s, out n), float.TryParse(s, out x): bool on the stack, the number (or 0) stored in n */
+static Type* call_tryparse(C* c, Expr* e, int isFloat) {
+    const char* cls = isFloat ? "#float" : "#int";
+    const char* what = isFloat ? "float.TryParse" : "int.TryParse";
+    Type* vt = isFloat ? &tFloat : &tInt;
+    int can = native_index(cls, "CanParse"), val = native_index(cls, "TryParse");
+    if (can < 0 || val < 0) cfail(c, e->line, "'%s' is not available here", what);
+    if (e->nargs != 2 || e->args[1]->k != E_OUT || e->args[1]->op)
+        cfail(c, e->line, "'%s' takes a string and 'out %s name', e.g. %s(text, out %s n)", what, type_name(c, vt), what, type_name(c, vt));
+    Expr* o = e->args[1];
+    if (o->prefix && o->tn && resolve_typenode(c, o->tn, 0) != vt) cfail(c, o->line, "'%s' gives %s, so write 'out %s %.*s'", what, type_name(c, vt), type_name(c, vt), o->nlen, o->name);
+    expr_to(c, e->args[0], &tString, e->args[0]->line, "argument 1 of TryParse");
+    c->line = e->line;
+    int t = alloc_temp(c);
+    emit_op1(c, OP_STORE, t);
+    emit_op2(c, OP_CALLN, can, 1);
+    emit_op1(c, OP_LOAD, t);
+    emit_op2(c, OP_CALLN, val, 1);
+    store_out(c, o, vt);
+    return &tBool;
+}
+
 /* Built-in method from the native table. With 'self' the receiver is already on the stack and
  * the table lists it as the first parameter (class names starting with '.', e.g. ".string"). */
 static Type* call_native(C* c, Expr* e, const char* cls, int clen, int self) {
     Expr* f = e->a;
+    if (!self && namecs(f->name, f->nlen, "TryParse") && (namecs(cls, clen, "int") || namecs(cls, clen, "float")))
+        return call_tryparse(c, e, namecs(cls, clen, "float"));
     /* overloads: same name, pick by argument count, then exact types, then convertible types */
     Type* at[MS_MAXNATIVEARGS];
     if (e->nargs > MS_MAXNATIVEARGS) cfail(c, e->line, "too many arguments for '%.*s'", f->nlen, f->name);
@@ -272,11 +345,16 @@ static void store_out(C* c, Expr* o, Type* vt) {
     } else {
         if (o->a->k != E_NAME) cfail(c, o->line, "'out' works with a variable name");
         Res r = resolve_name(c, o->a->name, o->a->nlen);
-        if (r.k == R_CELL || r.k == R_UPVAL) cfail(c, o->line, "'out %.*s': a variable used by a lambda cannot be an 'out' argument", o->a->nlen, o->a->name);
-        if (r.k != R_LOCAL && r.k != R_STATIC) cfail(c, o->line, "'out' works with a local variable or a static field");
+        if (r.k != R_LOCAL && r.k != R_STATIC && r.k != R_CELL && r.k != R_UPVAL) cfail(c, o->line, "'out' works with a local variable or a static field");
         coerce(c, vt, r.type, o->line, "'out' argument");
         if (vt->k == T_STRUCT) emit_op(c, OP_COPY);
-        emit_op1(c, r.k == R_LOCAL ? OP_STORE : OP_SETSTATIC, r.idx);
+        if (r.k == R_CELL || r.k == R_UPVAL) {      /* cell value -> value */
+            int t = alloc_temp(c);
+            emit_op1(c, OP_STORE, t); emit_pop(c);
+            emit_op1(c, r.k == R_CELL ? OP_LOAD : OP_UPVAL, r.idx);
+            emit_op1(c, OP_LOAD, t);
+            emit_op(c, OP_SETCELL);
+        } else emit_op1(c, r.k == R_LOCAL ? OP_STORE : OP_SETSTATIC, r.idx);
     }
     emit_pop(c);
 }

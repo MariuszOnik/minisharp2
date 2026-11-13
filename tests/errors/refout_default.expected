@@ -1,0 +1,1 @@
+compile error: line 1: a 'ref' parameter cannot have a default value

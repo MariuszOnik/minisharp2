@@ -1,0 +1,1 @@
+compile error: line 1: 'ref f': only a local variable or a parameter can be passed with 'ref' for now, not a field or a property

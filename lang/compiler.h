@@ -27,6 +27,7 @@ typedef struct { const char* name; int nlen; Type* type; int isStatic; int slot;
  * func < 0: abstract (no body). Constructors are CMethods too (in CClass.ctors). */
 /* roParams: bit i set = struct parameter i is never changed by the method, so callers pass it without a copy */
 typedef struct { const char* name; int nlen; int isStatic, isIter; Type* ret; Type** params; int np; int func, sel, owner; MethodDecl* decl; uint32_t roParams;
+                 uint32_t refs, outs;   /* bit i: parameter i is 'ref' / 'out' (gets a cell) */
                  int nreq; struct Expr** defs; } CMethod;   /* nreq: parameters without a default value; defs[i]: a literal or NULL */
 /* property: its get_X / set_X methods (NULL if it has none); backing: the hidden field of { get; set; } */
 typedef struct { const char* name; int nlen; Type* type; int isStatic, owner; CMethod *get, *set; CField* backing; PropDecl* decl; } CProp;
@@ -45,7 +46,7 @@ typedef struct {
 
 /* depth: 0 for the method, 1 inside a lambda, 2 in a lambda inside that...
  * boxed: a lambda uses it, so the slot holds a cell (ObjCell) with the value */
-typedef struct { const char* name; int nlen; Type* type; int slot; int depth, boxed; } Local;
+typedef struct { const char* name; int nlen; Type* type; int slot; int depth, boxed, refMode; } Local;   /* refMode: PM_* of a parameter */
 
 /* the lambda being compiled: the cells it captures from the functions around it */
 typedef struct LamCtx {
@@ -149,6 +150,7 @@ int alloc_temp(C* c);
 Type* resolve_typenode(C* c, TypeNode* tn, int extraDims);
 int enum_of(C* c, Expr* e);
 int is_const_field(CField* f);
+void check_out_params(C* c, MethodDecl* d);
 void args_for_m(C* c, Expr* e, CMethod* m, const char* what, uint32_t ro);
 
 /* expressions (comp_expr.c) */

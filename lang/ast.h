@@ -34,7 +34,7 @@ enum {
     TK_ENUM, TK_STRUCT,
     TK_INTERP,                          /* $"...{x}...": the whole literal; the parser lexes the holes again */
     TK_FILESEP,                         /* byte 0x1C that project.c puts between files: 'using' ends there */
-    TK_PROTECTED, TK_INTERNAL
+    TK_PROTECTED, TK_INTERNAL, TK_REF
 };
 
 typedef struct { int kind; const char* start; int len; int line; int32_t ival; float fval; } Token;
@@ -52,7 +52,7 @@ enum {
     E_UNARY, E_BINARY, E_LOGIC, E_ASSIGN, E_INCDEC, E_CAST, E_COND,
     E_CHAR, E_NEWLIST,              /* E_NEWLIST: tn = List<T> or Dictionary<K,V>, args = initializer items, a = capacity or NULL */
     E_PAIR,                         /* dictionary initializer item: {a, b}, or [a] = b when prefix is set */
-    E_OUT,                          /* 'out x' (a = target) or 'out var x' / 'out T x' (prefix = 1, tn = type or NULL, name) */
+    E_OUT,                          /* 'out x' (a = target) or 'out var x' / 'out T x' (prefix = 1, tn = type or NULL, name); op = 1: 'ref x' */
     E_BASE,                         /* 'base' (only as base.Member) */
     E_IS, E_AS,                     /* a is T [name] / a as T: tn = type (NULL: 'is null'), name = pattern variable; op = 1 for 'is not' */
     E_LAMBDA,                       /* params / nparams (tn NULL if not written), body (block) or a (expression) */
@@ -89,7 +89,9 @@ struct Stmt {
     const char *s0, *s1;            /* source text incl. ';' (NULL: made up by the parser, e.g. the body of '=> expr') */
 };
 
-typedef struct Param { TypeNode* tn; const char* name; int nlen; struct Expr* def; } Param;   /* def: 'int b = 10' (or NULL) */
+/* def: 'int b = 10' (or NULL); mode: PM_REF 'ref int x', PM_OUT 'out int x' */
+enum { PM_NONE, PM_REF, PM_OUT };
+typedef struct Param { TypeNode* tn; const char* name; int nlen; struct Expr* def; int mode; } Param;
 enum { MK_NONE, MK_VIRTUAL, MK_OVERRIDE, MK_ABSTRACT };
 /* access modifier of a member. AC_NONE (nothing written), AC_PUBLIC and AC_INTERNAL: every class may use it;
    AC_PRIVATE: only its own class; AC_PROTECTED: its class and the classes derived from it. */

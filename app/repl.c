@@ -159,7 +159,7 @@ int repl_eval(Repl* r, const char* text, char* err, int errlen) {
 /* ---------- completion ---------- */
 static const char* KEYWORDS[] = {
     "var", "int", "float", "bool", "char", "string", "new", "null", "true", "false",
-    "if", "else", "for", "foreach", "in", "while", "do", "switch", "break", "continue", "return",
+    "if", "else", "for", "foreach", "in", "while", "do", "switch", "break", "continue", "return", "ref", "out",
     "List", "Dictionary",
 };
 
@@ -225,7 +225,7 @@ int ms_complete(const char* line, int cursor, int* start, char out[][REPL_WORD],
         s = e;
     }
     for (int i = 0; i < ms_nnatives; i++)
-        if (ms_natives[i].cls[0] != '.') n = offer(out, n, max, ms_natives[i].cls, (int)strlen(ms_natives[i].cls), pre, plen);
+        if (ms_natives[i].cls[0] != '.' && ms_natives[i].cls[0] != '#') n = offer(out, n, max, ms_natives[i].cls, (int)strlen(ms_natives[i].cls), pre, plen);
     for (int i = 0; i < ms_nconsts; i++) n = offer(out, n, max, ms_consts[i].cls, (int)strlen(ms_consts[i].cls), pre, plen);
     for (size_t i = 0; i < sizeof KEYWORDS / sizeof KEYWORDS[0]; i++)
         n = offer(out, n, max, KEYWORDS[i], (int)strlen(KEYWORDS[i]), pre, plen);

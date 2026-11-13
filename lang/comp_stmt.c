@@ -387,3 +387,101 @@ static int can_end(Stmt* s, Flow* f) {
 }
 
 int stmt_can_end(Stmt* s) { Flow f = {0, 0}; return can_end(s, &f); }
+
+/* ================= 'out' parameters ================= */
+/* Like C#: an 'out' parameter gets a value on every path before the method ends. da() walks the statements with
+   'in' = the parameter surely has a value here, and returns the same after the statement (1 when its end cannot be
+   reached). A plain assignment 'x = ...' or passing it as 'out x' gives the value; '&&', '||', '??' and '?:' count
+   only on the part that always runs. Loops count only their condition, as their body may not run. */
+typedef struct { const char* n; int l; int brkAll, hasBrk, contAll, hasCont; } OutChk;
+
+static int expr_sets(Expr* e, const char* n, int l) {
+    if (!e || e->k == E_LAMBDA) return 0;
+    if (e->k == E_ASSIGN && e->op == TK_ASSIGN && e->a->k == E_NAME && nameeq(e->a->name, e->a->nlen, n, l)) return 1;
+    if (e->k == E_OUT && !e->op && !e->prefix && e->a->k == E_NAME && nameeq(e->a->name, e->a->nlen, n, l)) return 1;
+    if (e->k == E_LOGIC || e->k == E_COALESCE) return expr_sets(e->a, n, l);
+    if (e->k == E_COND) return expr_sets(e->a, n, l) || (expr_sets(e->b, n, l) && expr_sets(e->c, n, l));
+    if (e->k == E_MEMBER && e->prefix) return expr_sets(e->a, n, l);
+    if (expr_sets(e->a, n, l) || expr_sets(e->b, n, l) || expr_sets(e->c, n, l)) return 1;
+    for (int i = 0; i < e->nargs; i++) if (expr_sets(e->args[i], n, l)) return 1;
+    return 0;
+}
+
+static int da(C* c, Stmt* s, OutChk* k, int in) {
+    if (!s) return in;
+    switch (s->k) {
+        case S_BLOCK:
+            for (int i = 0; i < s->n; i++) {
+                in = da(c, s->list[i], k, in);
+                if (!stmt_can_end(s->list[i])) return 1;    /* the rest cannot be reached */
+            }
+            return in;
+        case S_VAR:
+            for (; s; s = s->els) in |= expr_sets(s->e, k->n, k->l);
+            return in;
+        case S_EXPR: case S_YIELD: return in || expr_sets(s->e, k->n, k->l);
+        case S_RETURN:
+            if (!in && !expr_sets(s->e, k->n, k->l))
+                cfail(c, s->line, "'out' parameter '%.*s' must get a value before 'return'", k->l, k->n);
+            return 1;
+        case S_BREAK: k->brkAll &= in; k->hasBrk = 1; return 1;
+        case S_CONTINUE: k->contAll &= in; k->hasCont = 1; return 1;
+        case S_IF:
+            in |= expr_sets(s->e, k->n, k->l);
+            if (is_true(s->e)) return da(c, s->body, k, in);
+            if (is_false(s->e)) return da(c, s->els, k, in);
+            { int t = da(c, s->body, k, in); int e = da(c, s->els, k, in); return t && e; }
+        case S_WHILE: case S_FOR: {
+            if (s->k == S_FOR) in = da(c, s->init, k, in);
+            in |= expr_sets(s->e, k->n, k->l);
+            OutChk lp = { k->n, k->l, 1, 0, 1, 0 };
+            da(c, s->body, &lp, in);
+            if (is_true(s->e)) return lp.hasBrk ? lp.brkAll : 1;
+            return in;
+        }
+        case S_DO: {
+            OutChk lp = { k->n, k->l, 1, 0, 1, 0 };
+            int b = da(c, s->body, &lp, in);
+            int atCond = (b && (lp.hasCont ? lp.contAll : 1)) || expr_sets(s->e, k->n, k->l);
+            if (is_true(s->e)) return lp.hasBrk ? lp.brkAll : 1;
+            return atCond && (lp.hasBrk ? lp.brkAll : 1);
+        }
+        case S_FOREACH: {
+            in |= expr_sets(s->e, k->n, k->l);
+            OutChk lp = { k->n, k->l, 1, 0, 1, 0 };
+            da(c, s->body, &lp, in);
+            return in;
+        }
+        case S_SWITCH: {
+            in |= expr_sets(s->e, k->n, k->l);
+            OutChk sw = { k->n, k->l, 1, 0, 1, 0 };
+            int res = 1, def = 0;
+            for (int i = 0; i < s->n; i++) {
+                Stmt* sec = s->list[i];
+                if (sec->isDefault) def = 1;
+                int r = in;
+                for (int q = 0; q < sec->n; q++) {
+                    r = da(c, sec->list[q], &sw, r);
+                    if (!stmt_can_end(sec->list[q])) { r = 1; break; }
+                }
+                res &= r;
+            }
+            if (sw.hasCont) { k->hasCont = 1; k->contAll &= sw.contAll; }   /* 'continue' belongs to the loop around */
+            if (sw.hasBrk) res &= sw.brkAll;
+            if (!def) res &= in;
+            return res;
+        }
+        default: return in;
+    }
+}
+
+void check_out_params(C* c, MethodDecl* d) {
+    for (int i = 0; i < d->nparams; i++) {
+        Param* pa = &d->params[i];
+        if (pa->mode != PM_OUT) continue;
+        OutChk k = { pa->name, pa->nlen, 1, 0, 1, 0 };
+        int r = da(c, d->body, &k, 0);
+        if (stmt_can_end(d->body) && !r)
+            cfail(c, d->line, "'out' parameter '%.*s' must get a value on every path before '%.*s' ends", pa->nlen, pa->name, d->nlen, d->name);
+    }
+}

@@ -1,0 +1,1 @@
+compile error: line 1: 'int.TryParse' takes a string and 'out int name', e.g. int.TryParse(text, out int n)

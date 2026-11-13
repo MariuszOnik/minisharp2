@@ -1,0 +1,1 @@
+compile error: line 2: method 'F' has 'ref' or 'out' parameters, so it cannot be used as a delegate

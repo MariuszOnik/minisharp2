@@ -314,17 +314,65 @@ widzą, a przy następnym wywołaniu zaczyna od nowa. Dlatego dwie metody mogą 
 przeszkadzają sobie. Żeby kilka metod dzieliło jedną wartość, potrzebne jest pole klasy. Pola poznasz w rozdziale
 o klasach.
 
+## ref i out – metoda zmienia zmienną wołającego
+
+Zwykły parametr to kopia: gdy metoda go zmieni, zmienna wołającego zostaje taka sama. Jeśli metoda ma zmienić samą
+zmienną, parametr i argument oznacza się słowem **`ref`**. Słowo **`out`** działa podobnie, ale służy do oddawania
+wyników: metoda musi przypisać mu wartość na każdej drodze, zanim się skończy. Dzięki `out` metoda może oddać kilka
+wyników naraz.
+
+```cs
+class Program
+{
+    static void Zamien(ref int a, ref int b)
+    {
+        int t = a;
+        a = b;
+        b = t;
+    }
+
+    static void Dziel(int a, int b, out int wynik, out int reszta)
+    {
+        wynik = a / b;
+        reszta = a % b;
+    }
+
+    static void Main()
+    {
+        int x = 1, y = 2;
+        Zamien(ref x, ref y);
+        Console.WriteLine(x + " " + y);
+
+        Dziel(17, 5, out int w, out int r);
+        Console.WriteLine(w + " reszty " + r);
+
+        if (int.TryParse("42", out int liczba)) Console.WriteLine(liczba + 1);
+    }
+}
+```
+
+```wynik
+2 1
+3 reszty 2
+43
+```
+
+`out int w` tworzy nową zmienną w miejscu wywołania (można też `out var w` albo `out w` dla istniejącej zmiennej).
+`int.TryParse` i `float.TryParse` nie zatrzymują programu przy złym tekście jak `int.Parse`, tylko oddają `false`
+i 0.
+
 ## Dobre metody
 
 - Jedna metoda, jedno zadanie. Nazwa mówi, co robi: `Ulecz`, `Ocena`, `RysujMape`.
 - Jeśli ten sam kod pojawia się drugi raz, to dobry kandydat na metodę.
 - Długi `Main` podziel na kilka metod o czytelnych nazwach. Wtedy `Main` czyta się jak spis treści.
 
-> **Dla zaawansowanych:** w MiniSharpie metody nie mają jeszcze parametrów `ref` ani `out`, więc kompilator
-> zgłosi błąd. `out` jest na razie
-> tylko w `TryGetValue` słownika. Zamiast kilku wyników przez `out` oddaj jeden obiekt albo strukturę (zob. rozdział
-> o klasach). Tablice i obiekty są przekazywane **przez referencję**: metoda dostaje kopię adresu, nie kopię danych,
-> więc gdy zmieni element tablicy, wołający tę zmianę zobaczy:
+> **Dla zaawansowanych:** w MiniSharpie przez `ref` i `out` można na razie przekazać tylko zmienną lokalną albo
+> parametr, a nie pole, element tablicy czy właściwość. Tak jak w C#, parametru `ref`/`out` nie można użyć w lambdzie,
+> a metody z takim parametrem nie da się przypisać do delegata. Kompilator nie sprawdza jeszcze, czy metoda
+> nie czyta parametru `out`, zanim go przypisze (dostanie wtedy to, co było w zmiennej wołającego; w C# to błąd).
+> Tablice i obiekty są przekazywane **przez referencję**: metoda dostaje kopię adresu, nie kopię danych,
+> więc gdy zmieni element tablicy, wołający tę zmianę zobaczy nawet bez `ref`:
 
 ```cs
 class Program

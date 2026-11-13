@@ -244,7 +244,7 @@ static void expr(MsBuf* b, Expr* e, int minprec, int level) {
             else { puts_(b, "{ "); expr(b, e->a, P_ASSIGN, level); puts_(b, ", "); expr(b, e->b, P_ASSIGN, level); puts_(b, " }"); }
             break;
         case E_OUT:
-            puts_(b, "out ");
+            puts_(b, e->op ? "ref " : "out ");
             if (e->prefix) {
                 if (e->tn) ms_print_type(b, e->tn); else puts_(b, "var");
                 putc_(b, ' '); put(b, e->name, e->nlen);
@@ -382,6 +382,7 @@ static void params(MsBuf* b, Param* p, int n) {
     putc_(b, '(');
     for (int i = 0; i < n; i++) {
         if (i) puts_(b, ", ");
+        if (p[i].mode) puts_(b, p[i].mode == PM_REF ? "ref " : "out ");
         ms_print_type(b, p[i].tn); putc_(b, ' '); put(b, p[i].name, p[i].nlen);
         if (p[i].def) { puts_(b, " = "); expr(b, p[i].def, P_ASSIGN, 0); }
     }

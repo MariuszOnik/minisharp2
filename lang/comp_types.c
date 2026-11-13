@@ -385,6 +385,7 @@ Res resolve_name(C* c, const char* n, int l) {
         r.type = lo->type;
         if (lo->depth == c->fdepth) { r.k = lo->boxed ? R_CELL : R_LOCAL; r.idx = lo->slot; return r; }
         if (!lo->boxed) cfail(c, c->line, "'%.*s' cannot be used inside a lambda; copy it to a variable first", l, n);
+        if (lo->refMode) cfail(c, c->line, "'%s' parameter '%.*s' cannot be used inside a lambda; copy it to a variable first", lo->refMode == PM_REF ? "ref" : "out", l, n);
         r.k = R_UPVAL; r.idx = get_upvalue(c, c->lam, li);
         return r;
     }
@@ -435,7 +436,7 @@ int declare_local(C* c, const char* n, int l, Type* t, int line) {
     Local* lo = &c->locals[c->nlocals++];
     lo->name = n; lo->nlen = l; lo->type = t; lo->slot = slot;
     lo->depth = c->fdepth;
-    lo->boxed = 0;
+    lo->boxed = 0; lo->refMode = 0;
     for (int i = 0; i < c->caps.n; i++) if (nameeq(c->caps.v[i].n, c->caps.v[i].l, n, l)) lo->boxed = 1;
     c->lastBoxed = lo->boxed;
     return slot;

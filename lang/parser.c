@@ -55,7 +55,7 @@ static const struct { const char* s; int k; } keywords[] = {
     {"public", TK_PUBLIC}, {"private", TK_PRIVATE}, {"using", TK_USING}, {"namespace", TK_NAMESPACE},
     {"const", TK_CONST}, {"readonly", TK_READONLY}, {"protected", TK_PROTECTED}, {"internal", TK_INTERNAL},
     {"char", TK_KCHAR}, {"foreach", TK_FOREACH}, {"in", TK_IN}, {"switch", TK_SWITCH}, {"case", TK_CASE},
-    {"default", TK_DEFAULT}, {"out", TK_OUT},
+    {"default", TK_DEFAULT}, {"out", TK_OUT}, {"ref", TK_REF},
     {"abstract", TK_ABSTRACT}, {"virtual", TK_VIRTUAL}, {"override", TK_OVERRIDE}, {"sealed", TK_SEALED},
     {"interface", TK_INTERFACE}, {"base", TK_BASE}, {"is", TK_IS}, {"as", TK_AS},
     {"enum", TK_ENUM}, {"struct", TK_STRUCT},
@@ -398,6 +398,11 @@ static TypeNode* parse_type(P* p);
 
 static Expr* parse_arg_(P* p) {
     Token* t = peek(p);
+    if (accept(p, TK_REF)) {                    /* ref x */
+        Expr* e = mkexpr(p, E_OUT, t->line);
+        e->op = 1; e->a = parse_unary(p);
+        return e;
+    }
     if (!accept(p, TK_OUT)) return parse_expr(p);
     Expr* e = mkexpr(p, E_OUT, t->line);
     if (accept(p, TK_VAR) || looks_like_decl(p)) {
@@ -1061,11 +1066,15 @@ static void parse_method_rest(P* p, MethodDecl* m) {
         do {
             m->params = (Param*)arena_grow(p->c->A, m->params, m->nparams, &pcap, sizeof(Param));
             Param* pa = &m->params[m->nparams++];
+            pa->mode = accept(p, TK_REF) ? PM_REF : accept(p, TK_OUT) ? PM_OUT : PM_NONE;
             pa->tn = parse_type(p);
             if (pa->tn->base == TK_VOID && pa->tn->dims == 0) fail(p->c, pa->tn->line, "a parameter cannot be 'void'");
             Token* pn = expect(p, TK_IDENT);
             pa->name = pn->start; pa->nlen = pn->len;
-            if (accept(p, TK_ASSIGN)) pa->def = parse_expr(p);         /* int b = 10: may be left out in a call */
+            if (accept(p, TK_ASSIGN)) {                                 /* int b = 10: may be left out in a call */
+                if (pa->mode) fail(p->c, pn->line, "a %s parameter cannot have a default value", pa->mode == PM_REF ? "'ref'" : "'out'");
+                pa->def = parse_expr(p);
+            }
             else if (m->nparams > 1 && m->params[m->nparams - 2].def)
                 fail(p->c, pn->line, "parameter '%.*s' needs a default value too: the parameters with one must come last", pn->len, pn->start);
         } while (accept(p, TK_COMMA));
