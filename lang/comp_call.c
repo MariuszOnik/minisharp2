@@ -286,7 +286,7 @@ static Type* call_list(C* c, Expr* e, Type* lt) {
     if (IS("AddRange")) {
         if (e->nargs != 1) cfail(c, e->line, "%s takes 1 argument", what);
         Type* st = compile_expr(c, e->args[0]);
-        if (!((st->k == T_LIST || st->k == T_ARRAY) && st->elem == el))
+        if (!((st->k == T_LIST || (st->k == T_ARRAY && st->rank != 2)) && st->elem == el))
             cfail(c, e->line, "%s needs a %s or %s[], not %s", what, type_name(c, lt), type_name(c, el), type_name(c, st));
         c->line = e->line;
         emit_op1(c, OP_LIST, L_ADDRANGE);
@@ -475,6 +475,14 @@ Type* compile_call(C* c, Expr* e) {
         }
         if (t->k == T_LIST) return call_list(c, e, t);
         if (t->k == T_DICT) return call_dict(c, e, t);
+        if (t->k == T_ARRAY && namecs(f->name, f->nlen, "GetLength")) {      /* t.GetLength(0): rows, (1): columns of a T[,] */
+            if (e->nargs != 1) cfail(c, e->line, "GetLength takes 1 argument (the dimension: 0 or 1)");
+            Type* dt = compile_expr(c, e->args[0]);
+            if (!type_isint(dt)) cfail(c, e->line, "GetLength needs an int, not %s", type_name(c, dt));
+            c->line = e->line;
+            emit_op1(c, OP_ARRDIM, t->rank == 2 ? 2 : 1);
+            return &tInt;
+        }
         if (t->k == T_FUNC && namecs(f->name, f->nlen, "Invoke")) return invoke(c, e, t);
         if (type_isobj(t)) {
             CMethod* m = find_call(c, t->cls, f->name, f->nlen, e);

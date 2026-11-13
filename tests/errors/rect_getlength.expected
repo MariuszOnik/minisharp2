@@ -1,0 +1,1 @@
+compile error: line 1: GetLength takes 1 argument (the dimension: 0 or 1)

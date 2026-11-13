@@ -33,6 +33,7 @@ static const struct { const char* name; int nargs; } ops[] = {
     [OP_BOX] = {"BOX", 0}, [OP_GETCELL] = {"GETCELL", 0}, [OP_SETCELL] = {"SETCELL", 0}, [OP_UPVAL] = {"UPVAL", 1},
     [OP_CLOSURE] = {"CLOSURE", 3}, [OP_CALLF] = {"CALLF", 2}, [OP_DELEG] = {"DELEG", 1},
     [OP_JNULL] = {"JNULL", 1}, [OP_JNULL_POP] = {"JNULL_POP", 1}, [OP_JNNULL] = {"JNNULL", 1}, [OP_LISTF] = {"LISTF", 1}, [OP_COPY] = {"COPY", 0},
+    [OP_NEWARR2] = {"NEWARR2", 1}, [OP_IDX2] = {"IDX2", 0}, [OP_ARRDIM] = {"ARRDIM", 1},
     [OP_JNLT] = {"JNLT", 1}, [OP_JNLE] = {"JNLE", 1}, [OP_JNGT] = {"JNGT", 1}, [OP_JNGE] = {"JNGE", 1}, [OP_JNEQ] = {"JNEQ", 1}, [OP_JNNE] = {"JNNE", 1},
     [OP_IADDK] = {"IADDK", 1}, [OP_INCL] = {"INCL", 2}, [OP_GETFIELDL] = {"GETFIELDL", 2},
 };

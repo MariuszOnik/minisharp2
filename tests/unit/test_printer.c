@@ -20,7 +20,7 @@ static int eq_stmt(Stmt* a, Stmt* b);
 
 static int eq_type(TypeNode* a, TypeNode* b) {
     if (!a || !b) return a == b;
-    if (a->base != b->base || a->dims != b->dims || a->nargs != b->nargs) return 0;
+    if (a->base != b->base || a->dims != b->dims || a->rect != b->rect || a->nargs != b->nargs) return 0;
     if (!eq_name(a->name, a->nlen, b->name, b->nlen)) return 0;
     for (int i = 0; i < a->nargs; i++) if (!eq_type(a->args[i], b->args[i])) return 0;
     return 1;

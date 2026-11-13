@@ -123,6 +123,7 @@ static int read_type(const char* s, int p) {
     while (is_id((unsigned char)s[p]) || (s[p] == '.' && is_id0((unsigned char)s[p + 1]))) p++;
     if (s[p] == '<') p = skip_generic(s, p);
     while (s[p] == '[' && s[p + 1] == ']') p += 2;
+    if (s[p] == '[' && s[p + 1] == ',' && s[p + 2] == ']') p += 3;     /* T[,] */
     return p;
 }
 
@@ -403,6 +404,7 @@ static int type_arg(const char* type, int n, char* out, int cap) {
 static int element_type(const char* base, char* out, int cap) {
     int n = (int)strlen(base);
     if (n > 2 && !strcmp(base + n - 2, "[]")) { snprintf(out, cap, "%.*s", n - 2, base); return 1; }
+    if (n > 3 && !strcmp(base + n - 3, "[,]")) { snprintf(out, cap, "%.*s", n - 3, base); return 1; }
     if (!strncmp(base, "List<", 5)) return type_arg(base, 0, out, cap);
     if (!strcmp(base, "string")) { snprintf(out, cap, "char"); return 1; }
     if (!strncmp(base, "Dictionary<", 11)) { snprintf(out, cap, "KeyValuePair%s", base + 10); return 1; }
@@ -450,6 +452,7 @@ static int decl_at(const CodeIndex* ci, int t, int o, int nlen, char* type, int 
     int p = o;
     while (p > 0 && (s[p - 1] == ' ' || s[p - 1] == '\t')) p--;
     int te = p;
+    if (p >= 3 && s[p - 1] == ']' && s[p - 2] == ',' && s[p - 3] == '[') p -= 3;      /* int[,] t */
     while (p >= 2 && s[p - 1] == ']' && s[p - 2] == '[') p -= 2;
     if (p > 0 && s[p - 1] == '>') {
         int d = 0;
@@ -473,7 +476,15 @@ static int decl_at(const CodeIndex* ci, int t, int o, int nlen, char* type, int 
     if (!strncmp(s + v, "new ", 4)) {
         int ns = skip_sp(s, v + 4), ne = read_type(s, ns);
         if (ne == ns) return 0;
-        if (s[ne] == '[') snprintf(type, cap, "%.*s[]", ne - ns, s + ns);
+        if (s[ne] == '[') {                     /* new int[3] -> int[]; new int[2, 3] / new int[,] { .. } -> int[,] */
+            int q = ne + 1, d = 0, rect = 0;
+            for (; s[q] && !(s[q] == ']' && d == 0); q++) {
+                if (s[q] == '(' || s[q] == '[') d++;
+                else if (s[q] == ')' || s[q] == ']') d--;
+                else if (s[q] == ',' && d == 0) rect = 1;
+            }
+            snprintf(type, cap, rect ? "%.*s[,]" : "%.*s[]", ne - ns, s + ns);
+        }
         else snprintf(type, cap, "%.*s", ne - ns, s + ns);
         strip_ns(type);
         return 1;
@@ -592,7 +603,8 @@ void ci_member_names(const CodeIndex* ci, const char* type, const char* viewer, 
     }
     if (!strncmp(type, "Func<", 5) || !strncmp(type, "Action", 6) || !strncmp(type, "Predicate<", 10) || !strncmp(type, "Comparison<", 11)) { ADD("Invoke"); return; }
     int tl = (int)strlen(type);
-    if (tl > 2 && !strcmp(type + tl - 2, "[]")) { ADD("Length"); return; }
+    if (tl > 2 && !strcmp(type + tl - 2, "[]")) { ADD("Length GetLength"); return; }
+    if (tl > 3 && !strcmp(type + tl - 3, "[,]")) { ADD("Length GetLength"); return; }
     if (!strcmp(type, "string")) ADD("Length");
     const char* from[16];
     int nf = lineage(ci, type, from, 16);

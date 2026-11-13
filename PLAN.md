@@ -101,8 +101,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] **Braki względem C# znalezione przy rozdziale 7 (tablice):**
       - ~~przypisanie do zmiennej pętli `foreach` przechodzi, w C# to błąd CS1656~~ (zrobione 2026-11-13: `Local.readOnly`,
         `check_writable_local` w `lvalue` i przy `ref`/`out`; błędy `foreach_*`; zostało: pole struktury przez taką zmienną, CS1654);
-      - `int[,] t = new int[2, 3];` daje niejasny błąd – **decyzja użytkownika 2026-11-13: dodać tablice prostokątne**
-        (`int[,]`, `new int[w, h]`, `{ {..}, {..} }`, `t[y, x]`, `GetLength`, `Length`, `foreach`, printer, podpowiedzi).
+      - ~~`int[,]`~~ – **decyzja użytkownika 2026-11-13: dodać tablice prostokątne** (zrobione 2026-11-13: typ `T_ARRAY`
+        z `rank = 2`, `ObjArray.rows/cols`, w VM `NEWARR2`, `IDX2` – dwa indeksy w jeden, potem zwykłe `GETELEM`/`SETELEM`,
+        więc `=`, `+=`, `++` bez zmian – i `ARRDIM` dla `GetLength`; `new T[r, c]`, `{ {..}, {..} }`, printer, podpowiedzi;
+        testy `rect`, `rt_rect*`, `ci_rect`, błędy `rect_*`). Tylko dwa wymiary i tylko `T[,]` (nie `T[,][]`, `T[][,]`).
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może

@@ -119,3 +119,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   zapamiętuje ramkę dla rozwijania stosu SEH i `longjmp` czasem się na tym wywracał (ok. 3% procesów, zależnie od
   układu pamięci – stąd niestabilny `test_hooks`). `lang/msjmp.h` włącza zwykły skok (`__USE_MINGW_SETJMP_NON_SEH`).
   Sprawdzone: 0 awarii na 200 procesów po 200 kompilacji z błędem i na 150 przebiegów `test_hooks`. 3DS i Linux bez zmian.
+- 2026-11-13: Tablice prostokątne `T[,]` (decyzja użytkownika): elementy wiersz po wierszu w zwykłym `ObjArray`
+  z liczbą wierszy i kolumn, a `t[i, j]` kompiluje się do `IDX2` (oba indeksy sprawdzone osobno) i zwykłego
+  `GETELEM`/`SETELEM` – przypisania, `+=`, `++`, `Length` i `foreach` działają bez osobnego kodu. Rozdział 7: plansza
+  jako `char[,]`, tablica tablic jako dopisek.

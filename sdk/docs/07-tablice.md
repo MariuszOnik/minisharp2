@@ -2,7 +2,7 @@
 
 Pięć wyników gracza w pięciu zmiennych `w1`, `w2`… to dużo pisania, a pętla po nich nie przejdzie. Gdy masz wiele
 wartości tego samego typu, trzymaj je w **tablicy**: jednej zmiennej z ponumerowanymi przegródkami. W tym rozdziale
-utworzysz tablicę, przejdziesz po niej pętlą, policzysz sumę i największą wartość oraz zrobisz planszę z tablicy tablic.
+utworzysz tablicę, przejdziesz po niej pętlą, policzysz sumę i największą wartość oraz zrobisz planszę z wierszami i kolumnami.
 
 ## Pierwsza tablica
 
@@ -219,38 +219,36 @@ zmienia też `a[0]`.
 > tablicy, a nie same wartości. Dlatego `Podwoj` widzi zmiany, choć nie ma `ref` (zob. rozdział 6), a `int[] b = a;`
 > nie kopiuje elementów. Kopię zrobisz pętlą do nowej tablicy (`new int[a.Length]`).
 
-## Tablica tablic – plansza
+## Plansza: wiersze i kolumny
 
-Planszę (wiersze i kolumny) zapiszesz jako tablicę, której elementami są tablice: `char[][]`, `int[][]`.
-Pierwszy indeks wybiera wiersz, drugi – kolumnę w tym wierszu.
+Plansza gry, mapa lochu albo tabela ma wiersze i kolumny. Do tego służy **tablica dwuwymiarowa** `T[,]`: przy
+tworzeniu podajesz dwie długości, a przy czytaniu dwa indeksy – najpierw wiersz, potem kolumnę.
 
 ```cs
 class Program
 {
     static void Main()
     {
-        int wiersze = 3;
-        int kolumny = 5;
-        char[][] plansza = new char[wiersze][];
-        for (int y = 0; y < wiersze; y++)
+        char[,] plansza = new char[3, 5];
+        for (int y = 0; y < plansza.GetLength(0); y++)
         {
-            plansza[y] = new char[kolumny];
-            for (int x = 0; x < kolumny; x++)
+            for (int x = 0; x < plansza.GetLength(1); x++)
             {
-                plansza[y][x] = '.';
+                plansza[y, x] = '.';
             }
         }
-        plansza[1][2] = '@';
-        plansza[0][4] = '#';
+        plansza[1, 2] = '@';
+        plansza[0, 4] = '#';
 
-        for (int y = 0; y < plansza.Length; y++)
+        for (int y = 0; y < 3; y++)
         {
-            for (int x = 0; x < plansza[y].Length; x++)
+            for (int x = 0; x < 5; x++)
             {
-                Console.Write(plansza[y][x]);
+                Console.Write(plansza[y, x]);
             }
             Console.WriteLine();
         }
+        Console.WriteLine("Pól: " + plansza.Length);
     }
 }
 ```
@@ -259,15 +257,47 @@ class Program
 ....#
 ..@..
 .....
+Pól: 15
 ```
 
-`new char[wiersze][]` tworzy tylko listę wierszy (na razie pustych, `null`). Każdy wiersz trzeba utworzyć osobno –
-to robi `plansza[y] = new char[kolumny];`. Wiersze mogą mieć różne długości, dlatego wewnętrzna pętla pyta
-o `plansza[y].Length`.
+- `new char[3, 5]` – 3 wiersze po 5 kolumn, wszystkie z wartością domyślną.
+- `plansza[y, x]` – wiersz `y`, kolumna `x`, oba liczone od zera.
+- `GetLength(0)` to liczba wierszy, `GetLength(1)` – kolumn. `Length` to liczba wszystkich pól (tu 15).
 
-> **Dla zaawansowanych:** C# ma też tablice prostokątne `int[,]` z dostępem `t[y, x]`. MiniSharp ich nie zna –
-> używaj tablicy tablic jak wyżej. Gdy liczba elementów ma się zmieniać w trakcie programu, zamiast tablicy użyj
-> `List` (osobny rozdział).
+Małą tablicę można od razu wypełnić, wiersz po wierszu:
+
+```cs
+class Program
+{
+    static void Main()
+    {
+        int[,] mapa =
+        {
+            { 1, 1, 1, 1 },
+            { 1, 0, 2, 1 },
+            { 1, 1, 1, 1 },
+        };
+        int sciany = 0;
+        foreach (int pole in mapa)
+        {
+            if (pole == 1) sciany++;
+        }
+        Console.WriteLine("Ścian: " + sciany + ", skarb w wierszu 1, kolumnie " + 2 + ": " + mapa[1, 2]);
+    }
+}
+```
+
+```wynik
+Ścian: 10, skarb w wierszu 1, kolumnie 2: 2
+```
+
+Każdy wiersz musi mieć tyle samo wartości. `foreach` przechodzi po wszystkich polach, wiersz po wierszu.
+Indeks spoza planszy daje błąd z oboma numerami, np. `index [1, 5] is outside the array [3, 5]`.
+
+> **Dla zaawansowanych:** jest też **tablica tablic** `char[][]` – tablica, której elementami są osobne tablice
+> (wiersze). Pisze się wtedy `t[y][x]`, a każdy wiersz trzeba utworzyć osobno (`t[y] = new char[5];`), za to wiersze
+> mogą mieć różne długości. Gdy liczba elementów ma się zmieniać w trakcie programu, zamiast tablicy użyj `List`
+> (osobny rozdział).
 
 ## Podsumowanie
 
@@ -275,4 +305,4 @@ o `plansza[y].Length`.
 - `t[i]` czyta i zapisuje przegródkę; indeksy od `0` do `t.Length - 1`.
 - `for` z indeksem do zmian i do pracy z numerami, `foreach` do samego czytania.
 - Tablica przekazana do metody to ta sama tablica, nie kopia.
-- Plansza: tablica tablic `char[][]`, każdy wiersz tworzony osobno.
+- Plansza: `char[,] p = new char[wiersze, kolumny];`, pole `p[y, x]`, rozmiary `GetLength(0)` i `GetLength(1)`.

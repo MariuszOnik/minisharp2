@@ -1,0 +1,4 @@
+Main.cs:7: Cell -> hp Hit
+Main.cs:9: Cell[,] -> Length GetLength
+Main.cs:10: Cell -> hp Hit
+Main.cs:12: int[,] -> Length GetLength

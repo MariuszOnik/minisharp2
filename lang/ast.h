@@ -42,6 +42,7 @@ typedef struct { int kind; const char* start; int len; int line; int32_t ival; f
 /* ---------- AST ---------- */
 typedef struct TypeNode {
     int base; const char* name; int nlen; int dims; int line;
+    int rect;                           /* the (only) array level is rectangular: T[,] (then dims == 1) */
     struct TypeNode *arg, *arg2;        /* List<arg>, Dictionary<arg, arg2> */
     struct TypeNode** args; int nargs;  /* all type arguments: Func<int, int, bool> */
 } TypeNode;

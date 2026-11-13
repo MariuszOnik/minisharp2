@@ -22,7 +22,8 @@ struct Obj { uint8_t type, marked, pinned; Obj* next; };
 /* UTF-8 text. len = bytes; ulen = characters (code points), -1 until first needed (strings never change);
  * cacheI / cacheB: the last character index looked up and its byte offset, so a loop over s[i] is not quadratic */
 typedef struct { Obj h; int32_t len, ulen, cacheI, cacheB; char chars[]; } ObjString;
-typedef struct { Obj h; int32_t len; Value items[]; } ObjArray;
+/* rows / cols: the dimensions of a rectangular array T[,] (items row after row); 0 for T[] */
+typedef struct { Obj h; int32_t len, rows, cols; Value items[]; } ObjArray;
 typedef struct { Obj h; int32_t cls; int32_t nfields; Value fields[]; } ObjInstance;
 typedef struct { Obj h; int32_t len, cap; Value* items; } ObjList;
 /* Dictionary, laid out like .NET's so foreach gives the same order: entries are kept in the order

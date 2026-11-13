@@ -13,6 +13,7 @@ struct Type {
     Type* elem;                     /* T[] / List<T>: element; Dictionary and KeyValuePair: value type */
     Type* key;                      /* Dictionary and KeyValuePair: key type */
     Type* arr; Type* list;          /* cached T[] and List<T> */
+    Type* arr2; int rank;           /* cached T[,]; rank 2 for a T[,] (T_ARRAY), else 0 */
     Type* kvp; Type* next;          /* Dictionary: its KeyValuePair type; next Dictionary type in C.dicts */
     uint8_t* isa;                   /* class / interface: isa[k] = 1 if it can be used as class k (itself, bases, interfaces) */
     Type** params; int np;          /* Func / Action: parameter types; elem = return type (void for Action) */
@@ -106,6 +107,7 @@ void cfail(C* c, int line, const char* fmt, ...) __attribute__((noreturn));
 int nameeq(const char* a, int al, const char* b, int bl);
 int namecs(const char* a, int al, const char* s);
 Type* array_of(C* c, Type* t);
+Type* array2_of(C* c, Type* t);                 /* T[,] (rank 2) */
 Type* func_of(C* c, Type** ps, int np, Type* ret);
 Type* list_of(C* c, Type* t);
 const char* type_name(C* c, Type* t);

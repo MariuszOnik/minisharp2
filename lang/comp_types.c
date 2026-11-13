@@ -26,6 +26,14 @@ Type* array_of(C* c, Type* t) {
     }
     return t->arr;
 }
+Type* array2_of(C* c, Type* t) {                   /* T[,] */
+    if (!t->arr2) {
+        Type* a = (Type*)arena_alloc(&c->A, sizeof(Type));
+        a->k = T_ARRAY; a->elem = t; a->rank = 2;
+        t->arr2 = a;
+    }
+    return t->arr2;
+}
 static Type* dict_of(C* c, Type* k, Type* v) {
     for (Type* d = c->dicts; d; d = d->next) if (d->key == k && d->elem == v) return d;
     Type* d = (Type*)arena_alloc(&c->A, sizeof(Type));
@@ -65,7 +73,7 @@ const char* type_name(C* c, Type* t) {
         case T_DICT: snprintf(b, 96, "Dictionary<%s, %s>", type_name(c, t->key), type_name(c, t->elem)); return b;
         case T_KVP: snprintf(b, 96, "KeyValuePair<%s, %s>", type_name(c, t->key), type_name(c, t->elem)); return b;
         case T_CLASS: case T_ENUM: case T_STRUCT: snprintf(b, 96, "%.*s", c->classes[t->cls].nlen, c->classes[t->cls].name); return b;
-        case T_ARRAY: snprintf(b, 96, "%s[]", type_name(c, t->elem)); return b;
+        case T_ARRAY: snprintf(b, 96, t->rank == 2 ? "%s[,]" : "%s[]", type_name(c, t->elem)); return b;
         case T_FUNC: {
             int isAction = t->elem->k == T_VOID, n = snprintf(b, 96, isAction ? "Action" : "Func");
             for (int i = 0; i < t->np + (isAction ? 0 : 1) && n < 90; i++)
@@ -527,7 +535,7 @@ Type* resolve_typenode(C* c, TypeNode* tn, int extraDims) {
     }
     int dims = tn->dims + extraDims;
     if (dims && t->k == T_VOID) cfail(c, tn->line, "cannot make an array of void");
-    for (int i = 0; i < dims; i++) t = array_of(c, t);
+    for (int i = 0; i < dims; i++) t = tn->rect && i == dims - 1 && !extraDims ? array2_of(c, t) : array_of(c, t);
     return t;
 }
 

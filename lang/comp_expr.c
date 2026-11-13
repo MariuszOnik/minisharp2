@@ -219,6 +219,23 @@ static int is_temp_struct(C* c, Expr* e) {
     return is_prop_access(c, e);
 }
 
+/* the index of t[i] (array, List, string) or t[i, j] (T[,]: OP_IDX2 makes one index of the two); the collection is
+   already on the stack, after this the index too, ready for GETELEM / SETELEM */
+static void index_args(C* c, Expr* e, Type* t) {
+    int rect = t->k == T_ARRAY && t->rank == 2;
+    if (rect && !e->c) cfail(c, e->line, "%s needs two indexes: [row, column]", type_name(c, t));
+    if (!rect && e->c) cfail(c, e->line, "%s takes one index, not two (only T[,] arrays take [row, column])", type_name(c, t));
+    Type* it = compile_expr(c, e->b);
+    if (!type_isint(it)) cfail(c, e->line, "index must be int, not %s", type_name(c, it));
+    if (rect) {
+        Type* jt = compile_expr(c, e->c);
+        if (!type_isint(jt)) cfail(c, e->line, "index must be int, not %s", type_name(c, jt));
+        c->line = e->line;
+        emit_op(c, OP_IDX2);
+    }
+    c->line = e->line;
+}
+
 static LV lvalue(C* c, Expr* e) {
     LV lv = { 0, 0, NULL, NULL, 0 };
     c->line = e->line;
@@ -286,14 +303,13 @@ static LV lvalue(C* c, Expr* e) {
         Type* t = compile_expr(c, e->a);
         if (t->k == T_STRING) cfail(c, e->line, "strings cannot be changed; build a new string instead");
         if (t->k == T_DICT) {
+            if (e->c) cfail(c, e->line, "a dictionary takes one key, not two");
             expr_to(c, e->b, t->key, e->line, "dictionary key");
             c->line = e->line;
             lv.kind = LV_ELEM; lv.type = t->elem; return lv;
         }
         if (t->k != T_ARRAY && t->k != T_LIST) cfail(c, e->line, "only arrays and lists can be indexed, not %s", type_name(c, t));
-        Type* it = compile_expr(c, e->b);
-        if (!type_isint(it)) cfail(c, e->line, "index must be int, not %s", type_name(c, it));
-        c->line = e->line;
+        index_args(c, e, t);
         lv.kind = LV_ELEM; lv.type = t->elem; return lv;
     }
     cfail(c, e->line, "the left side must be a variable, field or array element");
@@ -572,15 +588,14 @@ Type* compile_expr(C* c, Expr* e) {
         case E_INDEX: {
             Type* t = compile_expr(c, e->a);
             if (t->k == T_DICT) {
+                if (e->c) cfail(c, e->line, "a dictionary takes one key, not two");
                 expr_to(c, e->b, t->key, e->line, "dictionary key");
                 c->line = e->line;
                 emit_op(c, OP_GETELEM);
                 return t->elem;
             }
             if (t->k != T_ARRAY && t->k != T_LIST && t->k != T_STRING) cfail(c, e->line, "only arrays, lists, dictionaries and strings can be indexed, not %s", type_name(c, t));
-            Type* it = compile_expr(c, e->b);
-            if (!type_isint(it)) cfail(c, e->line, "index must be int, not %s", type_name(c, it));
-            c->line = e->line;
+            index_args(c, e, t);
             emit_op(c, OP_GETELEM);
             return t->k == T_STRING ? &tChar : t->elem;
         }
@@ -623,7 +638,7 @@ Type* compile_expr(C* c, Expr* e) {
             if (ct && type_isint(ct)) { compile_expr(c, e->a); emit_op(c, OP_POP); ct = NULL; }   /* the capacity is only a hint */
             c->line = e->line;
             if (ct) {                           /* new List<T>(otherListOrArray): a copy */
-                if (lt->k != T_LIST || !((ct->k == T_LIST || ct->k == T_ARRAY) && ct->elem == lt->elem))
+                if (lt->k != T_LIST || !((ct->k == T_LIST || (ct->k == T_ARRAY && ct->rank != 2)) && ct->elem == lt->elem))
                     cfail(c, e->line, "'new %s(...)' takes a capacity (int) or a %s / %s[] to copy, not %s",
                           type_name(c, lt), type_name(c, lt), type_name(c, lt->elem), type_name(c, ct));
                 emit_op1(c, OP_LIST, L_NEW);
@@ -660,6 +675,28 @@ Type* compile_expr(C* c, Expr* e) {
         case E_NEWARR: {
             Type* elem = resolve_typenode(c, e->tn, 0);
             if (elem->k == T_VOID) cfail(c, e->line, "cannot make an array of void");
+            if (e->op == 2) {                       /* T[,]: new T[rows, cols] or { { .. }, { .. } } (items row after row) */
+                if (!e->prefix) {
+                    Type* rt = compile_expr(c, e->a);
+                    if (rt->k != T_INT) cfail(c, e->line, "array size must be int, not %s", type_name(c, rt));
+                    Type* ct = compile_expr(c, e->c);
+                    if (ct->k != T_INT) cfail(c, e->line, "array size must be int, not %s", type_name(c, ct));
+                    c->line = e->line;
+                    emit_op1(c, OP_NEWARR2, default_kind(elem));
+                } else {
+                    emit_op1(c, OP_ICONST, (int)e->fval);
+                    emit_op1(c, OP_ICONST, e->ival);
+                    emit_op1(c, OP_NEWARR2, default_kind(elem));
+                    for (int i = 0; i < e->nargs; i++) {
+                        emit_op(c, OP_DUP);
+                        emit_op1(c, OP_ICONST, i);
+                        expr_to(c, e->args[i], elem, e->args[i]->line, "array element");
+                        emit_op(c, OP_SETELEM);
+                        emit_op(c, OP_POP);
+                    }
+                }
+                return array2_of(c, elem);
+            }
             if (!e->prefix) {
                 Type* st = compile_expr(c, e->a);
                 if (st->k != T_INT) cfail(c, e->line, "array size must be int, not %s", type_name(c, st));

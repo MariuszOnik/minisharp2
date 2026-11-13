@@ -41,7 +41,10 @@ static void print_type_base(MsBuf* b, TypeNode* tn) {    /* name and <args>, wit
     }
 }
 static void print_dims(MsBuf* b, int dims) { for (int i = 0; i < dims; i++) puts_(b, "[]"); }
-void ms_print_type(MsBuf* b, TypeNode* tn) { print_type_base(b, tn); print_dims(b, tn->dims); }
+void ms_print_type(MsBuf* b, TypeNode* tn) {
+    print_type_base(b, tn);
+    if (tn->rect) puts_(b, "[,]"); else print_dims(b, tn->dims);
+}
 
 /* ---------- expressions ---------- */
 /* precedence, lowest first: assignment / lambda, ?:, ??, binary operators (4..13), unary and casts, postfix and primary */
@@ -175,7 +178,11 @@ static void expr(MsBuf* b, Expr* e, int minprec, int level) {
             put(b, e->name, e->nlen);
             break;
         case E_CALL: expr(b, e->a, P_POSTFIX, level); putc_(b, '('); args(b, e->args, e->nargs, level); putc_(b, ')'); break;
-        case E_INDEX: expr(b, e->a, P_POSTFIX, level); putc_(b, '['); expr(b, e->b, P_ASSIGN, level); putc_(b, ']'); break;
+        case E_INDEX:
+            expr(b, e->a, P_POSTFIX, level); putc_(b, '['); expr(b, e->b, P_ASSIGN, level);
+            if (e->c) { puts_(b, ", "); expr(b, e->c, P_ASSIGN, level); }     /* t[i, j] */
+            putc_(b, ']');
+            break;
         case E_INCDEC:
             if (e->prefix) {
                 puts_(b, opstr(e->op));
@@ -234,6 +241,23 @@ static void expr(MsBuf* b, Expr* e, int minprec, int level) {
             if (e->args) { puts_(b, " { "); args(b, e->args, e->nargs, level); puts_(b, " }"); }
             break;
         case E_NEWARR:
+            if (e->op == 2) {               /* T[,]: new T[r, c], new T[,] { { .. } }, or short { { .. } } */
+                if (e->prefix != 2) { puts_(b, "new "); print_type_base(b, e->tn); }
+                if (!e->prefix) {
+                    putc_(b, '['); expr(b, e->a, P_ASSIGN, level); puts_(b, ", "); expr(b, e->c, P_ASSIGN, level); putc_(b, ']');
+                    break;
+                }
+                if (e->prefix == 1) puts_(b, "[,] ");
+                puts_(b, e->fval > 0 ? "{ " : "{");
+                for (int r = 0; r < (int)e->fval; r++) {
+                    if (r) puts_(b, ", ");
+                    puts_(b, e->ival ? "{ " : "{");
+                    args(b, e->args + r * e->ival, e->ival, level);
+                    puts_(b, " }");
+                }
+                puts_(b, " }");
+                break;
+            }
             if (e->prefix == 2) {           /* int[] t = { 1, 2 }; */
                 puts_(b, e->nargs ? "{ " : "{");
                 args(b, e->args, e->nargs, level);

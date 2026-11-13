@@ -349,10 +349,22 @@ static void parse_type_args(P* p, TypeNode* tn) {
     tn->arg2 = tn->nargs > 1 ? tn->args[1] : NULL;
 }
 
+/* [,] after a type: a rectangular array T[,]; only of a type that is not an array itself, and nothing after it */
+static void parse_rect(P* p, TypeNode* tn) {
+    if (!(at(p, TK_LBRACK) && peekn(p, 1)->kind == TK_COMMA)) return;
+    int line = peek(p)->line;
+    if (peekn(p, 2)->kind != TK_RBRACK) fail(p->c, line, "only arrays with two dimensions [,] are supported");
+    if (tn->dims) fail(p->c, line, "an array of arrays cannot have [,]; use T[,] or T[][]");
+    p->pos += 3;
+    tn->dims = 1; tn->rect = 1;
+    if (at(p, TK_LBRACK)) fail(p->c, line, "an array of T[,] is not supported; use T[,] alone");
+}
+
 /* after a type name: <T> (generic argument) and [] pairs */
 static void parse_type_suffix(P* p, TypeNode* tn) {
     if (tn->base == TK_IDENT && accept(p, TK_LT)) parse_type_args(p, tn);
     while (at(p, TK_LBRACK) && peekn(p, 1)->kind == TK_RBRACK) { p->pos += 2; tn->dims++; }
+    parse_rect(p, tn);
 }
 
 static TypeNode* parse_type(P* p) {
@@ -384,6 +396,11 @@ static int skip_type(P* p, int i) {
         i++;
     }
     while (p->t[i].kind == TK_LBRACK && p->t[i + 1].kind == TK_RBRACK) i += 2;
+    if (p->t[i].kind == TK_LBRACK && p->t[i + 1].kind == TK_COMMA) {        /* T[,] (T[,,] too, refused later) */
+        int j = i + 1;
+        while (p->t[j].kind == TK_COMMA) j++;
+        if (p->t[j].kind == TK_RBRACK) i = j + 1;
+    }
     return i;
 }
 
@@ -509,6 +526,7 @@ static Expr* parse_interp(P* p, Token* t) {
     return e;
 }
 
+static void parse_rect_rows(P* p, Expr* e);
 static Expr* parse_new(P* p, int line) {
     Token* t = next(p);
     if (!is_type_kw(t->kind) && t->kind != TK_IDENT) fail(p->c, t->line, "expected a type after 'new'");
@@ -568,6 +586,13 @@ array:;
     Expr* e = mkexpr(p, E_NEWARR, line);
     e->tn = tn;                        /* tn->dims = extra dimensions of the element type */
     next(p);
+    if (at(p, TK_COMMA) && peekn(p, 1)->kind == TK_RBRACK) {         /* new int[,] { { 1, 2 }, { 3, 4 } } */
+        p->pos += 2;
+        if (tn->dims) fail(p->c, line, "an array of arrays cannot have [,]; use T[,] or T[][]");
+        e->op = 2; e->prefix = 1;
+        parse_rect_rows(p, e);
+        return e;
+    }
     if (accept(p, TK_RBRACK)) {
         while (at(p, TK_LBRACK) && peekn(p, 1)->kind == TK_RBRACK) { p->pos += 2; tn->dims++; }
         /* initializer list: new int[] { 1, 2, 3 } */
@@ -586,9 +611,42 @@ array:;
         return e;
     }
     e->a = parse_expr(p);
+    if (accept(p, TK_COMMA)) {                                       /* new int[rows, cols] */
+        if (tn->dims) fail(p->c, line, "an array of arrays cannot have [,]; use T[,] or T[][]");
+        e->op = 2;
+        e->c = parse_expr(p);
+        if (at(p, TK_COMMA)) fail(p->c, line, "only arrays with two dimensions [,] are supported");
+        expect(p, TK_RBRACK);
+        if (at(p, TK_LBRACK)) fail(p->c, line, "an array of T[,] is not supported; use T[,] alone");
+        return e;
+    }
     expect(p, TK_RBRACK);
     while (at(p, TK_LBRACK) && peekn(p, 1)->kind == TK_RBRACK) { p->pos += 2; tn->dims++; }
     return e;
+}
+
+/* { { 1, 2 }, { 3, 4 } } for a T[,]: the items row after row in e->args, rows in e->fval, columns in e->ival;
+   every row must have the same length */
+static void parse_rect_rows(P* p, Expr* e) {
+    expect(p, TK_LBRACE);
+    Expr** items = NULL; int n = 0, cap = 0, rows = 0, cols = -1;
+    while (!at(p, TK_RBRACE)) {
+        Token* rt = expect(p, TK_LBRACE);
+        int k = 0;
+        while (!at(p, TK_RBRACE)) {
+            items = (Expr**)arena_grow(p->c->A, items, n, &cap, sizeof(Expr*));
+            items[n++] = parse_expr(p);
+            k++;
+            if (!accept(p, TK_COMMA)) break;
+        }
+        expect(p, TK_RBRACE);
+        if (cols >= 0 && k != cols) fail(p->c, rt->line, "every row of a [,] array must have the same length (%d, not %d)", cols, k);
+        cols = k; rows++;
+        if (!accept(p, TK_COMMA)) break;
+    }
+    expect(p, TK_RBRACE);
+    e->args = items; e->nargs = n;
+    e->fval = (float)rows; e->ival = cols < 0 ? 0 : cols;
 }
 
 static Expr* parse_primary_(P* p);
@@ -657,6 +715,10 @@ static Expr* parse_postfix(P* p) {
             next(p);
             Expr* ix = mkexpr(p, E_INDEX, t->line);
             ix->a = e; ix->b = parse_expr(p);
+            if (accept(p, TK_COMMA)) {                  /* t[i, j] of a T[,] */
+                ix->c = parse_expr(p);
+                if (at(p, TK_COMMA)) fail(p->c, t->line, "only arrays with two dimensions [,] are supported");
+            }
             expect(p, TK_RBRACK);
             e = ix;
         } else if (t->kind == TK_INC || t->kind == TK_DEC) {
@@ -876,6 +938,14 @@ static Expr* parse_init(P* p, TypeNode* tn) {
     int st = p->pos, line = peek(p)->line;
     if (!tn) fail(p->c, line, "'var' cannot be initialized with { ... }; write the type (int[] t = { 1, 2 };) or new int[] { 1, 2 }");
     if (tn->dims == 0) fail(p->c, line, "{ ... } as an initial value works only for arrays (int[] t = { 1, 2 };)");
+    if (tn->rect) {                             /* int[,] t = { { 1, 2 }, { 3, 4 } }; */
+        TypeNode* el = (TypeNode*)nw(p, sizeof(TypeNode));
+        *el = *tn; el->dims = 0; el->rect = 0;
+        Expr* e = mkexpr(p, E_NEWARR, line);
+        e->tn = el; e->prefix = 2; e->op = 2;
+        parse_rect_rows(p, e);
+        return espan(p, e, st);
+    }
     next(p);
     TypeNode* el = (TypeNode*)nw(p, sizeof(TypeNode));
     *el = *tn; el->dims--;

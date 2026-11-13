@@ -812,7 +812,7 @@ static Program* compile(const char* src, char* err, int errlen, char* replDecls,
     C* c = (C*)calloc(1, sizeof(C));
     if (!c) { snprintf(err, errlen, "out of memory"); return NULL; }
     Type* prims[] = { &tVoid, &tInt, &tFloat, &tBool, &tString, &tNull, &tAny, &tChar, &tCoro };
-    for (size_t i = 0; i < sizeof prims / sizeof prims[0]; i++) { prims[i]->arr = NULL; prims[i]->list = NULL; }
+    for (size_t i = 0; i < sizeof prims / sizeof prims[0]; i++) { prims[i]->arr = NULL; prims[i]->list = NULL; prims[i]->arr2 = NULL; }
     c->toStringSel = -1;
     c->scope = -1;
     c->pc.A = &c->A; c->pc.jb = &c->jb; c->pc.err = err; c->pc.errlen = errlen;

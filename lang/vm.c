@@ -185,7 +185,7 @@ Value vm_make_array(VM* vm, int len) {
     Value v; v.t = V_NULL; v.as.o = NULL;
     ObjArray* a = (ObjArray*)alloc_obj(vm, sizeof(ObjArray) + sizeof(Value) * len, O_ARRAY);
     if (!a) return v;
-    a->len = len;
+    a->len = len; a->rows = a->cols = 0;
     for (int i = 0; i < len; i++) { a->items[i].t = V_NULL; a->items[i].as.o = NULL; }
     v.t = V_OBJ; v.as.o = (Obj*)a;
     return v;
@@ -830,6 +830,7 @@ static int vm_run(VM* vm, int startFp) {
         &&L_OP_JNNULL,
         &&L_OP_LISTF,
         &&L_OP_COPY,
+        &&L_OP_NEWARR2, &&L_OP_IDX2, &&L_OP_ARRDIM,
         &&L_OP_JNLT, &&L_OP_JNLE, &&L_OP_JNGT, &&L_OP_JNGE, &&L_OP_JNEQ, &&L_OP_JNNE,
         &&L_OP_IADDK, &&L_OP_INCL, &&L_OP_GETFIELDL
     };
@@ -1269,7 +1270,7 @@ static int vm_run(VM* vm, int startFp) {
                 SYNC();
                 ObjArray* a = (ObjArray*)alloc_obj(vm, sizeof(ObjArray) + sizeof(Value) * n, O_ARRAY);
                 if (!a) FAIL("out of memory");
-                a->len = n;
+                a->len = n; a->rows = a->cols = 0;
                 Value d; d.as.i = 0;
                 d.t = kind == 1 ? V_INT : kind == 2 ? V_FLOAT : kind == 3 ? V_BOOL : kind == 4 ? V_CHAR : V_NULL;
                 if (kind == 2) d.as.f = 0.0f;
@@ -1277,6 +1278,46 @@ static int vm_run(VM* vm, int startFp) {
                 sp[-1].t = V_OBJ; sp[-1].as.o = (Obj*)a;
                 if (kind >= MS_KIND_STRUCT)                     /* new Vector2[n]: n zeroed structs (the array is on the stack) */
                     for (int i = 0; i < n; i++) if (!make_default(vm, kind, &a->items[i])) FAIL("out of memory");
+                NEXT;
+            }
+            CASE(OP_NEWARR2) {            /* new T[rows, cols]: rows * cols elements, row after row */
+                int kind = ARG();
+                int rows = sp[-2].as.i, cols = sp[-1].as.i;
+                if (rows < 0 || cols < 0) FAIL("array size cannot be negative");
+                if (cols && rows > 4 * 1024 * 1024 / cols) FAIL("array too big");
+                int n = rows * cols;
+                SYNC();
+                ObjArray* a = (ObjArray*)alloc_obj(vm, sizeof(ObjArray) + sizeof(Value) * n, O_ARRAY);
+                if (!a) FAIL("out of memory");
+                a->len = n; a->rows = rows; a->cols = cols;
+                Value d; d.as.i = 0;
+                d.t = kind == 1 ? V_INT : kind == 2 ? V_FLOAT : kind == 3 ? V_BOOL : kind == 4 ? V_CHAR : V_NULL;
+                if (kind == 2) d.as.f = 0.0f;
+                for (int i = 0; i < n; i++) a->items[i] = d;
+                sp--;
+                sp[-1].t = V_OBJ; sp[-1].as.o = (Obj*)a;
+                if (kind >= MS_KIND_STRUCT)
+                    for (int i = 0; i < n; i++) if (!make_default(vm, kind, &a->items[i])) FAIL("out of memory");
+                NEXT;
+            }
+            CASE(OP_IDX2) {               /* array, i, j -> array, i * cols + j (each index checked on its own) */
+                if (sp[-3].t != V_OBJ) FAIL("null reference (indexing null)");
+                ObjArray* a = (ObjArray*)sp[-3].as.o;
+                int i = sp[-2].as.i, j = sp[-1].as.i;
+                if (i < 0 || i >= a->rows || j < 0 || j >= a->cols) {
+                    char m[100]; snprintf(m, sizeof m, "index [%d, %d] is outside the array [%d, %d]", i, j, (int)a->rows, (int)a->cols);
+                    FAIL(m);
+                }
+                sp[-2].t = V_INT; sp[-2].as.i = i * a->cols + j; sp--;
+                NEXT;
+            }
+            CASE(OP_ARRDIM) {             /* rank; array, d -> GetLength(d) */
+                int rank = ARG();
+                if (sp[-2].t != V_OBJ) FAIL("null reference (GetLength of null)");
+                ObjArray* a = (ObjArray*)sp[-2].as.o;
+                int d = sp[-1].as.i;
+                if (d < 0 || d >= rank) { char m[80]; snprintf(m, sizeof m, "GetLength(%d): the array has %d dimension%s", d, rank, rank == 1 ? "" : "s"); FAIL(m); }
+                sp[-2].t = V_INT; sp[-2].as.i = rank == 1 ? a->len : d == 0 ? a->rows : a->cols; sp--;
                 NEXT;
             }
             CASE(OP_ARRLEN) {             /* array.Length, list.Count or string.Length */

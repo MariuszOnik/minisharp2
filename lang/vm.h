@@ -37,6 +37,9 @@ enum {
     OP_JNULL, OP_JNULL_POP, OP_JNNULL,  /* offset: a?.b (null stays / is popped), a ?? b (non-null stays, null is popped) */
     OP_LISTF,                           /* LF_* | default-value kind << 8: list, delegate -> result */
     OP_COPY,                            /* struct -> a copy of it (struct fields copied too) */
+    OP_NEWARR2,                         /* default-value kind: rows, cols -> new T[rows, cols] */
+    OP_IDX2,                            /* array, i, j -> array, flat index (then GETELEM / SETELEM as usual) */
+    OP_ARRDIM,                          /* rank: array, d -> GetLength(d) */
     /* superinstructions: made by the compiler from frequent sequences */
     OP_JNLT, OP_JNLE, OP_JNGT, OP_JNGE, OP_JNEQ, OP_JNNE,   /* offset: int compare + JZ (jump when the comparison is false) */
     OP_IADDK,                           /* k: ICONST k + IADD */
