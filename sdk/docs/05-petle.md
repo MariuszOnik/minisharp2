@@ -240,4 +240,5 @@ wpisując samą nazwę: `suma`.
 
 > **Dla zaawansowanych:** w terminalu `else` wpisuj w tej samej linii co klamrę zamykającą: `} else {`. Linia
 > zawierająca samo `}` kończy polecenie i terminal od razu je wykonuje, więc `else` w następnej linii nie miałoby się
-> do czego dołączyć.
+> do czego dołączyć. Terminal podpowie wtedy: `'else' has no 'if': in the terminal write '} else {' on one line`.
+> W programie pisanym w edytorze `else` może stać w osobnej linii.

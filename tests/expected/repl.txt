@@ -69,6 +69,19 @@ i = 3
 error: line 3: unknown method 'nic'
 > Console.WriteLine("brace in a string: {")
 brace in a string: {
+> if (x > 5) {
+.     Console.WriteLine("big");
+. }
+> else {
+.     Console.WriteLine("small");
+. }
+error: 'else' has no 'if': in the terminal write '} else {' on one line
+> if (x > 5) {
+.     Console.WriteLine("big");
+. } else {
+.     Console.WriteLine("small");
+. }
+small
 > #complete Con
 Console continue
 > #complete Math.Sq

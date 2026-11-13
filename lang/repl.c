@@ -130,6 +130,12 @@ int repl_eval(Repl* r, const char* text, char* err, int errlen) {
     free(src);
     if (!p) {
         free(decls);
+        const char* t = text;
+        while (isspace((unsigned char)*t)) t++;
+        if (!strncmp(t, "else", 4) && !isword((unsigned char)t[4])) {   /* the 'if' already ran as the previous input */
+            snprintf(err, errlen, "'else' has no 'if': in the terminal write '} else {' on one line");
+            return 0;
+        }
         strip_line(err, multi);
         char* f = strstr(err, "found ';'");          /* the ';' we added, not one the user typed */
         if (semi && f && !f[9]) snprintf(f, errlen - (f - err), "found end of line");

@@ -43,6 +43,17 @@ while (suma > 0) {
     nic();
 }
 Console.WriteLine("brace in a string: {")
+if (x > 5) {
+    Console.WriteLine("big");
+}
+else {
+    Console.WriteLine("small");
+}
+if (x > 5) {
+    Console.WriteLine("big");
+} else {
+    Console.WriteLine("small");
+}
 #complete Con
 #complete Math.Sq
 #complete li
