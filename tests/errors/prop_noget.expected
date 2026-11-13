@@ -1,0 +1,1 @@
+compile error: line 1: property 'X' has no 'get', so it can only be assigned

@@ -1,0 +1,1 @@
+compile error: line 1: property 'X' has no 'set', so it cannot be assigned (except in a constructor of its class)

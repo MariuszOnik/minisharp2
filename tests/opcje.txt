@@ -1,0 +1,7 @@
+# Dodatkowe argumenty hosta dla tests/<nazwa>.cs (jak w starym run_tests.sh). Format: nazwa argumenty...
+coroutines --frames 40
+coro_gc --frames 400
+coro_stop --frames 20
+inherit_coro --frames 8
+lambdas2 --frames 8
+kurs_snippets --frames 30

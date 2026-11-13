@@ -1,0 +1,18 @@
+score: 42
+42
+
+no holes
+1.5 True Z text []
+50 83 8 2
+high zero many
+{literal braces} {42}
+tab	new\line "quoted"
+(1, 2) and (3, -4)
+Green 1
+count=3 first=1 last=3
+inner nested 42
+TEXT4t
+<7><8>
+0,1,2,
+ab12
+0

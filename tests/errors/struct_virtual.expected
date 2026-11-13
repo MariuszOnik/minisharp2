@@ -1,0 +1,1 @@
+compile error: line 1: a struct cannot have virtual or abstract members (only 'override string ToString()')

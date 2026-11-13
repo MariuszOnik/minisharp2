@@ -1,0 +1,42 @@
+Right
+11
+0 1 10
+Down
+5
+d = Right, d + 1 = 12, d - 1 = Left
+1
+Right!
+Down Right Left
+True
+True
+True
+True
+A, C
+AB
+None
+All
+All
+B, C
+8
+True
+True
+All
+B, C
+B
+Low 1 10
+Idle Up
+Idle -> calm-ish
+Chase -> calm-ish
+Attack -> angry
+Dead -> gone
+Dead -> gone
+Right
+Attack
+Up: 3
+Left: 1
+Right: 1
+Up Down Left Right 
+2 True
+Up 3
+2.5
+2

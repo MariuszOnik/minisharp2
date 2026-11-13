@@ -1,0 +1,1 @@
+compile error: line 1: struct 'S' holds itself (through its fields), so it would never end; use a class

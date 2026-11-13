@@ -1,0 +1,1 @@
+compile error: line 5: 'Troll' is ambiguous: A.Troll or B.Troll? write the full name

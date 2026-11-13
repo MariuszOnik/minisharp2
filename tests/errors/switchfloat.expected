@@ -1,0 +1,1 @@
+compile error: line 1: 'switch' works on int, char, string, bool or an enum, not float

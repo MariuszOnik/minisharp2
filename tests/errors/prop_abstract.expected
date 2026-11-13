@@ -1,0 +1,1 @@
+compile error: line 1: class 'A' must override the abstract property 'B.X' (or be 'abstract class')

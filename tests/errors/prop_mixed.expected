@@ -1,0 +1,1 @@
+compile error: line 1: property 'X': write a body for every accessor, or for none ({ get; set; })

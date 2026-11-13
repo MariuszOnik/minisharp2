@@ -1,0 +1,1 @@
+compile error: line 1: formats like {x:F2} or {x,5} in $"..." are not supported yet; for a condition use parentheses: {(a ? b : c)}

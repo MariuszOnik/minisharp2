@@ -1,0 +1,1 @@
+compile error: line 1: cannot use instance property 'X' in a static method

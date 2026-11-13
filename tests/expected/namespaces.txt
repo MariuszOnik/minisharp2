@@ -1,0 +1,10 @@
+big Troll (Large, club) mod 6
+other troll
+scenario big Troll (Large, club) mod 6
+hero Lew (Small, fist)
+club 99 2
+monster item / axe / relative name
+Small 2 True
+monster item
+3 True True
+ring Troll

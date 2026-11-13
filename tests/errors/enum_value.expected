@@ -1,0 +1,1 @@
+compile error: line 1: an enum value must be a whole number, e.g. A = 4 or B = A | C

@@ -1,13 +1,20 @@
 #!/bin/sh
 # Uruchamia testy i porównuje wynik z zapisanym oczekiwanym (tests/expected/*.txt, tests/errors/*.expected).
-# Wołany przez `make test` (zmienna BIN = ścieżka binarki testowej). Ostatnia linia: "passed: N, failed: M".
+# Wołany przez `make test` (zmienna BIN = ścieżka binarki testowej). Ostatnia linia: "passed: N, failed: M, waiting: K" (K = testy z tests/czeka.txt).
 cd "$(dirname "$0")/.."
 BIN=${BIN:-build/minisharp}
 [ -f "$BIN" ] || [ -f "$BIN.exe" ] || BIN=
 pass=0; fail=0
 
+wait=0
+# tests/czeka.txt: testy czekające na brakującą część biblioteki – ich porażka nie psuje wyniku
+waiting() { grep -q "^$1[[:space:]]" tests/czeka.txt; }
 check() { # nazwa, wynik, plik z oczekiwanym wynikiem
-    if [ "$2" = "$(cat "$3")" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: $1"; fi
+    if [ "$2" = "$(cat "$3")" ]; then
+        pass=$((pass+1))
+        if waiting "$1"; then fail=$((fail+1)); echo "FAIL: $1 juz przechodzi - usun go z tests/czeka.txt"; fi
+    elif waiting "$1"; then wait=$((wait+1))
+    else fail=$((fail+1)); echo "FAIL: $1"; fi
 }
 
 # Testy jednostkowe w C (zmienna UNIT = lista binarek z build/unit): każdy wypisuje swoje FAIL-e, kod 0 = ok.
@@ -18,12 +25,16 @@ done
 if [ -z "$BIN" ]; then
     echo "Brak binarki testowej (nie ma jeszcze hosta platform/pc z main) - 0 testow."
 else
-    # Programy z tests/*.cs, które mają plik tests/expected/<nazwa>.txt (bez dodatkowych opcji).
+    # Programy z tests/*.cs, które mają plik tests/expected/<nazwa>.txt; argumenty z tests/opcje.txt, rt_* = tylko stderr.
     for f in tests/*.cs; do
         [ -f "$f" ] || continue
         n=$(basename "$f" .cs)
         [ -f "tests/expected/$n.txt" ] || continue
-        check "$n" "$("$BIN" "$f" 2>&1)" "tests/expected/$n.txt"
+        args=$(sed -n "s/^$n //p" tests/opcje.txt)    # np. --frames 40
+        case $n in
+            rt_*) check "$n" "$("$BIN" "$f" $args 2>&1 >/dev/null)" "tests/expected/$n.txt" ;;   # błąd wykonania: tylko stderr
+            *)    check "$n" "$("$BIN" "$f" $args 2>&1)" "tests/expected/$n.txt" ;;
+        esac
     done
     # Błędy kompilacji: tests/errors/<nazwa>.cs -> komunikat na stderr = tests/errors/<nazwa>.expected
     for f in tests/errors/*.cs; do
@@ -33,5 +44,5 @@ else
     done
 fi
 
-echo "passed: $pass, failed: $fail"
+echo "passed: $pass, failed: $fail, waiting: $wait"
 [ $fail -eq 0 ]

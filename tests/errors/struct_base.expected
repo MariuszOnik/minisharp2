@@ -1,0 +1,1 @@
+compile error: line 1: a struct cannot derive from a class or implement an interface here; use a class

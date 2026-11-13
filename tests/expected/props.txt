@@ -1,0 +1,19 @@
+orc Grom (20) kind=orc alive=True speed=3 id=101
+bat bat (3) kind=bat alive=True speed=1 id=102
+orc Ulg (20) kind=orc alive=True speed=3 id=103
+made 3
+False 0 bat bat (0)
+True
+30 30
+310
+3110
+3 20
+event: clamped 5
+event: clamped 0
+event: clamped 9
+9 3 3
+5 0 9 
+event: called directly
+70
+1.5 3
+4.5 9 9

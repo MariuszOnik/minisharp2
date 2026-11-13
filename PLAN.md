@@ -50,7 +50,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [x] Przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
 - [x] Przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania (z przestrzeniami nazw `a350c5e`).
 - [x] Rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli.
-- [ ] Przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`) – wszystkie mają przejść.
+- [x] Przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`) – przechodzą poza czekającymi na bibliotekę (`tests/czeka.txt`).
 
 ### Etap 2 – biblioteka i projekty
 - [ ] `lib/`: Console, Math, Mathf, Random, string, char, int/float, List, Dictionary (część rdzenia z `natives.c`).
@@ -107,8 +107,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 1: przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`; przestrzenie nazw z `a350c5e`). Potrzebny
-minimalny host PC z `main` (uruchom plik `.cs`) i tabela `Console` zarejestrowana przez `ms_register` – reszta `lib/` w etapie 2.
+Etap 2: `lib/` – Math, Mathf, Random, string, char, int/float, List, Dictionary (z `natives.c` z `931ad08`, każda klasa
+swoją tabelą przez `ms_register`, wzór: `lib/console.c`). Po każdej klasie skreślać z `tests/czeka.txt` testy, które
+zaczęły przechodzić. Uwaga: ostrzeżenie gcc `-Walloc-size-larger-than` w `lang/compiler.c:330` – przy okazji obejrzeć.
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -140,3 +141,7 @@ minimalny host PC z `main` (uruchom plik `.cs`) i tabela `Console` zarejestrowan
   rosnącej listy (kolejność = indeksy w bajtkodzie i kolejność przeciążeń; ta sama tabela drugi raz nic nie robi; wpis bez funkcji
   odrzucany), `ms_native_count`/`ms_native_at` dla Help i katalogu węzłów grafu. Doszły testy jednostkowe w C (`tests/unit/*.c`,
   linkowane bez hosta): `test_register.c` kompiluje i uruchamia program na zarejestrowanych tabelach.
+- 2026-11-13: testy języka przeniesione: 32 programy `tests/*.cs` + 111 błędów `errors/` z `931ad08`, przestrzenie nazw z `a350c5e`.
+  Minimalny host `platform/pc/main_pc.c` (plik `.cs`, `--frames`, zegar 60 kl./s) i `lib/console.c` (Console; wyjście ustawia
+  host przez `lib_set_output`, `lib_register_all`). Wynik: 132 przechodzi, 13 czeka (`tests/czeka.txt`: Math, string… – etap 2;
+  App, Gfx – etap 3); argumenty testów w `tests/opcje.txt`.
