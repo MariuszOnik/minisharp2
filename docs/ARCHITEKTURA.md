@@ -73,9 +73,16 @@ MiniSharp2/
 ```c
 MsProgram* ms_compile(const MsSource* files, int n, MsError* err);   // projekt = kilka plików
 MsVM*      ms_vm_new(MsProgram* p);
-int        ms_call_main / ms_call_update / ms_call_draw(MsVM* vm);   // 0 = błąd (ms_vm_error)
+int        ms_entry(p, MS_ENTRY_MAIN) / ms_hook(p, "Update");        // indeks funkcji dla vm_call; 0 = błąd (ms_vm_error)
 int        ms_register(const NativeDef* table, int n);               // warstwy i moduły dokładają funkcje (jest: lang/register.c)
+int        ms_register_hook("Update");                               // pętla gry jest warstwy wyżej: rdzeń zna tylko Main
+int        ms_register_source(const char* cs);                       // klasy C# dokładane przez warstwę (np. Node grafu)
 ```
+
+Rdzeń nie wie o pętli gry: `Update`/`Draw` rejestruje host albo aplikacja (`ms_register_hook`), on też decyduje, czy program
+bez `Main` i bez `Update` jest błędem. Kompilator dla każdej zarejestrowanej nazwy robi jedną funkcję wołającą `static void X()`
+wszystkich klas (kolejność `[Order(n)]`). Tak samo klasy potrzebne warstwie (np. `abstract class Node` dla grafu) dokłada
+ona sama przez `ms_register_source` – program może mieć własną klasę o tej nazwie.
 
 Szczegóły (nazwy, co jest w `ms.h`, a co wewnętrzne) ustalamy przy przenoszeniu języka – testy stare mają przejść
 bez zmian w kodzie MiniSharp (programach `.cs`).

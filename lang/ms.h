@@ -73,6 +73,17 @@ int ms_register(const NativeDef* table, int n);
 int ms_register_consts(const ConstDef* table, int n);
 #define MS_REGISTER(table) ms_register((table), (int)(sizeof(table) / sizeof((table)[0])))
 #define MS_REGISTER_CONSTS(table) ms_register_consts((table), (int)(sizeof(table) / sizeof((table)[0])))
+/* Hooks: a layer above the language (a game loop: "Update", "Draw") names the 'static void X()' methods it will
+ * call; the compiler then makes one function per name that calls X() of every class that has it, in the order
+ * of the classes ([Order(n)] first, then files by name, classes top to bottom). The language itself knows only Main.
+ * At most MS_MAX_HOOKS names of up to MS_HOOK_NAME-1 characters; 1 = ok (also when already registered). */
+#define MS_MAX_HOOKS 16
+#define MS_HOOK_NAME 32
+int ms_register_hook(const char* name);
+/* Sources: C# classes a layer adds to every program (unless the program declares a class of that name itself),
+ * e.g. the graph layer's base class of nodes. The string is kept, not copied. 1 = ok. */
+#define MS_MAX_SOURCES 16
+int ms_register_source(const char* src);
 int ms_native_count(void);                 /* registered functions (for Help, hints, the graph's node catalogue) */
 const NativeDef* ms_native_at(int i);      /* NULL outside 0..count-1 */
 
@@ -95,9 +106,11 @@ void ms_value_to_text(VM* vm, Value v, char* buf, int buflen);
 
 void ms_disassemble(Program* p);        /* print the bytecode (tools) */
 
-/* Entry points of a compiled program: function index for vm_call, or -1 when the program has none. */
-enum { MS_ENTRY_STATIC_INIT, MS_ENTRY_MAIN, MS_ENTRY_UPDATE, MS_ENTRY_DRAW };
+/* Entry points of a compiled program: function index for vm_call, or -1 when the program has none.
+ * A program may have no Main (e.g. only Update): whether that is enough is the host's decision. */
+enum { MS_ENTRY_STATIC_INIT, MS_ENTRY_MAIN };
 int ms_entry(const Program* p, int which);
+int ms_hook(const Program* p, const char* name);    /* registered hook (ms_register_hook) or -1 if no class has it */
 
 const char* ms_vm_error(VM* vm);        /* the runtime error after vm_call returned 0 ("" if none) */
 void ms_vm_fail(VM* vm, const char* fmt, ...);  /* built-in function: report a runtime error (the call then fails) */

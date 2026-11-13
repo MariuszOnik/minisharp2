@@ -69,20 +69,18 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] `lib/`: Console, Math, Mathf, Random, string, char, int/float (z `natives.c`); List i Dictionary są w języku (`vm.c`).
 - [x] `lang/project.c` (projekt = folder, `uses.txt`, `using X;` dołącza `../x/lib`), host PC przyjmuje folder; 12 testów
       projektów w `tests/projects/` (2026-11-13).
-- [ ] `repl.c` (terminal) z testem `repl`.
-- [ ] `printer.c` (AST → kod) z testami `print/*`, `spans`.
-- [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
 - [ ] **Modyfikatory dostępu, wersja łagodna** (decyzja użytkownika 2026-11-13). Dziś `public`/`private`/`protected`/`internal`
       i `static class` są przyjmowane i pomijane. Zasady: brak słówka = dostęp z każdej klasy (jak dziś, nic się nie psuje);
       jawne `private` – tylko w swojej klasie (błąd w rodzaju `'ile' is private in Licznik`); `protected` – w klasie i pochodnych;
       `internal` = brak słówka; `static class` – zakaz `new` i wszystkie składniki `static`. Każdy program poprawny w C# jest
       poprawny i u nas. Sprawdzenie przy wyszukiwaniu pola/metody/właściwości (`comp_types.c`, `comp_expr.c`, `comp_call.c`,
       też w lambdach), testy w `tests/errors/`, sekcja w rozdziale „Klasy i obiekty”.
-- [ ] **Rdzeń bez pętli gry** (uwaga użytkownika 2026-11-13). Kompilator zna na sztywno `Update`/`Draw` (`entry_point` w
-      `compiler.c`, błąd „no entry point… Update”) i sam dokłada klasę `Node` dla grafu – to pojęcia warstw wyżej. Rdzeń zna
-      tylko `Main` (jak C#) i daje ogólne `ms_hook(program, "Nazwa")`: jedna funkcja wołająca `static void Nazwa()` we wszystkich
-      klasach w kolejności `[Order(n)]`. Pętlę gry (`Update`/`Draw`) i komunikat o braku punktu wejścia robi host/aplikacja
-      (`platform/*`, `app/`); `Node` dokłada `graph/`. Testy `project_hooks`, `project_order`, `noentry` przechodzą bez zmian wyniku.
+- [ ] `repl.c` (terminal) z testem `repl`.
+- [ ] `printer.c` (AST → kod) z testami `print/*`, `spans`.
+- [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
+- [x] **Rdzeń bez pętli gry** (uwaga użytkownika 2026-11-13, zrobione 2026-11-13). Kompilator zna tylko `Main`; warstwy wyżej
+      rejestrują hooki (`ms_register_hook("Update")`, `ms_hook(p, "Update")`) i swoje klasy C# (`ms_register_source`, np. `Node`
+      grafu – `graph/` zarejestruje go w etapie 5). Brak punktu wejścia zgłasza host. Test jednostkowy `tests/unit/test_hooks.c`.
 
 ### Etap 3 – platforma 3DS i host testów PC
 - [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
@@ -149,5 +147,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 ## Następny krok
 
-Etap 2: `repl.c` (terminal) + test `repl` z `toee-3d`/`931ad08` (opcja hosta `--repl`, wejście ze stdin).
-Potem w osobnych krokach `printer.c`, `codeindex.c`. Przy okazji: rozdział 3 dokumentacji („Rachunki”).
+Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
+1. **Modyfikatory dostępu** (wersja łagodna) – zmieniają AST, więc przed `printer.c` (drukuje je) i `codeindex.c`
+   (nie podpowiada `private` spoza klasy). Przy okazji rozdział 3 dokumentacji („Rachunki”).
+2. `repl.c` (terminal) + test `repl` (opcja hosta `--repl`, wejście ze stdin).
+3. `printer.c`, potem `codeindex.c`.

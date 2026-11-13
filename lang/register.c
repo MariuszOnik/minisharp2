@@ -67,3 +67,30 @@ int ms_register_consts(const ConstDef* table, int n) {
 
 int ms_native_count(void) { return ms_nnatives; }
 const NativeDef* ms_native_at(int i) { return i >= 0 && i < ms_nnatives ? &ms_natives[i] : NULL; }
+
+/* ---------- hooks and sources registered by the layers above the language ---------- */
+/* Hooks: names of 'static void X()' methods that the host calls in every class (a game loop registers
+ * "Update" and "Draw"); the compiler makes one function per name that calls them all (ms_hook). */
+char ms_hook_names[MS_MAX_HOOKS][MS_HOOK_NAME];
+int ms_nhooks = 0;
+
+int ms_register_hook(const char* name) {
+    if (!name || !*name || strlen(name) >= MS_HOOK_NAME || !strcmp(name, "Main")) return 0;
+    for (int i = 0; i < ms_nhooks; i++) if (!strcmp(ms_hook_names[i], name)) return 1;
+    if (ms_nhooks == MS_MAX_HOOKS) return 0;
+    strcpy(ms_hook_names[ms_nhooks++], name);
+    return 1;
+}
+
+/* Sources: C# text whose classes every program gets unless it declares a class of the same name itself
+ * (e.g. the graph layer's 'abstract class Node'). The text is not copied: pass a string that lives on. */
+const char* ms_sources[MS_MAX_SOURCES];
+int ms_nsources = 0;
+
+int ms_register_source(const char* src) {
+    if (!src) return 0;
+    for (int i = 0; i < ms_nsources; i++) if (ms_sources[i] == src) return 1;
+    if (ms_nsources == MS_MAX_SOURCES) return 0;
+    ms_sources[ms_nsources++] = src;
+    return 1;
+}

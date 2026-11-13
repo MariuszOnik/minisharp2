@@ -25,9 +25,11 @@ int ms_entry(const Program* p, int which) {
     switch (which) {
         case MS_ENTRY_STATIC_INIT: return p->staticInit;
         case MS_ENTRY_MAIN: return p->entryMain;
-        case MS_ENTRY_UPDATE: return p->entryUpdate;
-        case MS_ENTRY_DRAW: return p->entryDraw;
     }
+    return -1;
+}
+int ms_hook(const Program* p, const char* name) {
+    for (int i = 0; name && i < p->nhooks; i++) if (!strcmp(p->hookNames[i], name)) return p->hookFuncs[i];
     return -1;
 }
 const char* ms_vm_error(VM* vm) { return vm->err; }

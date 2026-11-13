@@ -45,3 +45,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: `lang/project.c` z `toee-3d` (`uses.txt` + `using X;` → `../x/lib` lub `../lib/X`, pliki rozdzielone bajtem 0x1C,
   błędy mapowane na „Plik.cs line N”); host PC przyjmuje folder. 12 testów projektów w `tests/projects/` (162 ok z przykładami dokumentacji, 6 czeka);
   `project_ns` przepisany bez ToEE. Dokumentacja: rozdział 2 „Zmienne i typy”. W planie etapu 4 zakładka „Opcje” edytora.
+- 2026-11-13: rdzeń bez pętli gry: kompilator zna tylko `Main`; `Update`/`Draw` rejestruje host (`ms_register_hook`, `ms_hook`),
+  on też zgłasza brak punktu wejścia; dokładana na sztywno klasa `Node` zastąpiona ogólnym `ms_register_source`.
+  Test `tests/unit/test_hooks.c`; 163 ok. W planie kolejność: modyfikatory dostępu → `repl.c` → `printer.c` → `codeindex.c`.

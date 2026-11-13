@@ -77,7 +77,8 @@ struct Program {
     ClassRT* classes; int nclasses;
     int nsel;                           /* virtual selectors (length of every vtable) */
     Value* staticDefaults; int nstatics;
-    int staticInit, entryMain, entryUpdate, entryDraw;
+    int staticInit, entryMain;
+    int nhooks; char hookNames[MS_MAX_HOOKS][MS_HOOK_NAME]; int hookFuncs[MS_MAX_HOOKS];    /* ms_hook */
 };
 
 /* ---------- VM ---------- */
@@ -106,6 +107,10 @@ struct VM {
 
 
 /* Built-in functions and constants the compiler can see: everything registered so far (register.c). */
+extern char ms_hook_names[MS_MAX_HOOKS][MS_HOOK_NAME];    /* register.c: ms_register_hook / ms_register_source */
+extern int ms_nhooks;
+extern const char* ms_sources[MS_MAX_SOURCES];
+extern int ms_nsources;
 extern const NativeDef* ms_natives;
 extern int ms_nnatives;
 extern const ConstDef* ms_consts;

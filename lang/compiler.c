@@ -323,7 +323,7 @@ static void collect(C* c, ProgramAST* ast) {
         k->type->isa = isa;
     }
 
-    int nfuncs = 1 + 3 + ast->nlambdas;  /* static init, the Main/Update/Draw dispatchers, lambdas */
+    int nfuncs = 1 + 1 + ms_nhooks + ast->nlambdas;  /* static init, the dispatchers of Main and the hooks, lambdas */
     for (int i = 0; i < nc; i++) nfuncs += 1 + ast->classes[i].nmethods;
     P->funcs = (Func*)calloc(nfuncs, sizeof(Func));
     P->capfuncs = nfuncs;
@@ -650,9 +650,10 @@ static void lower_props(C* c, ProgramAST* ast) {
     }
 }
 
-/* Every class may have 'static void Main()', 'static void Update()' and 'static void Draw()' (like the Unity scripts of one scene):
- * the program calls all of them, in the order of the classes in the project (files by name, classes top to bottom).
- * With more than one, a small function made here does the calls, so the hosts keep calling a single entry. */
+/* Every class may have 'static void Main()' and the hooks registered by the layers above (a game loop: 'static void
+ * Update()', 'static void Draw()', like the Unity scripts of one scene): the program calls all of them, in the order of
+ * the classes in the project (files by name, classes top to bottom). With more than one, a small function made here
+ * does the calls, so the hosts keep calling a single entry. */
 static int entry_point(C* c, const char* name) {
     int fns[256], ords[256], n = 0;
     for (int i = 0; i < c->nclasses; i++) {
@@ -687,17 +688,26 @@ static int entry_point(C* c, const char* name) {
     return fi;
 }
 
-/* Graph nodes with memory derive from Node. Unless the program has its own class Node (an A* graph node, say),
-   one is added to the parsed program; it is parsed on its own, so the program's text and lines stay as they are. */
-static void add_node_class(C* c, ProgramAST* ast) {
-    for (int i = 0; i < ast->nclasses; i++) if (ast->classes[i].nlen == 4 && !memcmp(ast->classes[i].name, "Node", 4)) return;
-    static const char NODE_CLASS[] = "abstract class Node { public virtual void Run() { } }";
-    int n;
-    Token* t = ms_lex(&c->pc, NODE_CLASS, &n);
-    ProgramAST* extra = ms_parse(&c->pc, t, n);
-    int cap = ast->nclasses;
-    ast->classes = (ClassDecl*)arena_grow(&c->A, ast->classes, ast->nclasses, &cap, sizeof(ClassDecl));
-    ast->classes[ast->nclasses++] = extra->classes[0];
+/* Classes registered by the layers above (ms_register_source, e.g. the graph layer's base class of nodes) are added to
+   the parsed program unless it declares a class of the same name itself; each source is parsed on its own, so the
+   program's text and lines stay as they are. */
+static void add_sources(C* c, ProgramAST* ast) {
+    int nown = ast->nclasses;
+    for (int s = 0; s < ms_nsources; s++) {
+        int n;
+        Token* t = ms_lex(&c->pc, ms_sources[s], &n);
+        ProgramAST* extra = ms_parse(&c->pc, t, n);
+        for (int k = 0; k < extra->nclasses; k++) {
+            ClassDecl* x = &extra->classes[k];
+            int own = 0;
+            for (int i = 0; i < nown && !own; i++)
+                own = ast->classes[i].nlen == x->nlen && !memcmp(ast->classes[i].name, x->name, x->nlen);
+            if (own) continue;
+            int cap = ast->nclasses;
+            ast->classes = (ClassDecl*)arena_grow(&c->A, ast->classes, ast->nclasses, &cap, sizeof(ClassDecl));
+            ast->classes[ast->nclasses++] = *x;
+        }
+    }
 }
 
 static Program* compile(const char* src, char* err, int errlen, char* replDecls, int replDeclsCap) {
@@ -719,7 +729,7 @@ static Program* compile(const char* src, char* err, int errlen, char* replDecls,
     int ntok;
     Token* toks = ms_lex(&c->pc, src, &ntok);
     ProgramAST* ast = ms_parse(&c->pc, toks, ntok);
-    add_node_class(c, ast);
+    add_sources(c, ast);
     lower_props(c, ast);
     collect(c, ast);
     c->scope = -1;
@@ -739,10 +749,11 @@ static Program* compile(const char* src, char* err, int errlen, char* replDecls,
     }
     compile_static_init(c, c->P->staticInit);
     c->P->entryMain = entry_point(c, "Main");
-    c->P->entryUpdate = entry_point(c, "Update");
-    c->P->entryDraw = entry_point(c, "Draw");
-    if (c->P->entryMain < 0 && c->P->entryUpdate < 0)
-        cfail(c, 1, "no entry point: add 'static void Main()' or 'static void Update()'");
+    for (int h = 0; h < ms_nhooks; h++) {           /* copied: hooks registered later do not change this program */
+        snprintf(c->P->hookNames[h], sizeof c->P->hookNames[h], "%s", ms_hook_names[h]);
+        c->P->hookFuncs[h] = entry_point(c, ms_hook_names[h]);
+    }
+    c->P->nhooks = ms_nhooks;
     Program* P = c->P;
     arena_free(&c->A);
     free(c);

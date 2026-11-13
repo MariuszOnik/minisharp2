@@ -52,6 +52,8 @@ int main(int argc, char** argv) {
 
     ms_set_clock(frame_millis);
     lib_register_all();
+    ms_register_hook("Update");             /* the game loop is the host's: the language knows only Main */
+    ms_register_hook("Draw");
 
     char err[300];
     Project proj;                           /* stays empty for one file: project_map_error then does nothing */
@@ -72,12 +74,17 @@ int main(int argc, char** argv) {
         project_free(&proj);
         return 1;
     }
+    int si = ms_entry(p, MS_ENTRY_STATIC_INIT), mi = ms_entry(p, MS_ENTRY_MAIN);
+    int up = ms_hook(p, "Update"), dr = ms_hook(p, "Draw");
+    if (mi < 0 && up < 0) {
+        fprintf(stderr, "compile error: line 1: no entry point: add 'static void Main()' or 'static void Update()'\n");
+        ms_free_program(p); project_free(&proj);
+        return 1;
+    }
     if (dis) ms_disassemble(p);
     if (check) { ms_free_program(p); project_free(&proj); return 0; }
 
     VM* vm = vm_new(p);
-    int si = ms_entry(p, MS_ENTRY_STATIC_INIT), mi = ms_entry(p, MS_ENTRY_MAIN);
-    int up = ms_entry(p, MS_ENTRY_UPDATE), dr = ms_entry(p, MS_ENTRY_DRAW);
     int ok = si < 0 || vm_call(vm, si);
     if (ok && mi >= 0) ok = vm_call(vm, mi);
     if (ok && up >= 0) {
