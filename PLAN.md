@@ -260,6 +260,11 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    test `tests/unit/test_terminal.c`; Y w menu 3DS; Stop START+SELECT, wtedy bez limitu 5 s (`repl_set_time_limit`).
    Brak jeszcze płótna `Gfx` (etap 3). **Sprawdzić na konsoli**: wejście/wyjście z terminala, czytelność czcionki 13 px,
    czy wiersze po 56 znaków mieszczą się na 400 px (czcionka systemowa jest proporcjonalna), Stop w `while (true) { }`.
-8. (rdzeń) usługa języka `lang/service.h` na `codeindex.c`: podpowiedzi w miejscu kursora, sygnatura, kolory linii.
+8. [x] (rdzeń) usługa języka `lang/service.h` – zrobione 2026-11-13: `svc_colors` (kolory leksykalne, stan komentarza
+   między liniami, klasy projektu jako typy), `svc_complete` (po kropce `codeindex`, inaczej nazwy z pliku, klasy
+   projektu, wbudowane, słowa kluczowe), `svc_signature` (sygnatura wywołania i numer argumentu: własne metody
+   z `codeindex`, wbudowane z tabel z „(+N)” dla przeciążeń), `svc_complete_line` dla terminala (dawne `ms_complete`
+   z `app/repl.c`); test `tests/unit/test_service.c`. Brak: sygnatury konstruktorów (`codeindex` ich nie zapisuje),
+   błędy z liniami (dojdą z „Uruchom” w edytorze).
 9. Edytor tekstu bez podpowiedzi: bufor (kursor, zaznaczenie, cofanie – logika z testami na PC), widok z numerami
    linii, kolorowanie, zapis/otwieranie z karty, „Uruchom” i skok do linii błędu; potem podpowiedzi z usługi języka.

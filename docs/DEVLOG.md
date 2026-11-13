@@ -96,3 +96,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Terminal w `app/terminal.c` na `ui.h` (bez libctru): logika linii, historii, podpowiedzi i przewijanego
   wyjścia testowana na PC (`test_terminal`, też układ na jeden ekran). Na 3DS Y w menu otwiera terminal; host z przyciskiem
   Stop wyłącza limit 5 s (`repl_set_time_limit`). Rozdział 1: sekcja „Terminal na 3DS”.
+- 2026-11-13: Usługa języka `lang/service.c`: kolory linii, podpowiedzi w miejscu kursora i sygnatura wywołania
+  z numerem argumentu – wszystko na tekście (`codeindex` + tabele wbudowanych), więc działa na kodzie z błędami.
+  Uzupełnianie słów terminala przeniesione z `app/repl.c` do usługi: jedna logika dla terminala i edytora.

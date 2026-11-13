@@ -5,6 +5,7 @@
 #include "ms.h"
 #include "vm.h"
 #include "repl.h"
+#include "service.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -161,29 +162,6 @@ int repl_eval(Repl* r, const char* text, char* err, int errlen) {
 }
 
 /* ---------- completion ---------- */
-static const char* KEYWORDS[] = {
-    "var", "int", "float", "bool", "char", "string", "new", "null", "true", "false",
-    "if", "else", "for", "foreach", "in", "while", "do", "switch", "break", "continue", "return", "ref", "out",
-    "List", "Dictionary",
-};
-
-
-static int has(char out[][REPL_WORD], int n, const char* s) {
-    for (int i = 0; i < n; i++) if (!strcmp(out[i], s)) return 1;
-    return 0;
-}
-
-/* adds s if it starts with the prefix (any letter case: "con" finds Console) and is longer */
-static int offer(char out[][REPL_WORD], int n, int max, const char* s, int slen, const char* pre, int plen) {
-    if (n >= max || slen <= plen || slen >= REPL_WORD) return n;
-    for (int i = 0; i < plen; i++) if (tolower((unsigned char)s[i]) != tolower((unsigned char)pre[i])) return n;
-    char w[REPL_WORD];
-    memcpy(w, s, slen); w[slen] = 0;
-    if (has(out, n, w)) return n;
-    strcpy(out[n], w);
-    return n + 1;
-}
-
 int repl_complete(Repl* r, const char* line, int cursor, int* start, char out[][REPL_WORD], int max) {
     /* the terminal's own variables: "static int x; " -> "x" */
     char words[DECLS_CAP];
@@ -194,44 +172,5 @@ int repl_complete(Repl* r, const char* line, int cursor, int* start, char out[][
         n += snprintf(words + n, sizeof words - n, "%.*s ", (int)(s - e), e);
     }
     words[n] = 0;
-    return ms_complete(line, cursor, start, out, max, words);
-}
-
-int ms_complete(const char* line, int cursor, int* start, char out[][REPL_WORD], int max, const char* words) {
-    int ws = cursor;
-    while (ws > 0 && isword((unsigned char)line[ws - 1])) ws--;
-    *start = ws;
-    const char* pre = line + ws; int plen = cursor - ws;
-    int n = 0;
-    if (ws > 0 && line[ws - 1] == '.') {                /* members of a built-in class */
-        int os = ws - 1;
-        while (os > 0 && isword((unsigned char)line[os - 1])) os--;
-        int olen = ws - 1 - os;
-        if (olen == 0) return 0;
-        for (int i = 0; i < ms_nnatives; i++) {
-            const NativeDef* d = &ms_natives[i];
-            if ((int)strlen(d->cls) == olen && !memcmp(d->cls, line + os, olen))
-                n = offer(out, n, max, d->name, (int)strlen(d->name), pre, plen);
-        }
-        for (int i = 0; i < ms_nconsts; i++) {
-            const ConstDef* d = &ms_consts[i];
-            if ((int)strlen(d->cls) == olen && !memcmp(d->cls, line + os, olen))
-                n = offer(out, n, max, d->name, (int)strlen(d->name), pre, plen);
-        }
-        return n;
-    }
-    if (plen == 0 || isdigit((unsigned char)line[ws])) return 0;
-    for (const char* s = words; *s; ) {                 /* the caller's names first */
-        while (*s == ' ') s++;
-        const char* e = s;
-        while (*e && *e != ' ') e++;
-        if (e > s) n = offer(out, n, max, s, (int)(e - s), pre, plen);
-        s = e;
-    }
-    for (int i = 0; i < ms_nnatives; i++)
-        if (ms_natives[i].cls[0] != '.' && ms_natives[i].cls[0] != '#') n = offer(out, n, max, ms_natives[i].cls, (int)strlen(ms_natives[i].cls), pre, plen);
-    for (int i = 0; i < ms_nconsts; i++) n = offer(out, n, max, ms_consts[i].cls, (int)strlen(ms_consts[i].cls), pre, plen);
-    for (size_t i = 0; i < sizeof KEYWORDS / sizeof KEYWORDS[0]; i++)
-        n = offer(out, n, max, KEYWORDS[i], (int)strlen(KEYWORDS[i]), pre, plen);
-    return n;
+    return svc_complete_line(line, cursor, start, out, max, words);
 }
