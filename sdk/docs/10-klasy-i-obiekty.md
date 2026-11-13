@@ -339,7 +339,7 @@ saldo: 70
 Gdyby `Main` napisał `k.saldo = 1000000;`, kompilator odpowie błędem:
 
 ```text
-compile error: line 33: 'saldo' is private in Konto; only code inside class Konto can use it
+compile error: line …: 'saldo' is private in Konto; only code inside class Konto can use it
 ```
 
 - `public` – dostęp z każdej klasy.
