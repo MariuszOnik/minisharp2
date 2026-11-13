@@ -17,7 +17,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
    jak go używać, poradniki. **Każdy commit dopisuje albo poprawia jeden rozdział**, chyba że nie ma czego opisać.
    Pisana prosto, dla początkujących, z dopiskami „Dla zaawansowanych”. Format mały (podzbiór Markdown, opis w
    `sdk/docs/README.md`), żeby edytor na każdej platformie (3DS, web, Switch) mógł ją dołączyć jako Help; przykłady
-   ` ```cs ` + ` ```wynik ` sprawdza `make test`, więc dokumentacja zawsze zgadza się z językiem.
+   ` ```cs ` + ` ```wynik ` sprawdza `make test`, więc dokumentacja zawsze zgadza się z językiem. Po każdej zmianie
+   języka przejrzeć też opisy w rozdziałach (testy sprawdzają tylko przykłady).
 
 ## Gdzie co leży
 
@@ -77,6 +78,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       poprawny i u nas. Sprawdzenie przy wyszukiwaniu pola/metody/właściwości (`comp_types.c`, `comp_expr.c`, `comp_call.c`,
       też w lambdach), testy w `tests/errors/`, sekcja w rozdziale „Klasy i obiekty”.
 - [ ] `repl.c` (terminal) z testem `repl`.
+- [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
+      `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
+      host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
+      stanąć w połowie) i na PC (stdin, testy z plikiem odpowiedzi). `ReadLine` w lambdzie wołanej z funkcji wbudowanej
+      (np. `Sort`) = czytelny błąd. Rozdział dokumentacji „Rozmowa z użytkownikiem” (np. zgadywanka liczby).
 - [ ] `printer.c` (AST → kod) z testami `print/*`, `spans`.
 - [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
 - [x] **Rdzeń bez pętli gry** (uwaga użytkownika 2026-11-13, zrobione 2026-11-13). Kompilator zna tylko `Main`; warstwy wyżej
@@ -86,6 +92,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 ### Etap 3 – platforma 3DS i host testów PC
 - [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
+- [ ] **Terminal i `Console` w stylu DOS** (pomysł użytkownika 2026-11-13): ekran jako siatka znaków (górny ekran 3DS
+      przy czcionce 8×8 = 50×30), 16 kolorów, migający kursor-blok, znak zachęty w stylu `C:\>`. API jak w C#:
+      `Console.ForegroundColor`/`BackgroundColor` (`ConsoleColor.Yellow`…), `Console.Clear()`, `Console.SetCursorPosition(x, y)`,
+      `Console.CursorVisible` – na tym gry tekstowe (roguelike). Logika siatki w `lib/` (testy na PC: zrzut siatki jako tekst),
+      rysowanie w `platform/*`; czcionka własna albo na wolnej licencji (nie kopiujemy czcionki ROM z kart VGA).
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę. Pierwszy build na konsolę.
 - [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
       przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
@@ -150,6 +161,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego):
 1. **Modyfikatory dostępu** (wersja łagodna) – zmieniają AST, więc przed `printer.c` (drukuje je) i `codeindex.c`
-   (nie podpowiada `private` spoza klasy). Przy okazji rozdział 4 dokumentacji („if/else”).
+   (nie podpowiada `private` spoza klasy). Po zmianie **przejrzeć całą dokumentację `sdk/docs/`** (prośba użytkownika
+   2026-11-13): czy opisy i przykłady zgadzają się z nowymi zasadami (`public`/`private`, `static class`). Przy okazji
+   rozdział 4 dokumentacji („if/else”).
 2. `repl.c` (terminal) + test `repl` (opcja hosta `--repl`, wejście ze stdin).
 3. `printer.c`, potem `codeindex.c`.
