@@ -110,3 +110,4 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Przecinek w `for` (`for (i = 0, j = 5; i < j; i++, j--)`): nowy węzeł `E_SEQ` tylko w pierwszej
   i ostatniej części, kompilowany jak kolejne instrukcje; inne funkcje przechodzące po drzewie nie wymagały zmian.
   Test `forcomma`, rozdział 5: dopisek „Dla zaawansowanych”.
+- 2026-11-13: Rozdział 8 „Napisy” – 6 sprawdzanych przykładów (sklejanie, `$"..."`, znaki, metody, `Split` z `int.Parse`).

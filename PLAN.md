@@ -66,7 +66,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 5 „Pętle” (`for`, `while`, `do … while`, `foreach`, `break`/`continue`, pętle w terminalu).
 - [x] Rozdział 6 „Metody” (parametry, `return`, `=>`, przeciążanie, rekurencja, zasięg zmiennych).
 - [x] Rozdział 7 „Tablice” (`{ … }`, `new T[n]`, `Length`, `for`/`foreach`, suma i maksimum, tablica w metodzie, `char[][]`).
-- [ ] Kolejne rozdziały (propozycja kolejności): string,
+- [x] Rozdział 8 „Napisy” (`+`, `$""`, znaki specjalne, `Length`/`s[i]`, metody, `Split`, `IsNullOrEmpty`).
+- [ ] Kolejne rozdziały (propozycja kolejności):
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
