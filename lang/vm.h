@@ -105,7 +105,7 @@ struct VM {
 #define MS_POOL_MAX 128
 
 
-/* Built-in functions and constants the compiler can see (filled by the registration; empty until then). */
+/* Built-in functions and constants the compiler can see: everything registered so far (register.c). */
 extern const NativeDef* ms_natives;
 extern int ms_nnatives;
 extern const ConstDef* ms_consts;

@@ -1,5 +1,5 @@
 # MiniSharp2 – budowanie na PC (tylko testy).
-#   make test    buduje build/minisharp i uruchamia tests/run_tests.sh
+#   make test    buduje build/minisharp i testy jednostkowe (tests/unit/*.c), uruchamia tests/run_tests.sh
 #   make         samo budowanie (bez hosta platform/pc: tylko kompilacja warstw do build/obj)
 #   make clean   usuwa build/
 # Na Windows uruchamiaj przez tools/test.ps1 (ustawia PATH do msys64).
@@ -32,6 +32,11 @@ OBJ     := $(SRC:%.c=$(BUILD)/obj/%.o)
 # Binarkę testową linkujemy, gdy jest host PC z main() (etap 3); wcześniej tylko kompilujemy warstwy.
 HOST    := $(wildcard platform/pc/*.c)
 
+# Testy jednostkowe w C: każdy tests/unit/X.c to osobny program linkowany z warstwami bez hosta (bez main z platform/pc).
+CORE_OBJ := $(filter-out $(BUILD)/obj/platform/%,$(OBJ))
+UNIT_SRC := $(wildcard tests/unit/*.c)
+UNIT_BIN := $(UNIT_SRC:tests/unit/%.c=$(BUILD)/unit/%$(EXE))
+
 .PHONY: all test clean
 
 all: $(if $(HOST),$(BIN),$(if $(SRC),$(OBJ),nothing))
@@ -43,14 +48,18 @@ $(BUILD)/obj/%.o: %.c $(HDR) | $(TMPDIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
+$(BUILD)/unit/%$(EXE): tests/unit/%.c $(CORE_OBJ) $(HDR) | $(TMPDIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INC) -o $@ $< $(CORE_OBJ) -lm
+
 $(TMPDIR):
 	@mkdir -p $@
 
 nothing:
 	@echo "Brak plikow .c w $(SRCDIRS) - nie ma czego budowac."
 
-test: all
-	@BIN="$(BIN)" sh tests/run_tests.sh
+test: all $(UNIT_BIN)
+	@BIN="$(BIN)" UNIT="$(UNIT_BIN)" sh tests/run_tests.sh
 
 clean:
 	rm -rf $(BUILD)

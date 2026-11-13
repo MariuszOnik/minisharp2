@@ -49,7 +49,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 - [x] Szkielet repo: foldery, `Makefile` dla testów PC (sam ustawia `TMP`), skrypt `tools/test.ps1`, `.gitignore`.
 - [x] Przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
 - [x] Przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania (z przestrzeniami nazw `a350c5e`).
-- [ ] Rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli.
+- [x] Rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli.
 - [ ] Przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`) – wszystkie mają przejść.
 
 ### Etap 2 – biblioteka i projekty
@@ -88,8 +88,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 1: rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli – `ms_natives`/`ms_consts`
-w `lang/vm.c` to dziś puste wskaźniki, które `ms_register` ma wypełniać (kolejność = indeksy w bajtkodzie).
+Etap 1: przenieść testy języka (`tests/*.cs`, `tests/errors`, `expected`; przestrzenie nazw z `a350c5e`). Potrzebny
+minimalny host PC z `main` (uruchom plik `.cs`) i tabela `Console` zarejestrowana przez `ms_register` – reszta `lib/` w etapie 2.
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -117,3 +117,7 @@ w `lang/vm.c` to dziś puste wskaźniki, które `ms_register` ma wypełniać (ko
   (testy, przykłady, 13 projektów z `a350c5e`) identyczne przed i po podziale. Odłożone do swoich funkcji wbudowanych:
   `T_INTARR` (`File`, `ff4efc5`), `T_FLTARR` (Gfx3D) i `ms_require_entry` (API osadzania `6ab15e9`). Testy przestrzeni nazw
   (`namespaces.cs`, `project_ns`, `errors/ns_*`) brać z `a350c5e`, nie z `931ad08`.
+- 2026-11-13: `lang/register.c`: `ms_register`/`ms_register_consts` (+ makra `MS_REGISTER(tabela)`) dopisują tabele do jednej
+  rosnącej listy (kolejność = indeksy w bajtkodzie i kolejność przeciążeń; ta sama tabela drugi raz nic nie robi; wpis bez funkcji
+  odrzucany), `ms_native_count`/`ms_native_at` dla Help i katalogu węzłów grafu. Doszły testy jednostkowe w C (`tests/unit/*.c`,
+  linkowane bez hosta): `test_register.c` kompiluje i uruchamia program na zarejestrowanych tabelach.

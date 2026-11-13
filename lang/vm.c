@@ -8,12 +8,7 @@
 #include <time.h>
 #include <ctype.h>
 
-/* ================= tables and host hooks ================= */
-const NativeDef* ms_natives = NULL;
-int ms_nnatives = 0;
-const ConstDef* ms_consts = NULL;
-int ms_nconsts = 0;
-
+/* ================= host hooks ================= */
 static int clock_millis(void) { return (int)((long long)clock() * 1000 / CLOCKS_PER_SEC); }
 static int (*hostMillis)(void) = clock_millis;
 void ms_set_clock(int (*millis)(void)) { hostMillis = millis ? millis : clock_millis; }

@@ -73,7 +73,7 @@ MiniSharp2/
 MsProgram* ms_compile(const MsSource* files, int n, MsError* err);   // projekt = kilka plików
 MsVM*      ms_vm_new(MsProgram* p);
 int        ms_call_main / ms_call_update / ms_call_draw(MsVM* vm);   // 0 = błąd (ms_vm_error)
-void       ms_register(const NativeDef* table, int n);               // warstwy i moduły dokładają funkcje
+int        ms_register(const NativeDef* table, int n);               // warstwy i moduły dokładają funkcje (jest: lang/register.c)
 ```
 
 Szczegóły (nazwy, co jest w `ms.h`, a co wewnętrzne) ustalamy przy przenoszeniu języka – testy stare mają przejść

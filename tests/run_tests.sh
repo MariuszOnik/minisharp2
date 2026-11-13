@@ -10,6 +10,11 @@ check() { # nazwa, wynik, plik z oczekiwanym wynikiem
     if [ "$2" = "$(cat "$3")" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: $1"; fi
 }
 
+# Testy jednostkowe w C (zmienna UNIT = lista binarek z build/unit): każdy wypisuje swoje FAIL-e, kod 0 = ok.
+for u in $UNIT; do
+    if r=$("$u" 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: unit/$(basename "$u")"; echo "$r"; fi
+done
+
 if [ -z "$BIN" ]; then
     echo "Brak binarki testowej (nie ma jeszcze hosta platform/pc z main) - 0 testow."
 else

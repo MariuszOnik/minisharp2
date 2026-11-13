@@ -65,6 +65,17 @@ typedef Value (*NativeFn)(VM* vm, Value* args);
 typedef struct { const char* cls; const char* name; int np; int params[MS_MAXNATIVEARGS]; int ret; NativeFn fn; } NativeDef;
 typedef struct { const char* cls; const char* name; int isFloat; int ivalue; float fvalue; } ConstDef;
 
+/* Each layer and module registers its own tables before the first ms_compile (the compiler sees what is
+ * registered at that moment). Tables are appended in order: overloads of the same name are tried in
+ * registration order, and indices of programs compiled earlier stay valid. The table is copied; registering
+ * the same table again does nothing. 1 = ok, 0 = bad entry (no name or function, too many parameters) or no memory. */
+int ms_register(const NativeDef* table, int n);
+int ms_register_consts(const ConstDef* table, int n);
+#define MS_REGISTER(table) ms_register((table), (int)(sizeof(table) / sizeof((table)[0])))
+#define MS_REGISTER_CONSTS(table) ms_register_consts((table), (int)(sizeof(table) / sizeof((table)[0])))
+int ms_native_count(void);                 /* registered functions (for Help, hints, the graph's node catalogue) */
+const NativeDef* ms_native_at(int i);      /* NULL outside 0..count-1 */
+
 /* ---------- API ---------- */
 Program* ms_compile(const char* src, char* err, int errlen);
 void ms_free_program(Program* p);
