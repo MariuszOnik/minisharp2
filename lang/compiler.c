@@ -327,7 +327,7 @@ static void collect(C* c, ProgramAST* ast) {
     for (int i = 0; i < nc; i++) nfuncs += 1 + ast->classes[i].nmethods;
     P->funcs = (Func*)calloc(nfuncs, sizeof(Func));
     P->capfuncs = nfuncs;
-    P->classes = (ClassRT*)calloc(nc ? nc : 1, sizeof(ClassRT));
+    P->classes = (ClassRT*)calloc((size_t)(nc > 0 ? nc : 1), sizeof(ClassRT));
     P->nclasses = nc;
 
     /* enum values, in the order of the program (a member may use members of enums before it) */

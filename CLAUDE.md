@@ -7,7 +7,8 @@ Użytkownik pisze po polsku; odpowiadaj po polsku. Pracuje w krótkich sesjach (
 1. Przeczytaj [PLAN.md](PLAN.md) – jedyne źródło prawdy o stanie prac. Weź **jeden** punkt z „Następny krok”.
 2. Przy przenoszeniu kodu zajrzyj do [docs/PRZEGLAD.md](docs/PRZEGLAD.md) (werdykt dla każdego starego pliku)
    i [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) (warstwy, moduły, układ folderów).
-3. Na koniec: odhacz punkt w PLAN.md, dopisz 1–3 zdania do „Dziennika”, commit.
+3. Na koniec: odhacz punkt w PLAN.md, dopisz 1–3 zdania do dev logu ([docs/DEVLOG.md](docs/DEVLOG.md)), commit.
+   W każdym commicie dopisz albo popraw jeden rozdział dokumentacji `sdk/docs/` (zasady: `sdk/docs/README.md`), gdy jest co opisać.
 4. **Każdy commit od razu wypychaj** (`git push`) na `origin` = https://github.com/MariuszOnik/minisharp2.git.
    GitHub Actions (`.github/workflows/build.yml`) buduje testy PC, `.3dsx` i `.apk`; po pushu sprawdź, czy przeszło.
 

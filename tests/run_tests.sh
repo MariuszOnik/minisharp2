@@ -36,6 +36,23 @@ else
             *)    check "$n" "$("$BIN" "$f" $args 2>&1)" "tests/expected/$n.txt" ;;
         esac
     done
+    # Przykłady z dokumentacji (sdk/docs/*.md): blok ```cs = cały program; po nim ```wynik = oczekiwane wyjście.
+    # Przykład bez bloku wynik musi się przynajmniej skompilować.
+    rm -rf build/doc; mkdir -p build/doc
+    for md in sdk/docs/[0-9]*.md; do
+        [ -f "$md" ] || continue
+        awk -v out="build/doc/$(basename "$md" .md)" '
+            /^```cs[[:space:]]*$/    { n++; f = out "_" n ".cs";  printf "" > f; inb = 1; next }
+            /^```wynik[[:space:]]*$/ { f = out "_" n ".txt"; printf "" > f; inb = 1; next }
+            /^```/ && inb            { inb = 0; close(f); next }
+            inb                      { sub(/$/, ""); print > f }' "$md"
+    done
+    for f in build/doc/*.cs; do
+        [ -f "$f" ] || continue
+        n=${f%.cs}
+        if [ -f "$n.txt" ]; then check "doc/$(basename "$n")" "$("$BIN" "$f" 2>&1)" "$n.txt"
+        elif r=$("$BIN" "$f" --check 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: doc/$(basename "$n"): $r"; fi
+    done
     # Błędy kompilacji: tests/errors/<nazwa>.cs -> komunikat na stderr = tests/errors/<nazwa>.expected
     for f in tests/errors/*.cs; do
         [ -f "$f" ] || continue
