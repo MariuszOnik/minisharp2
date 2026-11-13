@@ -11,14 +11,14 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
    plik po pliku, z przeglądem. Nie wprowadzamy w nim zmian.
 4. Kod przenosimy **razem z testami**; po każdym kroku wszystkie przeniesione testy przechodzą.
 5. W rdzeniu żadnych nazw ani ścieżek gier. Gry i ich zasoby to moduły w repozytoriach gier.
-6. Platformy: 3DS i przeglądarka (web). PC tylko do testów. Logika (podpowiedzi, graf) tylko w C – web woła ją
+6. Platformy: 3DS, przeglądarka (web) i Android (APK = wersja web w WebView). PC tylko do testów. Logika (podpowiedzi, graf) tylko w C – web woła ją
    przez wasm. Pliki `.cs` bez BOM.
 
 ## Gdzie co leży
 
 | Co | Gdzie |
 |---|---|
-| Nowe repo | `E:\MiniSharp2` (git lokalny; przeniesione 2026-11-13 z `E:\minsharpProject\minisharp-core`) |
+| Nowe repo | `E:\MiniSharp2`, GitHub: https://github.com/MariuszOnik/minisharp2 (każdy commit od razu `git push`; Actions: testy PC, `.3dsx`, `.apk`, wydania `3ds-latest`/`android-latest`) |
 | Stare repo (archiwum) | `D:\Programowanie\FalloutDS\minisharp`; baza `931ad08` (gałąź `jezyk-v4`), późniejsze zmiany z `toee-3d` (`fa01cec`) |
 | Projekty na MiniSharpie (wstrzymane) | `E:\minsharpProject\PLAN.md` (framework D&D na zasobach ToEE), `toee-models` |
 | Konsola | FTP `192.168.1.90:5000`; testowe buildy jako `/3ds/MiniSharp-*.3dsx` (nie nadpisywać `/3ds/MiniSharp.3dsx` bez pytania) |
@@ -76,7 +76,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 ### Etap 5b – przeglądarka
 - [ ] `platform/web` (`main_web.c`) + budowanie wasm (Zig) z listy modułów; `Gfx.NewImage` w JS.
 - [ ] Strona: edytor HTML/JS, podpowiedzi i graf przez wywołania C (bez `complete.js`/`graph.js` jako drugiej logiki).
-- [ ] Publikacja (GitHub Pages) – nowe repo na GitHubie albo dalej stare: decyzja użytkownika.
+- [ ] Publikacja (GitHub Pages) w nowym repo `minisharp2`.
+- [ ] Android: folder `android/` (WebView z wersją web, `prepare-assets.sh`) – wzór w starym `minisharp-apk-files.zip`,
+      ale jako zwykłe pliki w repo, nie zip. Job `build-android` w Actions już czeka.
 
 ### Etap 6 – moduły
 - [ ] API modułów (folder, tabela funkcji, `api.cs`, testy, włączanie w buildzie).
@@ -97,3 +99,5 @@ szkieletu repo.
   `E:\MiniSharp2` (nowa nazwa folderu na prośbę użytkownika), dodany `CLAUDE.md` dla nowych sesji.
 - 2026-11-13: baza przenoszenia potwierdzona: `931ad08`. Różnica do `toee-3d` w rdzeniu języka jest mała
   (compiler +158, parser +87, vm +80 linii, 4 commity); większość późniejszych zmian to gry (`gfx3d.c`, `natives.c`).
+- 2026-11-13: repo na GitHubie (`minisharp2`), każdy commit wypychany. Workflow `build.yml`: testy PC, 3DS, APK
+  (Android dochodzi jako platforma: web w WebView); joby pomijają części, których jeszcze nie ma.

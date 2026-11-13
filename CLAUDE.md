@@ -8,6 +8,8 @@ Użytkownik pisze po polsku; odpowiadaj po polsku. Pracuje w krótkich sesjach (
 2. Przy przenoszeniu kodu zajrzyj do [docs/PRZEGLAD.md](docs/PRZEGLAD.md) (werdykt dla każdego starego pliku)
    i [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) (warstwy, moduły, układ folderów).
 3. Na koniec: odhacz punkt w PLAN.md, dopisz 1–3 zdania do „Dziennika”, commit.
+4. **Każdy commit od razu wypychaj** (`git push`) na `origin` = https://github.com/MariuszOnik/minisharp2.git.
+   GitHub Actions (`.github/workflows/build.yml`) buduje testy PC, `.3dsx` i `.apk`; po pushu sprawdź, czy przeszło.
 
 ## Czym jest ten projekt
 
@@ -37,6 +39,10 @@ gry (ToEE, Fallout) to moduły w swoich repozytoriach, **nic z gier w rdzeniu**.
 - **PC (testy):** gcc z `C:\msys64\mingw64\bin`, uruchamiać z **PowerShell** z `$env:TMP = "$env:USERPROFILE\AppData\Local\Temp"`
   (w Git Bash gcc nie widzi katalogu tymczasowego i pada na `C:\windows\`).
 - **Web:** Zig przez pip (`python -m ziglang`), `wasm32-wasi` – zob. stare `web/build.sh`.
+- **Android:** APK = wersja web w WebView; folder `android/` + `android/prepare-assets.sh` (wzór: stare
+  `minisharp-apk-files.zip` i `.github/workflows/apk-z-zip.yml`), budowane tylko w Actions.
+- **Umowa z CI** (workflow pomija część, której jeszcze nie ma): `make test` – testy PC (etap 1);
+  `make 3ds` → `build/MiniSharp.3dsx` (gdy jest `platform/3ds`); APK gdy są `android/` i `platform/web`.
 
 ## Pułapki
 
