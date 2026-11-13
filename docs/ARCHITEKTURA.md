@@ -2,15 +2,17 @@
 
 Cel: MiniSharp jest **podstawą niezależną od gier**. Rdzeń nie wie nic o żadnej grze ani projekcie, który na nim
 powstaje. Gry (ToEE, Fallout…) i większe dodatki (3D, Iso) są modułami, które dołączają się do rdzenia, a nie
-odwrotnie. Platformy: Nintendo 3DS i przeglądarka (ten sam C jako WebAssembly); build PC służy tylko testom.
+odwrotnie. Platformy: Nintendo 3DS, przeglądarka (ten sam C jako WebAssembly) i Android (wersja web w WebView,
+bez osobnego kodu C); build PC służy tylko testom.
 
 ## Warstwy
 
 Każda warstwa korzysta tylko z niższych. Niższa nie zna wyższej.
 
 ```
-5. aplikacje      menu, edytor kodu, edytor grafu, Help             (app/)
+5. aplikacje      menu, edytor kodu, edytor grafu, terminal, Help   (app/ – 3DS, web/ – przeglądarka)
 4. moduły         3d, iso, …  (opcjonalne, każdy w swoim folderze)   (modules/<nazwa>/)
+   graf           model grafu + generator (graf → AST → kod), bez UI (graph/) – obok modułów, korzysta tylko z języka
 3. platforma      Gfx, Input, Audio, Time, App, File – 3DS, web, PC-test (platform/3ds, web, pc)
 2. biblioteka     Console, Math, Mathf, Random, string, char, List…  (lib/)
 1. język          lekser, parser, kompilator, VM, GC, korutyny       (lang/)
@@ -37,7 +39,7 @@ Dziś te punkty są rozsiane w `editor.c` (słowa kluczowe, `ci_*`, `ms_complete
 Zysk: ten sam edytor otwiera też pliki bez języka (`uses.txt`, dane), a przeglądarka woła tę samą usługę przez wasm.
 Kolejność prac się nie zmienia: usługa stoi na rdzeniu, więc najpierw język i biblioteka (etapy 1–2), edytor w etapie 4.
 
-## Układ folderów (propozycja)
+## Układ folderów
 
 ```
 MiniSharp2/
@@ -51,8 +53,12 @@ MiniSharp2/
     web/        host w wasm: platform.h przez funkcje JS (canvas, dźwięk, dotyk)
     pc/         host testów: konsola, programowy bufor ekranów (--frames, --press, --ppm)
   modules/      3d/, iso/ (opcjonalne)
-  app/          menu, editor, graph, help, keyboard, ui, terminal (jeśli zostaje) – wersja 3DS w C
+  graph/        json.c, fgraph.c – model grafu, katalog węzłów, generator (graf → AST → printer); bez UI, testy na PC,
+                ten sam kod w 3DS i w wasm
+  app/          wersja 3DS w C: menu, editor, bolt (edytor grafu), terminal, help, keyboard, ui
   web/          strona: edytor HTML/JS, widok grafu SVG, budowanie wasm (Zig), publikacja
+  android/      projekt Gradle: WebView z wersją web (prepare-assets.sh kopiuje web/dist)
+  .github/      workflow: testy PC, .3dsx, .apk, wydania 3ds-latest / android-latest
   sdk/          Help.txt, api/*.cs (opis API wg warstw i modułów, dla podpowiedzi i VS Code)
   tools/        gen_help.py, gen_samples.py, make_atlas.py, ms.ps1, build/test skrypty
   examples/     przykładowe programy (tylko ogólne)

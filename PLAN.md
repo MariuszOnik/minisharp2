@@ -42,7 +42,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
       - przegląd był robiony na `toee-3d` – przy każdym pliku porównać z wersją z `931ad08`;
       - różnice `vm.c`/`compiler.c` z commita Gfx3D (`a43971f`) przejrzeć ręcznie (mogą zawierać ogólne poprawki);
       - przestrzenie nazw (`a350c5e`) przenieść już w etapie 1 razem z kompilatorem (`using`/`uses.txt` z nich korzystają).
-- [ ] Przejrzeć architekturę z użytkownikiem i ją zatwierdzić (układ folderów, nazwy).
+- [x] Architektura zatwierdzona (2026-11-13): układ folderów i nazwy z `docs/ARCHITEKTURA.md`, w tym nowy `graph/`
+      (model grafu + generator bez UI, wspólny dla 3DS i wasm) i `android/` (WebView z wersją web).
 
 ### Etap 1 – język (lang/) + testy na PC
 - [ ] Szkielet repo: foldery, `Makefile` dla testów PC (sam ustawia `TMP`), skrypt `tools/test.ps1`, `.gitignore`.
@@ -87,8 +88,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 0: przejrzeć i zatwierdzić architekturę z użytkownikiem (`docs/ARCHITEKTURA.md`). Potem etap 1 od
-szkieletu repo.
+Etap 1: szkielet repo (foldery, `Makefile` z `make test` ustawiającym `TMP`, `tools/test.ps1`, `.gitignore`).
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -101,3 +101,4 @@ szkieletu repo.
   (compiler +158, parser +87, vm +80 linii, 4 commity); większość późniejszych zmian to gry (`gfx3d.c`, `natives.c`).
 - 2026-11-13: repo na GitHubie (`minisharp2`), każdy commit wypychany. Workflow `build.yml`: testy PC, 3DS, APK
   (Android dochodzi jako platforma: web w WebView); joby pomijają części, których jeszcze nie ma.
+- 2026-11-13: architektura zatwierdzona; doszedł folder `graph/` (fgraph/json poza `app/` i `lang/`). Etap 0 zamknięty.
