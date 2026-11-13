@@ -14,6 +14,7 @@ static void cond_expr(C* c, Expr* e, const char* what) {
 }
 
 void expr_stmt(C* c, Expr* e) {
+    if (e->k == E_SEQ) { expr_stmt(c, e->a); expr_stmt(c, e->b); return; }   /* for (...; ...; a++, b--) */
     if (e->k == E_INCDEC) e->prefix = 1;       /* value unused: x++ behaves like ++x */
     if (e->k != E_ASSIGN && e->k != E_INCDEC && e->k != E_CALL && e->k != E_NEW)
         cfail(c, e->line, "only assignments, calls, ++/-- and 'new' can be used as a statement");

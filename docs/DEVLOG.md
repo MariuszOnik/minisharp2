@@ -107,3 +107,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   zmianach: 207 ok, 0 błędów. Rozdział 1: sekcja „Edytor na 3DS”.
 - 2026-11-13: Przypisanie do zmiennej pętli `foreach` (`=`, `+=`, `++`, `ref`/`out`, też w lambdzie i dla słownika) to
   teraz błąd kompilacji jak CS1656 w C#. Rozdział 7 pokazuje komunikat.
+- 2026-11-13: Przecinek w `for` (`for (i = 0, j = 5; i < j; i++, j--)`): nowy węzeł `E_SEQ` tylko w pierwszej
+  i ostatniej części, kompilowany jak kolejne instrukcje; inne funkcje przechodzące po drzewie nie wymagały zmian.
+  Test `forcomma`, rozdział 5: dopisek „Dla zaawansowanych”.

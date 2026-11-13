@@ -58,7 +58,8 @@ enum {
     E_LAMBDA,                       /* params / nparams (tn NULL if not written), body (block) or a (expression) */
     E_COALESCE,                     /* a ?? b */
     E_STACK,                        /* compiler only: a value already on the stack (for a?.b) */
-    E_INTERP                        /* $"...": args = the parts in order; text pieces are E_STRING with prefix = 1 */
+    E_INTERP,                       /* $"...": args = the parts in order; text pieces are E_STRING with prefix = 1 */
+    E_SEQ                           /* a, b: only in the first and the third part of 'for' (each part a statement) */
 };
 
 typedef struct Expr Expr;

@@ -200,6 +200,11 @@ static void expr(MsBuf* b, Expr* e, int minprec, int level) {
             if (e->tn) ms_print_type(b, e->tn); else puts_(b, "null");
             if (e->name) { putc_(b, ' '); put(b, e->name, e->nlen); }
             break;
+        case E_SEQ:                                 /* for (a = 0, b = 9; ...; a++, b--) */
+            expr(b, e->a, P_ASSIGN, level);
+            puts_(b, ", ");
+            expr(b, e->b, P_ASSIGN, level);
+            break;
         case E_COALESCE:
             expr(b, e->a, P_COALESCE + 1, level);
             puts_(b, " ?? ");

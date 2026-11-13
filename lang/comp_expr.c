@@ -400,6 +400,7 @@ Type* compile_expr(C* c, Expr* e) {
             patch_jump(c, j);
             return t;
         }
+        case E_SEQ: cfail(c, e->line, "a list with ',' is allowed only in the first and the last part of 'for'");
         case E_NULL: emit_op(c, OP_NULL); return &tNull;
         case E_STRING: emit_op1(c, OP_SCONST, add_string(c, e->name, e->nlen)); return &tString;
         case E_INTERP: {                        /* $"a{x}b" is "a" + x + "b"; it starts with a text piece, so a null string gives "" */

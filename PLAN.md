@@ -86,7 +86,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       (`repl_incomplete`: otwarta `{`/`(`/`[` albo nagłówek `for/while/if/foreach (...)`, `else`, `do` bez treści).
       Ograniczenie: `else` musi być w linii z `}` (samo `}` kończy wejście).
 - [ ] **Braki względem C# znalezione przy rozdziale 5** (zasada: program poprawny w C# działa i u nas):
-      - przecinek w `for`: `for (int a = 0, b = 10; a < b; a += 3, b--)` – dziś błąd `expected ')', found ','`;
+      - ~~przecinek w `for`~~ (zrobione 2026-11-13: `E_SEQ` w parserze tylko dla części 1 i 3 `for`, printer, test `forcomma`);
       - `char` to jeden bajt: `foreach (char c in "pętla")` daje dla `ę` dwa znaki (napisy w UTF-8). Do decyzji: `char` jako
         punkt kodowy Unicode (indeksowanie i `Length` po znakach) czy zostawić bajty i opisać.
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**

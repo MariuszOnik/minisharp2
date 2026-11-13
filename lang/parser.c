@@ -315,6 +315,19 @@ static Stmt* parse_stmt(P* p) { int st = p->pos; return sspan(p, parse_stmt_(p),
 static Stmt* parse_block(P* p) { int st = p->pos; return sspan(p, parse_block_(p), st); }
 static Stmt* parse_simple(P* p) { int st = p->pos; return sspan(p, parse_simple_(p), st); }
 
+/* "first, x, y" in the parts of 'for': a chain E_SEQ(E_SEQ(first, x), y), run left to right */
+static Expr* parse_seq(P* p, Expr* first) {
+    while (at(p, TK_COMMA)) {
+        int line = first->line;
+        next(p);
+        Expr* s = mkexpr(p, E_SEQ, line);
+        s->a = first;
+        s->b = parse_expr(p);
+        first = s;
+    }
+    return first;
+}
+
 static int is_type_kw(int k) { return k == TK_KINT || k == TK_KFLOAT || k == TK_KBOOL || k == TK_KSTRING || k == TK_KCHAR || k == TK_VOID; }
 
 static TypeNode* parse_type(P* p);
@@ -947,10 +960,11 @@ static Stmt* parse_stmt_(P* p) {
             s = mkstmt(p, S_FOR, t->line);
             expect(p, TK_LPAREN);
             if (!at(p, TK_SEMI)) s->init = parse_simple(p);
+            if (s->init && s->init->k == S_EXPR) s->init->e = parse_seq(p, s->init->e);   /* for (a = 0, b = 9; ...) */
             expect(p, TK_SEMI);
             if (!at(p, TK_SEMI)) s->e = parse_expr(p);
             expect(p, TK_SEMI);
-            if (!at(p, TK_RPAREN)) s->step = parse_expr(p);
+            if (!at(p, TK_RPAREN)) s->step = parse_seq(p, parse_expr(p));             /* ...; a++, b--) */
             expect(p, TK_RPAREN);
             s->body = parse_stmt(p);
             return s;

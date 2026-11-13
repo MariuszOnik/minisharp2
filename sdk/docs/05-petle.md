@@ -53,6 +53,28 @@ class Program
 10 7 4 1 Start!
 ```
 
+> **Dla zaawansowanych:** w pierwszej i ostatniej części `for` może być kilka rzeczy naraz, rozdzielonych
+> przecinkiem. Tak dwie zmienne idą sobie naprzeciw:
+
+```cs
+class Program
+{
+    static void Main()
+    {
+        for (int lewo = 0, prawo = 6; lewo < prawo; lewo++, prawo--)
+        {
+            Console.WriteLine(lewo + " <-> " + prawo);
+        }
+    }
+}
+```
+
+```wynik
+0 <-> 6
+1 <-> 5
+2 <-> 4
+```
+
 ## Suma w pętli
 
 Częsty wzór: zmienna przed pętlą zbiera wynik, pętla dokłada do niej po kawałku.
