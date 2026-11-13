@@ -22,6 +22,7 @@ if [ "$1" = tests ]; then
     (cd "$tmp" && find minisharp -type f | sort | xargs md5sum) > "$sent.new"
     grep -vxFf "$sent" "$sent.new" > "$sent.todo"
     while read -r sum p; do
+        p=${p#\*}                    # md5sum na Windows pisze "*ścieżka" (tryb binarny)
         curl -sS --ftp-create-dirs -T "$tmp/$p" "$FTP/$p" || exit 1
         echo "$sum  $p" >> "$sent"   # po każdym udanym pliku – przerwana wysyłka nie zgubi postępu
     done < "$sent.todo"
