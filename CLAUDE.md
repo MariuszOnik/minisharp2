@@ -12,6 +12,18 @@ Użytkownik pisze po polsku; odpowiadaj po polsku. Pracuje w krótkich sesjach (
 4. **Każdy commit od razu wypychaj** (`git push`) na `origin` = https://github.com/MariuszOnik/minisharp2.git.
    GitHub Actions (`.github/workflows/build.yml`) buduje testy PC, `.3dsx` i `.apk`; po pushu sprawdź, czy przeszło.
 
+## Tryb autonomiczny (gdy użytkownik napisze „pracuj sam”)
+
+- Bierz kolejne punkty z „Następny krok” w PLAN.md po kolei, bez pytania o potwierdzenie.
+- Po każdym punkcie: `make test` (Windows: `tools\test.ps1`) → jeśli przechodzi: odhacz w PLAN.md, DEVLOG, rozdział
+  dokumentacji (gdy jest co opisać), commit, push i sprawdzenie Actions.
+- Jeśli testy padają i dwie próby naprawy nie pomogą: zapisz problem w PLAN.md („Do decyzji”), cofnij
+  niedokończone zmiany (`git stash`) i przejdź do następnego niezależnego punktu albo zakończ.
+- Decyzje projektowe, których plan nie rozstrzyga (np. `char` jako bajt czy punkt kodowy): nie zgaduj –
+  dopisz do „Do decyzji” w PLAN.md i weź inny punkt.
+- Nie wysyłaj nic na konsolę 3DS (FTP). Na koniec napisz podsumowanie: co zrobione, co czeka na decyzję,
+  co sprawdzić na konsoli.
+
 ## Czym jest ten projekt
 
 Przebudowa języka MiniSharp (C#-podobny, kompilator + VM w C, działa na Nintendo 3DS i w przeglądarce przez wasm)

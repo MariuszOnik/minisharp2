@@ -214,6 +214,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] `modules/iso`, `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).
 - [ ] Przeniesienie części ToEE do modułu w `toee-models` (osobny build `MiniSharp-ToEE.3dsx`).
 
+## Do decyzji
+
+Sprawy, których plan nie rozstrzyga – czekają na użytkownika (tu dopisuje je też tryb autonomiczny, zob. `CLAUDE.md`).
+- `char` jako jeden bajt czy punkt kodowy Unicode (`foreach (char c in "pętla")` daje dziś dla `ę` dwa znaki) – etap 2,
+  „Braki względem C# znalezione przy rozdziale 5”.
+
 ## Następny krok
 
 Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1–4 to braki względem C# z rozdziału 6
