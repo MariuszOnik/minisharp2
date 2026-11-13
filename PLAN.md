@@ -72,6 +72,17 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] `repl.c` (terminal) z testem `repl`.
 - [ ] `printer.c` (AST → kod) z testami `print/*`, `spans`.
 - [ ] `codeindex.c` z testami `ci`, `ci_inherit`, `ci_ns` (projekty z `/*?*/`, opcja hosta `--ci`).
+- [ ] **Modyfikatory dostępu, wersja łagodna** (decyzja użytkownika 2026-11-13). Dziś `public`/`private`/`protected`/`internal`
+      i `static class` są przyjmowane i pomijane. Zasady: brak słówka = dostęp z każdej klasy (jak dziś, nic się nie psuje);
+      jawne `private` – tylko w swojej klasie (błąd w rodzaju `'ile' is private in Licznik`); `protected` – w klasie i pochodnych;
+      `internal` = brak słówka; `static class` – zakaz `new` i wszystkie składniki `static`. Każdy program poprawny w C# jest
+      poprawny i u nas. Sprawdzenie przy wyszukiwaniu pola/metody/właściwości (`comp_types.c`, `comp_expr.c`, `comp_call.c`,
+      też w lambdach), testy w `tests/errors/`, sekcja w rozdziale „Klasy i obiekty”.
+- [ ] **Rdzeń bez pętli gry** (uwaga użytkownika 2026-11-13). Kompilator zna na sztywno `Update`/`Draw` (`entry_point` w
+      `compiler.c`, błąd „no entry point… Update”) i sam dokłada klasę `Node` dla grafu – to pojęcia warstw wyżej. Rdzeń zna
+      tylko `Main` (jak C#) i daje ogólne `ms_hook(program, "Nazwa")`: jedna funkcja wołająca `static void Nazwa()` we wszystkich
+      klasach w kolejności `[Order(n)]`. Pętlę gry (`Update`/`Draw`) i komunikat o braku punktu wejścia robi host/aplikacja
+      (`platform/*`, `app/`); `Node` dokłada `graph/`. Testy `project_hooks`, `project_order`, `noentry` przechodzą bez zmian wyniku.
 
 ### Etap 3 – platforma 3DS i host testów PC
 - [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
