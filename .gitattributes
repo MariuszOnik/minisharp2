@@ -1,0 +1,7 @@
+# LF wszedzie (run_tests.sh i porownania wynikow testow; pliki osadzane bajt w bajt)
+* text=auto eol=lf
+*.png binary
+*.wav binary
+*.jpg binary
+*.bmp binary
+*.t3x binary

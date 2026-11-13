@@ -36,7 +36,7 @@ gry (ToEE, Fallout) to moduły w swoich repozytoriach, **nic z gier w rdzeniu**.
 ## Budowanie (Windows)
 
 - **3DS:** `C:\devkitPro\msys2\usr\bin\bash.exe -lc "cd <repo>; export DEVKITPRO=/opt/devkitpro DEVKITARM=/opt/devkitpro/devkitARM; make"`
-- **PC (testy):** gcc z `C:\msys64\mingw64\bin`, uruchamiać z **PowerShell** z `$env:TMP = "$env:USERPROFILE\AppData\Local\Temp"`
+- **PC (testy):** `powershell -File tools	est.ps1` (= `make test`, pełny log w `build	est.log`). Ręcznie: gcc z `C:\msys64\mingw64\bin`, uruchamiać z **PowerShell** z `$env:TMP = "$env:USERPROFILE\AppData\Local\Temp"`
   (w Git Bash gcc nie widzi katalogu tymczasowego i pada na `C:\windows\`).
 - **Web:** Zig przez pip (`python -m ziglang`), `wasm32-wasi` – zob. stare `web/build.sh`.
 - **Android:** APK = wersja web w WebView; folder `android/` + `android/prepare-assets.sh` (wzór: stare

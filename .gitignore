@@ -1,6 +1,15 @@
+# wyniki budowania
 build/
+*.o
+*.map
+*.exe
 *.3dsx
 *.elf
 *.smdh
-*.exe
 *.ppm
+web/dist/
+# Android (Gradle)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties

@@ -46,7 +46,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
       (model grafu + generator bez UI, wspólny dla 3DS i wasm) i `android/` (WebView z wersją web).
 
 ### Etap 1 – język (lang/) + testy na PC
-- [ ] Szkielet repo: foldery, `Makefile` dla testów PC (sam ustawia `TMP`), skrypt `tools/test.ps1`, `.gitignore`.
+- [x] Szkielet repo: foldery, `Makefile` dla testów PC (sam ustawia `TMP`), skrypt `tools/test.ps1`, `.gitignore`.
 - [ ] Przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
 - [ ] Przenieść `compiler.c` podzielony na kilka plików, bez zmiany zachowania.
 - [ ] Rejestracja funkcji wbudowanych tabelami (`ms_register`) zamiast jednej tabeli.
@@ -88,7 +88,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Ocena starego kodu:
 
 ## Następny krok
 
-Etap 1: szkielet repo (foldery, `Makefile` z `make test` ustawiającym `TMP`, `tools/test.ps1`, `.gitignore`).
+Etap 1: przenieść `ast.h`, `parser.c`, `vm.c`, `disasm.c` i rozdzielić `ms.h` na publiczne API i wnętrze.
 
 ## Dziennik
 - 2026-11-12: decyzja użytkownika – MiniSharp ma być podstawą niezależną od gier; nowe repo z czystą historią,
@@ -102,3 +102,6 @@ Etap 1: szkielet repo (foldery, `Makefile` z `make test` ustawiającym `TMP`, `t
 - 2026-11-13: repo na GitHubie (`minisharp2`), każdy commit wypychany. Workflow `build.yml`: testy PC, 3DS, APK
   (Android dochodzi jako platforma: web w WebView); joby pomijają części, których jeszcze nie ma.
 - 2026-11-13: architektura zatwierdzona; doszedł folder `graph/` (fgraph/json poza `app/` i `lang/`). Etap 0 zamknięty.
+- 2026-11-13: szkielet repo: `Makefile` (`make test` buduje `build/minisharp` z `lang/ lib/ graph/ platform/pc`, TMP w `build/tmp`),
+  `tests/run_tests.sh` (testy `tests/*.cs` + `expected/`, `errors/`), `tools/test.ps1` (log w `build/test.log`).
+  `platform/3ds` i `platform/web` celowo jeszcze nie istnieją – ich foldery włączają buildy w Actions.
