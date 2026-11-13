@@ -244,6 +244,7 @@ void compile_stmt(C* c, Stmt* s) {
                 emit_op1(c, OP_ICONST, 0); emit_op1(c, OP_STORE, idx); emit_pop(c);
                 int kslot = declare_local(c, s->name, s->nlen, ct->kvp, s->line);
                 c->locals[c->nlocals - 1].boxed = 0;          /* two slots; a lambda cannot use it */
+                c->locals[c->nlocals - 1].readOnly = 1;
                 alloc_temp(c);                                  /* kslot + 1: the value */
                 int start = code_label(c);
                 emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_DICT, D_NEXT);
@@ -270,6 +271,7 @@ void compile_stmt(C* c, Stmt* s) {
             emit_op1(c, OP_STORE, coll); emit_pop(c);
             emit_op1(c, OP_ICONST, 0); emit_op1(c, OP_STORE, idx); emit_pop(c);
             int var = declare_local(c, s->name, s->nlen, vt, s->line), varBoxed = c->lastBoxed;
+            c->locals[c->nlocals - 1].readOnly = 1;
             int start = code_label(c);
             emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_LOAD, coll); emit_op(c, OP_ARRLEN); emit_op(c, OP_ILT);
             int jz = emit_jump(c, OP_JZ);

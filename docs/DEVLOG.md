@@ -105,3 +105,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: Edytor kodu `app/editor.c` na `ui.h`: tekst w `textbuf`, kolory, podpowiedzi i sygnatury z usługi języka,
   uruchamianie przez funkcję hosta i skok do linii błędu. Na 3DS przycisk B w menu. Testy z konsoli po poprzednich
   zmianach: 207 ok, 0 błędów. Rozdział 1: sekcja „Edytor na 3DS”.
+- 2026-11-13: Przypisanie do zmiennej pętli `foreach` (`=`, `+=`, `++`, `ref`/`out`, też w lambdzie i dla słownika) to
+  teraz błąd kompilacji jak CS1656 w C#. Rozdział 7 pokazuje komunikat.

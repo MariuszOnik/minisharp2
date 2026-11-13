@@ -96,8 +96,14 @@ Witaj, Bartek!
 Witaj, Celina!
 ```
 
-Przez zmienną pętli `foreach` nie zmienisz tablicy: w C# przypisanie `imie = "X";` w takiej pętli to błąd. Do zmian
-użyj `for` z indeksem.
+Przez zmienną pętli `foreach` nie zmienisz tablicy. Przypisanie `imie = "X";` (a także `+=`, `++`) w takiej pętli
+to błąd, tak samo jak w C#:
+
+```text
+compile error: line 8: cannot assign to 'imie': it is the variable of a 'foreach' loop (to change the elements, use 'for' with an index)
+```
+
+Do zmian użyj `for` z indeksem.
 
 ## Suma, średnia, największa wartość
 

@@ -368,6 +368,13 @@ int find_local(C* c, const char* n, int l) {
     return -1;
 }
 
+/* like C# (CS1656): the variable of a foreach cannot be assigned, incremented or passed with ref / out */
+void check_writable_local(C* c, const char* n, int l, int line) {
+    int li = find_local(c, n, l);
+    if (li >= 0 && c->locals[li].readOnly)
+        cfail(c, line, "cannot assign to '%.*s': it is the variable of a 'foreach' loop (to change the elements, use 'for' with an index)", l, n);
+}
+
 /* index of the captured local li among the cells of lambda lc (adding it, and to the lambdas around it) */
 static int get_upvalue(C* c, LamCtx* lc, int li) {
     for (int k = 0; k < lc->nup; k++) if (lc->ups[k].li == li) return k;
@@ -436,7 +443,7 @@ int declare_local(C* c, const char* n, int l, Type* t, int line) {
     Local* lo = &c->locals[c->nlocals++];
     lo->name = n; lo->nlen = l; lo->type = t; lo->slot = slot;
     lo->depth = c->fdepth;
-    lo->boxed = 0; lo->refMode = 0;
+    lo->boxed = 0; lo->refMode = 0; lo->readOnly = 0;
     for (int i = 0; i < c->caps.n; i++) if (nameeq(c->caps.v[i].n, c->caps.v[i].l, n, l)) lo->boxed = 1;
     c->lastBoxed = lo->boxed;
     return slot;

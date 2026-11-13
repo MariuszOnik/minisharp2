@@ -42,6 +42,7 @@ static void ref_arg(C* c, Expr* a, int i, Type* pt, int mode, const char* what) 
     }
     Expr* v = a->a;
     if (v->k != E_NAME) cfail(c, a->line, "'%s' works only with a variable name for now, not a field, an element or an expression", kw);
+    check_writable_local(c, v->name, v->nlen, a->line);
     Res r = resolve_name(c, v->name, v->nlen);
     if (r.k == R_LOCAL) cfail(c, a->line, "'%s %.*s': this variable cannot be passed with '%s'", kw, v->nlen, v->name, kw);
     if (r.k != R_CELL && r.k != R_UPVAL)

@@ -46,7 +46,7 @@ typedef struct {
 
 /* depth: 0 for the method, 1 inside a lambda, 2 in a lambda inside that...
  * boxed: a lambda uses it, so the slot holds a cell (ObjCell) with the value */
-typedef struct { const char* name; int nlen; Type* type; int slot; int depth, boxed, refMode; } Local;   /* refMode: PM_* of a parameter */
+typedef struct { const char* name; int nlen; Type* type; int slot; int depth, boxed, refMode, readOnly; } Local;   /* refMode: PM_* of a parameter; readOnly: the variable of a foreach */
 
 /* the lambda being compiled: the cells it captures from the functions around it */
 typedef struct LamCtx {
@@ -141,6 +141,7 @@ int find_class(C* c, const char* n0, int l0);
 const char* class_hint(C* c, const char* n, int l);
 int is_builtin_class(const char* n, int l);
 int find_local(C* c, const char* n, int l);
+void check_writable_local(C* c, const char* n, int l, int line);   /* error for the variable of a foreach */
 Res resolve_name(C* c, const char* n, int l);
 void fold_ns(C* c, Expr* m);
 int declare_local(C* c, const char* n, int l, Type* t, int line);

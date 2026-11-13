@@ -96,7 +96,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - skrócony inicjalizator tablicy `int[] t = { 1, 2 };` – dziś `unexpected '{' in expression` (działa `new int[] { … }`);
       - ~~brak `return` na jakiejś drodze to błąd w czasie działania, w C# – błąd kompilacji~~ (zrobione 2026-11-13).
 - [ ] **Braki względem C# znalezione przy rozdziale 7 (tablice):**
-      - przypisanie do zmiennej pętli `foreach` (`foreach (string s in t) s = "x";`) przechodzi, w C# to błąd CS1656;
+      - ~~przypisanie do zmiennej pętli `foreach` przechodzi, w C# to błąd CS1656~~ (zrobione 2026-11-13: `Local.readOnly`,
+        `check_writable_local` w `lvalue` i przy `ref`/`out`; błędy `foreach_*`; zostało: pole struktury przez taką zmienną, CS1654);
       - `int[,] t = new int[2, 3];` daje niejasny błąd `unexpected type name 'int' here` – tablic prostokątnych nie ma
         (rozdział 7 każe używać `int[][]`); do decyzji: dodać je czy tylko czytelny komunikat.
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca

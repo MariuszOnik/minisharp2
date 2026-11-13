@@ -1,0 +1,1 @@
+compile error: line 8: cannot assign to 's': it is the variable of a 'foreach' loop (to change the elements, use 'for' with an index)

@@ -223,6 +223,7 @@ static LV lvalue(C* c, Expr* e) {
     LV lv = { 0, 0, NULL, NULL, 0 };
     c->line = e->line;
     if (e->k == E_NAME) {
+        check_writable_local(c, e->name, e->nlen, e->line);
         Res r = resolve_name(c, e->name, e->nlen);
         switch (r.k) {
             case R_PROP:
