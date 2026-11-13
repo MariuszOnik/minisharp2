@@ -106,6 +106,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `Console.ForegroundColor`/`BackgroundColor` (`ConsoleColor.Yellow`…), `Console.Clear()`, `Console.SetCursorPosition(x, y)`,
       `Console.CursorVisible` – na tym gry tekstowe (roguelike). Logika siatki w `lib/` (testy na PC: zrzut siatki jako tekst),
       rysowanie w `platform/*`; czcionka własna albo na wolnej licencji (nie kopiujemy czcionki ROM z kart VGA).
+- [ ] **Przycisk „Stop” zamiast limitu czasu** (pytanie użytkownika 2026-11-13: pętla gry w roguelike'u to `while (true)`).
+      Dziś limit 5 s działa **tylko w terminalu** (`repl_eval` ustawia `deadline`); zwykły program kręci się, ile chce.
+      Docelowo: VM co ~65 tys. skoków wstecz woła funkcję hosta `ms_set_interrupt(int (*check)(void))`; host sprawdza
+      przycisk przerwania (3DS: START+SELECT, PC: Ctrl+C, web: flaga z wątku strony – wasm w Workerze) i VM kończy z
+      komunikatem „stopped by the user”. W terminalu limit czasu zostaje jako zapas tylko tam, gdzie host nie ma przycisku.
+      `Console.ReadLine` (wstrzymanie VM) nie może liczyć się do limitu – czas mierzy się od wznowienia.
 - [ ] **Wygląd terminala** (rozmowa 2026-11-13, po terminalu w stylu DOS): zielony „fosfor”, migający kursor, na 3DS
       przyciemniona co druga linia (scanlines – tanie), bez poświaty (za droga). Na 3DS terminal na **cały górny ekran**
       (ramka monitora zjadłaby 20–30% z 400×240), na dolnym **klawiatura rysowana kodem** (prostokąty + czcionka, jeden układ
