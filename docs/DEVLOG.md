@@ -86,3 +86,7 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-13: `codeindex.c` w `lang/` (podpowiedzi edytora po kropce, typ nazwy z deklaracji, dziedziczenie, przestrzenie
   nazw) z testami `tests/ci/*` przez host `--ci`. Nowość: nie podpowiada `private`/`protected` spoza klasy (`ci_access`).
   Ustalona szybsza ścieżka do pisania na konsoli: własna klawiatura + terminal, potem edytor, na przemian z rdzeniem.
+- 2026-11-13: `app/ui.h` – rysowanie i wejście aplikacji przez tabelę funkcji platformy (`UiBackend`), pierwsza
+  implementacja `platform/3ds/ui_3ds.c` na citro2d. Klawiatura dotykowa przeniesiona do `app/keyboard.c` bez libctru,
+  ze skalowalnym obszarem i testem na PC (`test_keyboard`); na 3DS Y w menu otwiera test klawiatury. Rozdział 7 „Tablice”
+  (przy nim wyszły dwa braki względem C#: przypisanie do zmiennej `foreach`, `int[,]`).

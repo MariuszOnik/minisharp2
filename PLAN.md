@@ -65,7 +65,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 4 „Warunki: if i else” (porównania, `&& || !`, `?:`, `switch`).
 - [x] Rozdział 5 „Pętle” (`for`, `while`, `do … while`, `foreach`, `break`/`continue`, pętle w terminalu).
 - [x] Rozdział 6 „Metody” (parametry, `return`, `=>`, przeciążanie, rekurencja, zasięg zmiennych).
-- [ ] Kolejne rozdziały (propozycja kolejności): tablice, string,
+- [x] Rozdział 7 „Tablice” (`{ … }`, `new T[n]`, `Length`, `for`/`foreach`, suma i maksimum, tablica w metodzie, `char[][]`).
+- [ ] Kolejne rozdziały (propozycja kolejności): string,
       klasy i obiekty, dziedziczenie, List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
@@ -94,6 +95,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         elementy tablic i właściwości przez `ref`, błąd przy czytaniu `out` przed przypisaniem);
       - skrócony inicjalizator tablicy `int[] t = { 1, 2 };` – dziś `unexpected '{' in expression` (działa `new int[] { … }`);
       - ~~brak `return` na jakiejś drodze to błąd w czasie działania, w C# – błąd kompilacji~~ (zrobione 2026-11-13).
+- [ ] **Braki względem C# znalezione przy rozdziale 7 (tablice):**
+      - przypisanie do zmiennej pętli `foreach` (`foreach (string s in t) s = "x";`) przechodzi, w C# to błąd CS1656;
+      - `int[,] t = new int[2, 3];` daje niejasny błąd `unexpected type name 'int' here` – tablic prostokątnych nie ma
+        (rozdział 7 każe używać `int[][]`); do decyzji: dodać je czy tylko czytelny komunikat.
 - [ ] **`Console.ReadLine()` – odpowiedź użytkownika** (pomysł użytkownika 2026-11-13, jak `cin` w C++). Jak w C#: zwraca
       `string` (liczba przez `int.Parse`). VM się **wstrzymuje** zamiast blokować: `vm_call` zwraca stan „czeka na wejście”,
       host pokazuje pole wpisywania i wznawia VM z wpisanym tekstem – działa tak samo na 3DS, w przeglądarce (wasm nie może
@@ -243,8 +248,12 @@ Etap 2, w tej kolejności (każdy następny korzysta z poprzedniego). Punkty 1�
 **Szybsza ścieżka do pisania na konsoli** (decyzja użytkownika 2026-11-13): po `codeindex.c` edytor i terminal na 3DS
 idą wcześniej, **na przemian z rdzeniem** (sesja edytor/terminal, sesja rdzeń: `Console.ReadLine`, Stop, rozdziały
 dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowana kodem (wzór: stare `keyboard.c`).
-6. Minimalny `app/ui.h` (prostokąt, tekst, przycinanie, klawisze, dotyk; tylko to, czego potrzebuje terminal) +
-   implementacja w `platform/3ds` + własna klawiatura dotykowa (`app/keyboard.c`, układ i trafienia testowane na PC).
+6. [x] Minimalny `app/ui.h` + `platform/3ds/ui_3ds.c` (citro2d) + klawiatura `app/keyboard.c` – zrobione 2026-11-13:
+   backend to tabela funkcji (`UiBackend`, `ui_set_backend`), wejście podawane w `UiInput` (przyciski, dotyk, czas);
+   klawiatura skalowalna (`kbd_set_area`), test `tests/unit/test_keyboard.c` (warstwy, Shift, powtarzanie, trafienia,
+   rysowanie). Na 3DS: Y w menu = test klawiatury (ekrany na chwilę przechodzą z konsoli tekstowej na citro2d).
+   **Sprawdzić na konsoli**: czy test klawiatury działa i wraca do menu; czy rysowanie co klatkę (bez tekstury
+   z klawiszami jak w starym kodzie) jest dość szybkie.
 7. Terminal na 3DS: `terminal.c` ze starego repo na `ui.h` + `app/repl.c`; podpowiedzi z `repl_complete`; przycisk Stop
    (START+SELECT, `ms_set_interrupt` z punktu „Przycisk Stop” w etapie 3), żeby `while (true)` nie wieszało konsoli.
 8. (rdzeń) usługa języka `lang/service.h` na `codeindex.c`: podpowiedzi w miejscu kursora, sygnatura, kolory linii.

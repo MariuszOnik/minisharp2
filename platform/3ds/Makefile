@@ -30,7 +30,7 @@ CFLAGS   := -g -Wall -O2 -mword-relocations -ffunction-sections -std=gnu11 $(ARC
 CFLAGS   += $(INCLUDE) -D__3DS__ -DBUILD_ID='"$(BUILD_ID)"'
 ASFLAGS  := -g $(ARCH)
 LDFLAGS   = -specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-LIBS     := -lctru -lm
+LIBS     := -lcitro2d -lcitro3d -lctru -lm
 LIBDIRS  := $(CTRULIB)
 
 ifneq ($(notdir $(BUILD)),$(notdir $(CURDIR)))
