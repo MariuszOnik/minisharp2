@@ -326,7 +326,7 @@ static Value n_image4(VM* vm, Value* a) {
     if (im) {
         float sc = a[3].as.f;
         float x = a[1].as.f, y = a[2].as.f;
-        if (sc < 0) x -= im->w * sc;                        /* mirrored: it stays in the same place */
+        /* mirrored (sc < 0): the backends draw a negative width from x to the right, so x stays the left edge */
         draw_part(im, 0, 0, (float)im->w, (float)im->h, x, y, sc, 0);
     }
     return vnone();
@@ -337,7 +337,6 @@ static Value n_imagepart8(VM* vm, Value* a) {
     Img* im = image_of(vm, a[0], "Gfx.ImagePart");
     if (im) {
         float sc = a[7].as.f, x = a[5].as.f;
-        if (sc < 0) x -= a[3].as.f * sc;
         draw_part(im, a[1].as.f, a[2].as.f, a[3].as.f, a[4].as.f, x, a[6].as.f, sc, 0);
     }
     return vnone();

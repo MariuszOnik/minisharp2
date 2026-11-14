@@ -212,3 +212,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Dwa błędy obrazków na konsoli: tekstura 3DS była wgrywana z odwróconymi wierszami (każdy obrazek do góry
   nogami), a ujemna skala (`Gfx.Image(img, x, y, -3)`) odbijała też w pionie. Teraz minus odbija tylko w poziomie,
   jak opisuje rozdział 17; test `gfx_image` ma nowy hash.
+- 2026-11-14: Odbity obrazek przeskakiwał o swoją szerokość: biblioteka przesuwała go w prawo, a backendy i tak rysują
+  ujemną szerokość od `x`. Teraz `x` to zawsze lewy brzeg, odbity czy nie (sprawdzone na pikselach z `--ppm`).
