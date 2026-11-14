@@ -166,3 +166,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   `EditorHost.help`, a host 3DS uruchamia tę samą pętlę Help co z menu, bez przełączania ekranów.
 - 2026-11-14: Rozdział 15 „Przestrzenie nazw” (5 przykładów). Przy okazji: ostrzeżenie gcc ARM w `compiler.c` (kopiowanie
   nazw hooków) usunięte – build 3DS jest bez ostrzeżeń; wyszło też, że alias `using G = Gra;` jest po cichu pomijany.
+- 2026-11-14: Aliasy `using G = Gra;` (wcześniej po cichu pomijane): alias zastępuje pierwszy człon nazwy przy szukaniu
+  klasy, więc działa w typach, `new`, wywołaniach statycznych i enumach bez osobnego kodu w każdym miejscu.

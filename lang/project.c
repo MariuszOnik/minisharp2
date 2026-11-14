@@ -146,7 +146,13 @@ static void scan_names(const char* s, char uses[][48], int* nu, char decl[][48],
             const char* after = b;
             while (*after == '.' || is_id((unsigned char)*after)) after++;
             while (*after == ' ' || *after == '\t') after++;
-            int ok = b > a && !(isUse && (*after == '=' || (b - a == 6 && !memcmp(a, "static", 6))));
+            if (isUse && *after == '=') {           /* 'using G = Dice.Rolls;': the library is the one of Dice */
+                a = after + 1;
+                while (*a == ' ' || *a == '\t') a++;
+                b = a;
+                while (is_id((unsigned char)*b)) b++;
+            }
+            int ok = b > a && !(isUse && b - a == 6 && !memcmp(a, "static", 6));
             char (*list)[48] = isUse ? uses : decl;
             int* n = isUse ? nu : nd;
             if (ok && *n < max && b - a < 48) {

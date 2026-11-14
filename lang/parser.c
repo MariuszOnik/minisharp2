@@ -1441,7 +1441,7 @@ static NsName parse_dotted(P* p) {
         s[at0++] = '.'; memcpy(s + at0, u->start, u->len); at0 += u->len;
     }
     s[at0] = 0;
-    NsName r = { s, at0 };
+    NsName r = { s, at0, NULL, 0 };
     return r;
 }
 
@@ -1451,7 +1451,7 @@ ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
     ProgramAST* prog = (ProgramAST*)arena_alloc(c->A, sizeof(ProgramAST));
     int cap = 0, nsDepth = 0;
     /* namespaces: ns = the current one ("" = global); a block 'namespace X { ... }' saves the outer state */
-    NsName ns = { "", 0 }, fileNs = { "", 0 };
+    NsName ns = { "", 0, NULL, 0 }, fileNs = { "", 0, NULL, 0 };
     NsName* usings = NULL; int nus = 0, capus = 0;
     struct { NsName ns; int nus; } outer[32];
     while (!at(&p, TK_EOF)) {
@@ -1461,9 +1461,20 @@ ProgramAST* ms_parse(ParseCtx* c, Token* toks, int ntok) {
             continue;
         }
         if (accept(&p, TK_USING)) {
-            if (accept(&p, TK_STATIC) || (at(&p, TK_IDENT) && peekn(&p, 1)->kind == TK_ASSIGN)) {   /* 'using static X;', 'using A = B;': ignored */
+            if (accept(&p, TK_STATIC)) {   /* 'using static X;': ignored */
                 while (!at(&p, TK_SEMI) && !at(&p, TK_EOF)) next(&p);
                 expect(&p, TK_SEMI);
+                continue;
+            }
+            if (at(&p, TK_IDENT) && peekn(&p, 1)->kind == TK_ASSIGN) {   /* 'using G = Lib.Monsters;': an alias */
+                Token* an = next(&p);
+                next(&p);
+                NsName u = parse_dotted(&p);
+                if (at(&p, TK_LT)) fail(c, peek(&p)->line, "an alias of a generic type ('using %.*s = %s<...>;') is not supported; write the type in full", an->len, an->start, u.s);
+                expect(&p, TK_SEMI);
+                u.alias = an->start; u.alen = an->len;
+                usings = (NsName*)arena_grow(c->A, usings, nus, &capus, sizeof(NsName));
+                usings[nus++] = u;
                 continue;
             }
             NsName u = parse_dotted(&p);

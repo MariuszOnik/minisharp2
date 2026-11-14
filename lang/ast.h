@@ -125,7 +125,9 @@ typedef struct {
     Expr* init;                             /* '{ get; set; } = value;' */
     const char *s0, *s1;
 } PropDecl;
-typedef struct { const char* s; int l; } NsName;      /* a namespace name with dots, e.g. "Lib.Monsters" */
+/* a namespace name with dots, e.g. "Lib.Monsters"; in a class's 'usings' an entry with alias = 'using G = Lib.Monsters;'
+ * (G stands for the namespace or class s), without alias = 'using Lib.Monsters;' */
+typedef struct { const char* s; int l; const char* alias; int alen; } NsName;
 typedef struct {
     int line; const char* name; int nlen;
     NsName ns;                              /* namespace it is declared in (l = 0: the global one) */

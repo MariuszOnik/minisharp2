@@ -503,7 +503,10 @@ static void class_decl(MsBuf* b, ClassDecl* cd, int ci) {
     indent(b, ci); puts_(b, "}\n");
 }
 
-static int same_name(NsName a, NsName b) { return a.l == b.l && (!a.l || !memcmp(a.s, b.s, (size_t)a.l)); }
+static int same_name(NsName a, NsName b) {
+    return a.l == b.l && (!a.l || !memcmp(a.s, b.s, (size_t)a.l)) &&
+           a.alen == b.alen && (!a.alen || !memcmp(a.alias, b.alias, (size_t)a.alen));
+}
 
 /* usings i.. of a class (the ones beyond the shared ones) are the same as of another class */
 static int same_usings(ClassDecl* a, ClassDecl* b, int from) {
@@ -513,7 +516,11 @@ static int same_usings(ClassDecl* a, ClassDecl* b, int from) {
 }
 
 static void usings(MsBuf* b, ClassDecl* cd, int from, int to, int level) {    /* cd->usings[from..to) */
-    for (int i = from; i < to; i++) { indent(b, level); puts_(b, "using "); put(b, cd->usings[i].s, cd->usings[i].l); puts_(b, ";\n"); }
+    for (int i = from; i < to; i++) {
+        indent(b, level); puts_(b, "using ");
+        if (cd->usings[i].alen) { put(b, cd->usings[i].alias, cd->usings[i].alen); puts_(b, " = "); }   /* using G = Lib; */
+        put(b, cd->usings[i].s, cd->usings[i].l); puts_(b, ";\n");
+    }
 }
 
 /* 'using' of the file at the top (the ones every class shares), then the classes; neighbours in the same

@@ -111,8 +111,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         `foreach` po `List` sprawdza go przed każdym krokiem (`L_VERSION`/`L_CHECKVER`), `ForEach` po każdym wywołaniu;
         testy `foreach_change`, `rt_foreach_*`, `rt_listforeach_add`). Zostało: to samo dla `Dictionary` (w .NET Core
         błąd daje tylko dodanie nowego klucza; `Remove` i nadpisanie wartości są dozwolone).
-- [ ] **Braki względem C# znalezione przy rozdziale 15:** `using G = Gra;` (alias) kompilator przyjmuje i pomija, a użycie
-      `G.K` daje potem „unknown name 'G'” – albo dodać aliasy, albo zgłaszać błąd już w linii `using`.
+- [x] **Braki względem C# znalezione przy rozdziale 15:** aliasy `using G = Gra;` / `using V = Gra.Wektor;` (zrobione
+      2026-11-14, użytkownik zostawił wybór mnie: `NsName.alias` w `usings` klasy, `find_class` zamienia pierwszy człon
+      nazwy na cel i szuka od przestrzeni globalnej, printer je drukuje, `project.c` bierze bibliotekę z celu; test
+      `alias`, błąd `alias_generic`). Zostało: alias typu z `<…>`; podpowiedzi po `G.` (codeindex nie zna aliasów).
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,

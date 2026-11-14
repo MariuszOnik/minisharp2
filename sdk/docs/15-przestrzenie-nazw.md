@@ -146,6 +146,40 @@ class Program
 Goblin atakuje za 5
 ```
 
+## Krótsza nazwa: using G = …
+
+Gdy nazwa szuflady jest długa, a nie chcesz jej otwierać w całości (bo ma klasę o tej samej nazwie co inna), nadaj jej
+**krótki przydomek** (alias):
+
+```cs
+using M = Gra.Potwory.Mapa;
+
+namespace Gra.Potwory.Mapa
+{
+    class Pole
+    {
+        public int X, Y;
+        public Pole(int x, int y) { X = x; Y = y; }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        M.Pole p = new M.Pole(3, 7);
+        Console.WriteLine($"pole ({p.X}, {p.Y})");
+    }
+}
+```
+
+```wynik
+pole (3, 7)
+```
+
+`M.Pole` znaczy to samo co `Gra.Potwory.Mapa.Pole`. Przydomek może też oznaczać jedną klasę: po
+`using P = Gra.Potwory.Mapa.Pole;` wystarczy pisać `P`.
+
 ## Po co to w małym programie?
 
 W jednym pliku – rzadko. Przestrzenie nazw przydają się, gdy:
@@ -159,4 +193,5 @@ O projektach z wieloma plikami i wspólnych bibliotekach (`uses.txt`) opowie oso
 > **Dla zaawansowanych:** klasę szuka się najpierw w przestrzeni, w której jest kod, potem w przestrzeniach wokół
 > niej (`Gra.Potwory`, potem `Gra`), na końcu w otwartych przez `using` i „na wierzchu”. Dlatego klasa
 > `Gra.Potwory.Item` w kodzie z `Gra.Potwory` zasłania `Gra.Item` – do tej drugiej trzeba wtedy pełnej nazwy.
-> Względna nazwa też działa: w `Gra` można napisać `Potwory.Goblin`. Na razie nie ma `using X = Y;` (aliasów).
+> Względna nazwa też działa: w `Gra` można napisać `Potwory.Goblin`. Przydomek (`using G = Gra;`) nie otwiera
+> szuflady jak `using Gra;` – zastępuje tylko nazwę. Przydomka dla typu z `<…>` (`using L = List<int>;`) nie ma.

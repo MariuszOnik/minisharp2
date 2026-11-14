@@ -312,9 +312,24 @@ int find_class(C* c, const char* n0, int l0) {
     for (int i = 0; i < l0 && l < (int)sizeof buf - 1; i++)           /* "Lib . Item" -> "Lib.Item" */
         if (n0[i] != ' ' && n0[i] != '\t' && n0[i] != '\r' && n0[i] != '\n') buf[l++] = n0[i];
     if (l != l0) n = buf;
-    NsName cur = { "", 0 };
+    NsName cur = { "", 0, NULL, 0 };
     ClassDecl* sd = c->scope >= 0 && c->scope < c->nclasses ? c->classes[c->scope].decl : NULL;
     if (sd) cur = sd->ns;
+    /* 'using G = Lib.Monsters;': G.Troll is Lib.Monsters.Troll, a full name looked up from the global namespace */
+    char abuf[256];
+    if (sd) {
+        int seg = 0;
+        while (seg < l && n[seg] != '.') seg++;
+        for (int u = 0; u < sd->nusings; u++) {
+            NsName* a = &sd->usings[u];
+            if (!a->alen || !nameeq(a->alias, a->alen, n, seg)) continue;
+            if (a->l + (l - seg) >= (int)sizeof abuf) break;
+            memcpy(abuf, a->s, a->l); memcpy(abuf + a->l, n + seg, l - seg);
+            n = abuf; l = a->l + (l - seg);
+            cur.s = ""; cur.l = 0;
+            break;
+        }
+    }
     if (memchr(n, '.', l)) {
         for (int pl = cur.l;; pl = ns_parent(cur.s, pl)) {
             int ci = find_qualified(c, cur.s, pl, n, l);
@@ -337,7 +352,7 @@ int find_class(C* c, const char* n0, int l0) {
     int found = -1;
     if (sd)
         for (int u = 0; u < sd->nusings; u++)
-            for (int i = 0; i < c->nclasses; i++)
+            for (int i = 0; i < c->nclasses && !sd->usings[u].alen; i++)    /* aliases do not open a namespace */
                 if (i != found && class_in(c, i, sd->usings[u].s, sd->usings[u].l, n, l)) {
                     if (found >= 0)
                         cfail(c, c->line, "'%.*s' is ambiguous: %s.%.*s or %s.%.*s? write the full name",

@@ -1,0 +1,1 @@
+compile error: line 1: an alias of a generic type ('using L = System.Collections.Generic.List<...>;') is not supported; write the type in full
