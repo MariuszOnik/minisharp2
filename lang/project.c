@@ -190,7 +190,7 @@ int project_load(const char* dir, Project* pr, char* err, int errlen) {
     if (!read_files(pr, 0, &len, &cap, &line, err, errlen)) { project_free(pr); return 0; }
 
     /* 'using Dice;' where no file declares namespace Dice: the library folder ../dice/lib (next to the
-     * project, as sdmc:/minisharp/dice/lib) or ../lib/Dice; its files may use further libraries */
+     * project, as sdmc:/minisharp2/dice/lib) or ../lib/Dice; its files may use further libraries */
     char self[320];
     normalize(dir, self, sizeof self);
     for (int pass = 0; pass < 8; pass++) {

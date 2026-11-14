@@ -51,6 +51,11 @@ void lib_input_frame(uint32_t held, int touching, int x, int y);   /* x, y: pixe
  * lib_time_frame(1/60); then lib_draw_begin and Draw. A host with a fixed frame (PC tests) simply runs one step. */
 int lib_frame_steps(double nowMs);
 void lib_time_frame(float delta);       /* after an Update step: Time.Frame + 1 */
+/* Time.Millis(): the real time in ms since the program started, on every platform and also without frames (a
+ * benchmark in Main). The host gives its clock (3DS: osGetTime); default: the C clock(). lib_time_start marks
+ * the start (lib_gfx_reset calls it). WaitForSeconds and Time.Delta stay on the game clock (ms_set_clock). */
+void lib_set_real_clock(int (*millis)(void));
+void lib_time_start(void);
 void lib_draw_begin(void);
 /* Gfx.FrameRate(n): how many times a second Draw runs (60, 30, 20 or 15); Update stays at 60 */
 int lib_draw_rate(void);              /* before Draw: the first logical screen, opaque (Gfx.Screen / Alpha last a frame) */

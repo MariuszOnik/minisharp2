@@ -231,6 +231,17 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Testy na prawdziwej konsoli (2026-11-13: 177 ok, 6 czeka; ułamki zgodne z PC): `sh tools/3ds_send.sh tests` (FTP konsoli: `192.168.1.90:5000`), X w menu,
       `sh tools/3ds_tests.sh fetch <katalog>` i `sh tools/3ds_tests.sh compare <katalog>` (punkt „Przenośność” niżej).
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę – rozbudowa minimalnego hosta.
+      ~~Log na kartę~~ (zrobione 2026-11-14, prośba użytkownika): folder aplikacji to `sdmc:/minisharp2` (stary
+      `sdmc:/minisharp` przemianowany na `oldMinisharp` – stara aplikacja go już nie znajdzie); każde uruchomienie pisze
+      osobny `logs/<program>_<RRRRMMDD-GGMMSS>.txt` (nagłówek z buildem, wyjście programu, wynik, czas, zajęta sterta
+      i wolna pamięć liniowa przed / po – widać, czy programy coś po sobie zostawiają). Folder `logs/` nie jest projektem.
+- [ ] **Graficzne menu hosta** (prośba użytkownika 2026-11-14) zamiast tekstowej konsoli libctru: dolny ekran – duże
+      przyciski na dotyk (Programy, Terminal, Help, Testy, Ustawienia: czcionka, schemat), górny – logo, build, ostatnie
+      projekty. Logika w `app/menu.c` bez rysowania (jak `files.c`), test na PC, rysowanie przez `app/ui.h` (citro2d) –
+      znika przełączanie konsola ↔ citro2d. **Każdy program z menu startuje „z czystym kontem”**: nowa VM i program,
+      po wyjściu `vm_free` + `ms_free_program`, obrazki zwalniane (`lib_gfx_reset`), stan `Gfx`/`Input`/`Time`
+      zerowany. Do dopilnowania: obrazki zwalniać już przy wyjściu (teraz dopiero przy starcie następnego programu),
+      a liczby pamięci z logu porównać po kilku uruchomieniach na konsoli (wyciek = rosnące „heap in use after”).
 - [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
       przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
       - ostatnia cyfra `float`: `sinf`, `powf` i wypisywanie `%.7g` pochodzą z różnych bibliotek C (3DS: newlib, Switch, PC) –
@@ -288,7 +299,26 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] Android: folder `android/` (WebView z wersją web, `prepare-assets.sh`) – wzór w starym `minisharp-apk-files.zip`,
       ale jako zwykłe pliki w repo, nie zip. Job `build-android` w Actions już czeka.
 
+### Pliki z programu (prośba użytkownika 2026-11-14)
+- [ ] **`File` / `Directory` jak w C#** w `lib/file.c` (niezależne od platformy, zwykłe `stdio`): `File.ReadAllText`,
+      `ReadAllLines`, `WriteAllText`, `AppendAllText`, `Exists`, `Delete`, `Directory.GetFiles/GetDirectories/Exists/
+      CreateDirectory`, `Path.Combine/GetFileName/GetExtension`. Ścieżki względne = folder programu/projektu (jak
+      `Gfx.LoadImage`), na 3DS bez wychodzenia poza kartę.
+- [ ] **Pliki binarne**: `byte[] File.ReadAllBytes`, `File.WriteAllBytes` i `BinaryReader` (`ReadByte`, `ReadInt16/32`,
+      `ReadUInt16/32`, `ReadSingle`, `ReadBytes(n)`, `ReadString(n)` – little-endian jak w .NET, `BaseStream.Position`,
+      `Length`, `Seek`) – do pisania czytników formatów innych gier jako testów. Wymaga typu `byte` (0–255) i tablic
+      bajtów trzymanych w pamięci po 1 bajcie (nie po `Value`: plik 1 MB = 1 MB). **Do decyzji przy realizacji:** czy
+      `byte` jako osobny typ (jak w C#), czy na start `int[]` z wartościami 0–255 (prościej, ale 8× więcej pamięci na 3DS).
+
 ### Etap 6 – moduły
+- [ ] **Biblioteki MiniSharp wstępnie skompilowane** (pytanie użytkownika 2026-11-14): biblioteka `.cs` kompilowana na
+      PC (albo przy pierwszym użyciu na konsoli) do pliku z kodem bajtowym (`.msl`: tabele klas, metod, stałych, kod
+      VM), wczytywana na żądanie przez `using`/`uses.txt` zamiast parsowania źródeł – szybszy start dużych projektów.
+      Format musi mieć wersję (zmiana VM = przekompilowanie) i być niezależny od rozmiaru `Value` (3DS 8 B, PC 16 B).
+- [ ] **Moduły w C (np. framework ISO)**: 3DS nie ma bibliotek ładowanych dynamicznie (`.3dsx` to jeden plik, bez
+      `dlopen`), więc kod C modułu jest **wkompilowany** w build (`modules/iso`), a program włącza go na żądanie
+      (`using Iso;` – klasy modułu widoczne dopiero wtedy). Build z modułami: osobny `.3dsx` albo wszystkie moduły
+      w jednym. Na webie to samo (jeden `.wasm`). Wolna pamięć: kod modułu zajmuje miejsce zawsze, dane dopiero po `using`.
 - [ ] API modułów (folder, tabela funkcji, `api.cs`, testy, włączanie w buildzie).
 - [ ] `modules/iso`, `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).
 - [ ] Przeniesienie części ToEE do modułu w `toee-models` (osobny build `MiniSharp-ToEE.3dsx`).
@@ -307,6 +337,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
   (`Input.TouchScreen`). Pętla: `lib_frame_steps` (akumulator, przyciąganie do rytmu vsync ±2 ms, najwyżej 4 kroki),
   `lib_draw_begin`; `Gfx.FrameRate(60/30/20/15)` – tylko `Draw`, na 3DS przez `C3D_FrameRate` (prośba użytkownika:
   świadome 30 kl./s). Testy `gfx_layout`, `rt_layout_screen`, `rt_framerate`, `test_framesteps`; rozdział 16.
+- **Dwa zegary** (decyzja użytkownika 2026-11-14): `Time.Millis()` = prawdziwy czas od startu programu na każdej
+  platformie, także bez klatek (benchmark w `Main` mierzy naprawdę; host daje zegar przez `lib_set_real_clock`, 3DS:
+  `osGetTime`). Zegar gry (`ms_set_clock`: `WaitForSeconds`, `Time.Delta`, `Time.Frame`) liczy kroki `Update` po 1/60 s
+  – dzięki temu gra działa tak samo na każdym urządzeniu, a testy na PC wychodzą powtarzalnie.
 
 ## Do decyzji
 

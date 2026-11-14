@@ -1,15 +1,15 @@
 /* MiniSharp - minimal 3DS host (stage 2 step 0): a text console from libctru, no graphics yet.
- *   A      run sdmc:/minisharp/main.cs (Main, then Update/Draw every frame until START)
- *   X      run the test files from sdmc:/minisharp/tests/ (the .cs files there and in errors/, the folders in projects/)
- *          and write each result to sdmc:/minisharp/tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
+ *   A      run sdmc:/minisharp2/main.cs (Main, then Update/Draw every frame until START)
+ *   X      run the test files from sdmc:/minisharp2/tests/ (the .cs files there and in errors/, the folders in projects/)
+ *          and write each result to sdmc:/minisharp2/tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
  *          tools/3ds_tests.sh compares them with tests/expected/ on the PC
  *   B      programs and projects on the card (app/files.c), then the code editor (app/editor.c; A in it runs the
  *          program - or the whole project for a file in a project folder - and jumps to the error line)
  *   Y      terminal (app/terminal.c, touch keyboard, app/ui.h on citro2d; START = back)
  *   START  quit
  * START+SELECT held = the Stop button: a running loop (also Main with while (true)) stops with "stopped by the user".
- * If sdmc:/minisharp/tests/auto exists, the tests run at start, the file is removed and the app quits (emulator runs).
- * Console output goes to the top screen and to sdmc:/minisharp/log.txt; the menu is on the bottom screen.
+ * If sdmc:/minisharp2/tests/auto exists, the tests run at start, the file is removed and the app quits (emulator runs).
+ * Console output goes to the top screen and to sdmc:/minisharp2/logs/<program>_<time>.txt; the menu is on the bottom screen.
  * The full platform (citro2d, Gfx, Input, menu) comes in stage 3 and builds on this file. */
 #include <3ds.h>
 #include "ms.h"
@@ -26,13 +26,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <malloc.h>
+#include <time.h>
 
 /* the parser and the compiler recurse; the default 32 KB is too little for nested programs (the old host used 256 KB) */
 u32 __stacksize__ = 256 * 1024;
 
-#define APP_DIR   "sdmc:/minisharp"
+#define APP_DIR   "sdmc:/minisharp2"          /* the old app keeps its sdmc:/minisharp (renamed oldMinisharp) */
 #define MAIN_CS   APP_DIR "/main.cs"
-#define LOG_PATH  APP_DIR "/log.txt"
+#define LOGS_DIR  APP_DIR "/logs"   /* one log per run: <program>_<YYYYMMDD-HHMMSS>.txt, never overwritten */
 #define TESTS_DIR APP_DIR "/tests"
 #define OUT_DIR   TESTS_DIR "/out"
 
@@ -48,6 +50,9 @@ static int g_tests;            /* tests run so far (progress line) */
 /* the game's clock: 60 frames per second, the same as the PC host, so WaitForSeconds matches */
 static double g_ms;
 static int frame_millis(void) { return (int)g_ms; }
+/* Time.Millis: the real clock (ms since the app started; lib_time_start marks each program's start) */
+static u64 g_boot;
+static int real_millis(void) { return (int)(osGetTime() - g_boot); }
 
 /* the Stop button (ms_set_interrupt): the VM asks during long loops, when nobody else reads the buttons */
 static int stop_pressed(void) {
@@ -166,6 +171,7 @@ static void run(const char* path, int isProject, int frames) {
         return;
     }
     g_ms = 0;
+    lib_time_start();
     if (g_cs) {
         lib_set_gfx(ui3ds_gfx());
         lib_gfx_reset();
@@ -329,7 +335,7 @@ static void copy_file(const char* from, const char* to) {
     fclose(in);
 }
 
-/* the colour schemes of the editor (romfs:/themes, from sdk/themes) go to sdmc:/minisharp/themes once; the user adds
+/* the colour schemes of the editor (romfs:/themes, from sdk/themes) go to sdmc:/minisharp2/themes once; the user adds
  * own files there (or changes these): a folder that exists is left alone */
 static void install_themes(void) {
     struct stat st;
@@ -413,6 +419,29 @@ static void terminal(void) {
     menu();
 }
 
+/* a new log for one run: logs/<program>_<YYYYMMDD-HHMMSS>.txt (the .cs name or the project folder), with a header */
+static FILE* open_run_log(const char* path) {
+    char name[96];
+    const char* end = path + strlen(path);
+    while (end > path && end[-1] == '/') end--;
+    const char* b = end;
+    while (b > path && b[-1] != '/') b--;
+    size_t n = (size_t)(end - b);
+    if (n > 3 && !strncmp(end - 3, ".cs", 3)) n -= 3;
+    if (n >= sizeof name) n = sizeof name - 1;
+    memcpy(name, b, n);
+    name[n] = 0;
+    time_t now = time(NULL);
+    struct tm* t = gmtime(&now);                    /* the console's clock is local time already */
+    char stamp[32], file[200];
+    strftime(stamp, sizeof stamp, "%Y%m%d-%H%M%S", t);
+    mkdir(LOGS_DIR, 0777);
+    snprintf(file, sizeof file, LOGS_DIR "/%s_%s.txt", name, stamp);
+    FILE* f = fopen(file, "w");
+    if (f) fprintf(f, "MiniSharp2 build %s\nprogram: %s\nstarted: %s\n---\n", BUILD_ID, path, stamp);
+    return f;
+}
+
 /* runs a program by the user on the console screen (the screens are in citro2d already): its Console is a 40 x 20
  * grid on the top screen (the system font is proportional: bigger cells than 50 x 30 stay readable), ReadLine asks
  * on the touch screen; at the end the result stays until A / B. 1 = no error (else the error in g_lastErr). */
@@ -421,10 +450,20 @@ static int run_on_screen(const char* path, int isProject) {
     if (!g_cs) { snprintf(g_lastErr, sizeof g_lastErr, "out of memory"); return 0; }
     cs_set_hint(g_cs, "START+SELECT: stop the program");
     lib_console_set_grid(cs_grid(g_cs));
-    g_out = fopen(LOG_PATH, "w");
+    g_out = open_run_log(path);
+    struct mallinfo m0 = mallinfo();
+    u32 lin0 = linearSpaceFree();
+    u64 t0 = osGetTime();
     cs_frame();
     run(path, isProject, -1);
-    if (g_out) { fclose(g_out); g_out = NULL; }
+    if (g_out) {
+        struct mallinfo m1 = mallinfo();
+        fprintf(g_out, "\n---\n%s in %.1f s\nheap in use: %d KB before, %d KB after; linear free: %lu KB before, %lu KB after\n",
+                g_lastErr[0] ? g_lastErr : "finished ok", (osGetTime() - t0) / 1000.0, m0.uordblks / 1024,
+                m1.uordblks / 1024, (unsigned long)(lin0 / 1024), (unsigned long)(linearSpaceFree() / 1024));
+        fclose(g_out);
+        g_out = NULL;
+    }
     cs_finish(g_cs, g_lastErr[0] == 0, g_lastErr);
     while (aptMainLoop()) {
         hidScanInput();
@@ -473,7 +512,7 @@ static void edit_file(const char* path) {
 }
 
 /* R: Help (app/help.c) – the chapters of sdk/docs built into the .3dsx (romfs:/docs) together with the ones in
- * sdmc:/minisharp/docs (e.g. newer chapters sent over FTP): a chapter on the card replaces the built-in file of the
+ * sdmc:/minisharp2/docs (e.g. newer chapters sent over FTP): a chapter on the card replaces the built-in file of the
  * same name, other files on the card are added. */
 /* the Help loop on screens already in citro2d (from the menu and from the editor's Help tool); 0 = no memory */
 static int help_loop(void) {
@@ -548,7 +587,9 @@ int main(void) {
     install_examples();
     install_themes();
 
+    g_boot = osGetTime();
     ms_set_clock(frame_millis);
+    lib_set_real_clock(real_millis);
     ms_set_interrupt(stop_pressed);
     lib_register_all();
     lib_set_output(out_write);
@@ -578,7 +619,7 @@ int main(void) {
             consoleInit(GFX_TOP, &top);
             consoleInit(GFX_BOTTOM, &bottom);
             menu();
-            printf("\n%s (output also in log.txt)\n", g_lastErr[0] ? "error" : "done");
+            printf("\n%s (output also in logs/)\n", g_lastErr[0] ? "error" : "done");
         }
         if (k & KEY_X) run_tests();
         if (k & KEY_Y) terminal();

@@ -74,13 +74,14 @@ int main(void) {
     /* a fresh root: two programs, a project, the tests folder and the log */
     remove(ROOT "/Game/Program.cs"); remove(ROOT "/Game/Player.cs"); remove(ROOT "/Game/uses.txt"); remove(ROOT "/Game/Enemy.cs");
     remove(ROOT "/Nowy/Program.cs"); rmdir(ROOT "/Nowy"); rmdir(ROOT "/Game");
-    remove(ROOT "/tests/a.cs"); rmdir(ROOT "/tests");
+    remove(ROOT "/tests/a.cs"); rmdir(ROOT "/tests"); remove(ROOT "/logs/main_1.txt"); rmdir(ROOT "/logs");
     remove(ROOT "/main.cs"); remove(ROOT "/beta.cs"); remove(ROOT "/Hello.cs"); remove(ROOT "/log.txt");
     rmdir(ROOT);
-    make_dir(ROOT); make_dir(ROOT "/Game"); make_dir(ROOT "/tests");
+    make_dir(ROOT); make_dir(ROOT "/Game"); make_dir(ROOT "/tests"); make_dir(ROOT "/logs");
     touch_file(ROOT "/main.cs", "class P {}\n");
     touch_file(ROOT "/beta.cs", "class B {}\n");
     touch_file(ROOT "/log.txt", "log\n");
+    touch_file(ROOT "/logs/main_1.txt", "log\n");
     touch_file(ROOT "/tests/a.cs", "class T {}\n");
     touch_file(ROOT "/Game/Program.cs", "class Program {}\n");
     touch_file(ROOT "/Game/Player.cs", "class Player {}\n");
@@ -88,7 +89,7 @@ int main(void) {
 
     Files* fs = files_new(ROOT);
     check(fs != NULL, "files_new");
-    check(files_count(fs) == 3, "root: 3 entries (no tests/, no log.txt)");
+    check(files_count(fs) == 3, "root: 3 entries (no tests/, no logs/, no log.txt)");
     check(!strcmp(files_name(fs, 0), "Game/") && !strcmp(files_name(fs, 1), "beta.cs") && !strcmp(files_name(fs, 2), "main.cs"),
           "projects first, then files by name");
 

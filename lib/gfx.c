@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 static const GfxBackend* be;
 static int screen;
@@ -18,6 +19,13 @@ static int touchScreenIdx;
 static double acc, lastMs;
 static int stepsStarted;
 static int drawRate = 60;
+
+/* Time.Millis: the real clock, independent of frames */
+static int clock_ms(void) { return (int)((long long)clock() * 1000 / CLOCKS_PER_SEC); }
+static int (*realClock)(void) = clock_ms;
+static int realStart;
+void lib_set_real_clock(int (*millis)(void)) { realClock = millis ? millis : clock_ms; realStart = realClock(); }
+void lib_time_start(void) { realStart = realClock(); }
 
 /* ---------- logical screens on the physical ones ---------- */
 typedef struct { int phys; float s, ox, oy; int w, h; } View;  /* logical w x h drawn at ox, oy scaled by s */
@@ -106,6 +114,7 @@ void lib_gfx_reset(void) {
     compute_layout();
     forget_images();
     select_screen(0);
+    lib_time_start();
 }
 
 /* the touch in physical pixels -> the logical screen under it; outside every logical screen it does not count */
@@ -358,7 +367,7 @@ static Value n_touchy(VM* vm, Value* a) { (void)vm; (void)a; return vint(touchY)
 static Value n_touchscreen(VM* vm, Value* a) { (void)vm; (void)a; return vint(touchScreenIdx); }
 
 /* ---------- Time, App ---------- */
-static Value n_millis(VM* vm, Value* a) { (void)vm; (void)a; return vint(ms_millis()); }
+static Value n_millis(VM* vm, Value* a) { (void)vm; (void)a; return vint(realClock() - realStart); }
 static Value n_delta(VM* vm, Value* a) { (void)vm; (void)a; return vfloat(delta); }
 static Value n_frame(VM* vm, Value* a) { (void)vm; (void)a; return vint(frame); }
 static Value n_quit(VM* vm, Value* a) { (void)a; ms_vm_request_quit(vm); return vnone(); }

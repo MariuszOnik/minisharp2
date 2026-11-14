@@ -97,10 +97,12 @@ klatka 40, minęło 0.6666667 s
 
 - `Time.Frame()` – numer kroku `Update` (0, 1, 2, …); 60 kroków to zawsze sekunda.
 - `Time.Delta()` – czas jednego kroku: 1/60 sekundy. Ruch `x += 180 * Time.Delta()` to „180 pikseli na sekundę”.
-- `Time.Millis()` – milisekundy od startu programu.
+- `Time.Millis()` – prawdziwe milisekundy od startu programu (zegar urządzenia). Działa też bez `Update` – np. do
+  zmierzenia, ile trwa pętla w `Main`. `Time.Delta()` i `WaitForSeconds` liczą natomiast kroki gry (60 na sekundę),
+  więc gra zachowuje się tak samo na każdym urządzeniu.
 - `App.Quit()` – koniec programu.
 
-`Console.WriteLine` działa także w grze: tekst trafia do dziennika (`log.txt`), a gdy program się skończy, widać go
+`Console.WriteLine` działa także w grze: tekst trafia do dziennika (`logs/<program>_<data-godzina>.txt`), a gdy program się skończy, widać go
 na ekranie konsoli.
 
 ## Tempo gry: 60 kroków na sekundę

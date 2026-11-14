@@ -83,9 +83,9 @@ Komentarze nic nie robią
 
 ## Uruchamianie na 3DS
 
-Na konsoli (Homebrew Launcher) MiniSharp uruchamia plik `sdmc:/minisharp/main.cs`. Gdy go nie ma, sam tworzy
+Na konsoli (Homebrew Launcher) MiniSharp uruchamia plik `sdmc:/minisharp2/main.cs`. Gdy go nie ma, sam tworzy
 przykładowy program. W menu na dolnym ekranie **A** uruchamia `main.cs`, a **START** wychodzi. Wynik `Console`
-pojawia się na górnym ekranie i trafia też do pliku `sdmc:/minisharp/log.txt`. Jeśli program ma metodę `Update`,
+pojawia się na górnym ekranie i trafia też do dziennika `sdmc:/minisharp2/logs/main_<data-godzina>.txt` (każde uruchomienie ma osobny plik). Jeśli program ma metodę `Update`,
 wywołuje się ona co klatkę, dopóki nie naciśniesz START. Plik `main.cs` możesz edytować na komputerze i skopiować na kartę,
 na przykład przez FTP, albo na samej konsoli w edytorze (niżej).
 

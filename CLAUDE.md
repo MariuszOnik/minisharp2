@@ -42,7 +42,7 @@ gry (ToEE, Fallout) to moduły w swoich repozytoriach, **nic z gier w rdzeniu**.
 | Stare repo MiniSharp (archiwum, nie zmieniać) | `D:\Programowanie\FalloutDS\minisharp` (gałęzie `toee-3d`, `jezyk-v4`, `main`; baza przenoszenia `931ad08`) |
 | Stara kopia v1 (bez wartości) | `E:\minsharpProject\minisharp\minisharp` |
 | Projekty gier na MiniSharpie (wstrzymane) | `E:\minsharpProject` (plan D&D w `PLAN.md`, eksport ToEE w `toee-models`) |
-| Konsola 3DS | FTP `192.168.1.90:5000` (ftpd, anonimowo, karta jako `/`); programy w `/minisharp/`, log `/minisharp/log.txt` |
+| Konsola 3DS | FTP `192.168.1.90:5000` (ftpd, anonimowo, karta jako `/`); programy MiniSharp2 w `/minisharp2/`, logi `/minisharp2/logs/<program>_<czas>.txt`; stara aplikacja: `/oldMinisharp/` |
 | Buildy testowe na konsolę | `/3ds/MiniSharp-*.3dsx` – **nie nadpisywać `/3ds/MiniSharp.3dsx` bez pytania** |
 | Emulator | Azahar: `D:\Programowanie\azahar-windows-mxe-2127.0-alpha3\azahar-windows-mxe-2127.0-alpha3` |
 

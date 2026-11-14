@@ -1,5 +1,5 @@
 /* MiniSharp - the file list of the native app: the programs and projects on the card, before the editor.
- * Two levels, like the old app: the root folder (e.g. sdmc:/minisharp) holds single programs (.cs) and projects
+ * Two levels, like the old app: the root folder (e.g. sdmc:/minisharp2) holds single programs (.cs) and projects
  * (folders with .cs files, all compiled together); a project shows its .cs and .txt files (uses.txt).
  * New file / new project ask for a name on the touch keyboard and write a small starting class.
  * The list is on the touch screen (tap = select, tap again = open), the hints and the name on the other one.

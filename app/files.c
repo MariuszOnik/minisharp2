@@ -113,14 +113,14 @@ void files_scan(Files* fs) {
             snprintf(path, sizeof path, "%s/%s", fs->dir, nm);
             Entry* e = &fs->e[fs->n];
             if (is_dir(path)) {
-                if (!in_root(fs) || !strcmp(nm, "tests") || !strcmp(nm, "themes") || !strcmp(nm, "docs"))
+                if (!in_root(fs) || !strcmp(nm, "tests") || !strcmp(nm, "themes") || !strcmp(nm, "docs") || !strcmp(nm, "logs"))
                     continue;                                   /* projects are one level deep; app folders are not projects */
                 e->isDir = 1;
                 e->ncs = project_count_cs(path);
                 snprintf(e->name, sizeof e->name, "%s/", nm);
             } else {
                 if (!ends_with(nm, ".cs") && !ends_with(nm, ".txt")) continue;
-                if (in_root(fs) && !ends_with(nm, ".cs")) continue;     /* log.txt of the app */
+                if (in_root(fs) && !ends_with(nm, ".cs")) continue;     /* only programs in the root */
                 e->isDir = 0; e->ncs = 0;
                 snprintf(e->name, sizeof e->name, "%s", nm);
             }
