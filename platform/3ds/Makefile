@@ -49,6 +49,8 @@ export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 export APP_ICON   := $(TOPDIR)/platform/3ds/icon.png
 export _3DSXDEPS  := $(OUTPUT).smdh
 export _3DSXFLAGS += --smdh=$(OUTPUT).smdh
+# sdk/ (the documentation chapters for Help) goes into the .3dsx as romfs:/
+export _3DSXFLAGS += --romfs=$(TOPDIR)/sdk
 
 .PHONY: all clean
 

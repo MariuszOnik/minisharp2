@@ -18,6 +18,7 @@
 #include "terminal.h"
 #include "editor.h"
 #include "files.h"
+#include "help.h"
 #include "ui_3ds.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -244,6 +245,7 @@ static void menu(void) {
     printf("X      run tests from " TESTS_DIR "\n");
     printf("B      editor: programs and projects\n");
     printf("Y      terminal\n");
+    printf("R      Help: the language\n");
     printf("START  quit\n");
 }
 
@@ -319,6 +321,32 @@ static void edit_file(const char* path) {
     ed_free(ed);
 }
 
+/* R: Help (app/help.c) – the chapters of sdk/docs. A folder on the card (sdmc:/minisharp/docs, e.g. newer chapters
+ * sent over FTP) wins over the copy built into the .3dsx (romfs:/docs). */
+static void help(void) {
+    Help* h = NULL;
+    if (!ui3ds_init() || !(h = help_new())) {
+        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
+        printf("\ncannot open Help\n");
+        return;
+    }
+    if (!help_load_dir(h, APP_DIR "/docs")) help_load_dir(h, "romfs:/docs");
+    while (aptMainLoop()) {
+        hidScanInput();
+        UiInput in;
+        ui3ds_input(&in);
+        if (!help_update(h, &in)) break;
+        ui3ds_frame_begin(0x101418, 0x0C0C0C);
+        help_draw(h);
+        ui3ds_frame_end();
+    }
+    help_free(h);
+    ui3ds_exit();
+    consoleInit(GFX_TOP, &top);
+    consoleInit(GFX_BOTTOM, &bottom);
+    menu();
+}
+
 /* B: the programs and projects on the card (app/files.c); a chosen file opens in the editor, START there
  * comes back to the list */
 static void editor(void) {
@@ -348,6 +376,7 @@ static void editor(void) {
 
 int main(void) {
     gfxInitDefault();
+    romfsInit();                                    /* sdk/ built into the .3dsx: the Help chapters */
     consoleInit(GFX_TOP, &top);
     consoleInit(GFX_BOTTOM, &bottom);
     mkdir(APP_DIR, 0777);
@@ -366,6 +395,7 @@ int main(void) {
         fclose(autof);
         remove(TESTS_DIR "/auto");
         run_tests();
+        romfsExit();
         gfxExit();
         return 0;
     }
@@ -386,8 +416,10 @@ int main(void) {
         if (k & KEY_X) run_tests();
         if (k & KEY_Y) terminal();
         if (k & KEY_B) editor();
+        if (k & KEY_R) help();
         gspWaitForVBlank();
     }
+    romfsExit();
     gfxExit();
     return 0;
 }

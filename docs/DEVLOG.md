@@ -154,3 +154,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   przypisaniu obok klasy dzielonej przez dwie zmienne.
 - 2026-11-14: Lista plików ma czwarty przycisk „Delete” dla rysika – działa jak SELECT: pierwsze dotknięcie pyta
   („Delete?” na czerwono), drugie usuwa.
+- 2026-11-14: Help na konsoli: `app/help.c` czyta rozdziały `sdk/docs` w tym samym małym Markdownie, zawija akapity
+  do szerokości ekranu, pokazuje kod i wynik na ciemnym tle, a dopiski „Dla zaawansowanych” z paskiem. Rozdziały jadą
+  w `.3dsx` jako romfs, więc Help działa bez kopiowania plików na kartę (R w menu).
