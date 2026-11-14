@@ -156,7 +156,15 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       grafu – `graph/` zarejestruje go w etapie 5). Brak punktu wejścia zgłasza host. Test jednostkowy `tests/unit/test_hooks.c`.
 
 ### Etap 3 – platforma 3DS i host testów PC
-- [ ] `platform/platform.h`, `platform/pc` (konsola, bufor ekranów, `--frames/--press/--ppm`).
+- [x] **Grafika 2D, Input, Time, App – wspólne API** (decyzja użytkownika 2026-11-14: etap 3, na razie tylko 2D):
+      `lib/gfx.c` – `Gfx.Screen/Clear/Rect/RectLine/Circle/Line/Pixel/Text/TextWidth/Alpha/Rgb/Lerp/Width/Height`,
+      `Color.*`, `Screen.Top/Bottom`, `Input.Held/Pressed/Released/Touching/Touched/TouchX/TouchY`, `Btn.*`,
+      `Time.Millis/Delta/Frame`, `App.Quit`. Platforma daje tylko `GfxBackend` (prostokąt, koło, linia, tekst) i co klatkę
+      `lib_input_frame` / `lib_time_frame` – zamiast osobnego `platform.h`. Testy czekające od etapu 1 przechodzą
+      (`czeka.txt` pusty).
+- [x] `platform/pc`: ekrany w pamięci (`swgfx.c`, 400×240 + 320×240, czarne na początku klatki), `--press A@10`,
+      `--press Left@5-20`, `--touch 3@100,50`, `--hash` (skrót obrazu do testów), `--ppm plik` (zrzut 400×480);
+      testy `gfx_draw`, `input_frames`. Tekst na PC to prostokąt na znak (czcionka to sprawa platformy).
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
 - [ ] **Podział `Console` na warstwy** (decyzja użytkownika 2026-11-13): `Console` to biblioteka, nie część języka ani platformy.
       (1) API jak w C# (`Write`, `WriteLine`, `ReadLine`, `Clear`, kolory, `SetCursorPosition`) w `lib/`, w C; wygodne dodatki

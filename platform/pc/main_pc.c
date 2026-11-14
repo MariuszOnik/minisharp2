@@ -12,7 +12,11 @@
  *   minisharp --ci folder           editor suggestions (codeindex) at every marker comment slash-star-?-star-slash
  *                                   in the project's files: "File.cs:LINE: type -> first 8 names"
  * Ctrl+C is the Stop button: a running loop stops with "stopped by the user" (the second Ctrl+C kills the host).
- * Graphics, input and --press/--ppm come in stage 3.
+ *   minisharp file.cs --press A@10 --press Left@5-20    buttons held in these frames (0 = the first Update)
+ *   minisharp file.cs --touch 3@100,50                  the touch screen touched at 100,50 in frame 3 (3-6@... = a range)
+ *   minisharp file.cs --hash                            at the end: "screens: 1a2b3c4d" (a hash of both screens)
+ *   minisharp file.cs --ppm out.ppm                     at the end: both screens as a picture (400 x 480)
+ * The screens are in memory (platform/pc/swgfx.c): 400x240 on top and 320x240 below, black at the start of a frame.
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
 #include "lib.h"
@@ -21,6 +25,8 @@
 #include "printer.h"
 #include "codeindex.h"
 #include "textgrid.h"
+#include "gfx.h"
+#include "swgfx.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,6 +69,50 @@ static char* read_line(void) {
     if (n && s[n - 1] == '\r') n--;
     s[n] = 0;
     return s;
+}
+
+/* --press / --touch: what is held in which frames */
+typedef struct { int from, to; uint32_t btn; int x, y; } Press;
+static Press g_press[64];
+static int g_npress;
+
+static uint32_t btn_named(const char* s, int n) {
+    static const struct { const char* name; uint32_t b; } B[] = {
+        {"A", BTN_A}, {"B", BTN_B}, {"X", BTN_X}, {"Y", BTN_Y}, {"L", BTN_L}, {"R", BTN_R}, {"Start", BTN_START},
+        {"Select", BTN_SELECT}, {"Up", BTN_UP}, {"Down", BTN_DOWN}, {"Left", BTN_LEFT}, {"Right", BTN_RIGHT},
+    };
+    for (size_t i = 0; i < sizeof B / sizeof B[0]; i++) if ((int)strlen(B[i].name) == n && !strncmp(B[i].name, s, n)) return B[i].b;
+    return 0;
+}
+
+/* "A@10", "Left@5-20" (a button) or "3@100,50", "3-6@100,50" (the touch); 0 = wrong */
+static int add_press(const char* s, int touch) {
+    if (g_npress == 64) return 0;
+    Press* p = &g_press[g_npress];
+    memset(p, 0, sizeof *p);
+    const char* at = strchr(s, '@');
+    if (!at) return 0;
+    if (touch) {
+        if (sscanf(s, "%d-%d@", &p->from, &p->to) != 2) { if (sscanf(s, "%d@", &p->from) != 1) return 0; p->to = p->from; }
+        if (sscanf(at + 1, "%d,%d", &p->x, &p->y) != 2) return 0;
+        p->btn = 0;
+    } else {
+        if (!(p->btn = btn_named(s, (int)(at - s)))) return 0;
+        if (sscanf(at + 1, "%d-%d", &p->from, &p->to) != 2) { if (sscanf(at + 1, "%d", &p->from) != 1) return 0; p->to = p->from; }
+    }
+    g_npress++;
+    return 1;
+}
+
+static void input_for_frame(int f) {
+    uint32_t held = 0;
+    int touching = 0, x = 0, y = 0;
+    for (int i = 0; i < g_npress; i++) {
+        if (f < g_press[i].from || f > g_press[i].to) continue;
+        if (g_press[i].btn) held |= g_press[i].btn;
+        else { touching = 1; x = g_press[i].x; y = g_press[i].y; }
+    }
+    lib_input_frame(held, touching, x, y);
 }
 
 static int g_echo;
@@ -183,12 +233,19 @@ int main(int argc, char** argv) {
         return 0;
     }
     if (argc < 2) { fprintf(stderr, "usage: %s file.cs|folder [--frames N] [--check] [--dis] | --repl\n", argv[0]); return 2; }
-    int frames = 60, check = 0, dis = 0;
+    int frames = 60, check = 0, dis = 0, hash = 0;
+    const char* ppm = NULL;
     for (int i = 2; i < argc; i++) {
         if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--check")) check = 1;
         else if (!strcmp(argv[i], "--dis")) dis = 1;
         else if (!strcmp(argv[i], "--echo")) g_echo = 1;
+        else if ((!strcmp(argv[i], "--press") || !strcmp(argv[i], "--touch")) && i + 1 < argc) {
+            int touch = !strcmp(argv[i], "--touch");
+            if (!add_press(argv[++i], touch)) { fprintf(stderr, "bad %s %s (e.g. %s)\n", touch ? "--touch" : "--press", argv[i], touch ? "3@100,50" : "A@10 or Left@5-20"); return 2; }
+        }
+        else if (!strcmp(argv[i], "--hash")) hash = 1;
+        else if (!strcmp(argv[i], "--ppm") && i + 1 < argc) ppm = argv[++i];
         else if (!strcmp(argv[i], "--grid") && i + 1 < argc) {
             int gw = 0, gh = 0;
             if (sscanf(argv[++i], "%dx%d", &gw, &gh) != 2 || !(grid = tg_new(gw, gh))) { fprintf(stderr, "bad --grid %s (e.g. 50x30)\n", argv[i]); return 2; }
@@ -236,17 +293,27 @@ int main(int argc, char** argv) {
     if (check) { ms_free_program(p); project_free(&proj); return 0; }
 
     if (grid) { lib_console_set_grid(grid); lib_set_output(no_output); }
+    const GfxBackend* screens = swgfx_init();
+    lib_set_gfx(screens);
+    lib_gfx_reset();
     VM* vm = vm_new(p);
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
     if (ok && up >= 0) {
         for (int f = 0; f < frames && ok; f++) {
             g_ms += 1000.0 / 60;
+            input_for_frame(f);
+            swgfx_begin_frame();
             ok = call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);    /* after Update, before Draw, like Unity */
             if (ok && dr >= 0) ok = call(vm, dr);
+            lib_time_frame(1.0f / 60);
         }
     }
+    if (hash) printf("screens: %08x\n", swgfx_hash());
+    if (ppm && !swgfx_save_ppm(ppm)) fprintf(stderr, "cannot write %s\n", ppm);
+    lib_set_gfx(NULL);
+    swgfx_free();
     int rc = 0;
     if (grid) {                                     /* the grid's rows, without the empty ones at the bottom */
         int last = tg_height(grid) - 1;

@@ -107,4 +107,5 @@ void lib_register_all(void) {
     lib_register_random();
     lib_register_strings();
     lib_register_convert();
+    lib_register_gfx();
 }

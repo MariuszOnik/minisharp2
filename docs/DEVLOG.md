@@ -187,3 +187,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   się co 50 ms podczas pisania i co klatkę w pętli `Update`; konsola tekstowa libctru zostaje tylko dla testów (X).
 - 2026-11-14: Buildy z Actions da się rozróżnić: plik w wydaniu nazywa się `MiniSharp-<nr przebiegu>.3dsx`, a ten sam
   numer widać w Homebrew Launcherze i w menu.
+- 2026-11-14: Etap 3, grafika 2D: API `Gfx`/`Input`/`Time`/`App` napisane raz w `lib/gfx.c`, platforma daje tylko kilka
+  funkcji rysujących. Host PC rysuje w pamięci i umie „nacisnąć” przyciski w wybranych klatkach, więc gry da się
+  testować w CI po skrócie obrazu. Pięć testów czekających od początku na Gfx/Input/App wreszcie przechodzi.

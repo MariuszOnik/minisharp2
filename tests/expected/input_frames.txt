@@ -1,0 +1,7 @@
+delta True
+A pressed in frame 3
+A+B in frame 4
+A released in frame 5
+touched at 120,40 in frame 8
+still touching in frame 9
+x = 5, quit

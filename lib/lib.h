@@ -17,6 +17,7 @@ void lib_register_math(void);       /* Math, Mathf (+ PI, E, Deg2Rad…) */
 void lib_register_random(void);     /* Random */
 void lib_register_strings(void);    /* string methods, string.IsNullOrEmpty */
 void lib_register_convert(void);    /* int/float.Parse, int.MaxValue/MinValue, char.IsDigit… */
+void lib_register_gfx(void);        /* Gfx, Color, Screen, Input, Btn, Time, App (lib/gfx.h: the platform gives a backend) */
 void lib_register_all(void);
 /* List<T> and Dictionary<K,V> are part of the language (lang/vm.c), not of these tables. */
 
