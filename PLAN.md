@@ -77,8 +77,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       metoda jako wartość, zdarzenia `+=`/`-=`, ściąga typów).
 - [x] Rozdział 14 „enum i struct” (enum w `switch`, liczby i rzutowania, enum jako klucz; struct kopiowany przy
       przypisaniu i w metodzie, struct czy klasa). Właściwości są już w rozdziale 10.
+- [x] Rozdział 15 „Przestrzenie nazw” (`namespace`, pełne nazwy, `using`, ta sama nazwa w dwóch przestrzeniach,
+      przestrzenie zagnieżdżone, kolejność szukania).
 - [ ] Kolejne rozdziały (propozycja kolejności):
-      przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 
@@ -110,6 +111,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         `foreach` po `List` sprawdza go przed każdym krokiem (`L_VERSION`/`L_CHECKVER`), `ForEach` po każdym wywołaniu;
         testy `foreach_change`, `rt_foreach_*`, `rt_listforeach_add`). Zostało: to samo dla `Dictionary` (w .NET Core
         błąd daje tylko dodanie nowego klucza; `Remove` i nadpisanie wartości są dozwolone).
+- [ ] **Braki względem C# znalezione przy rozdziale 15:** `using G = Gra;` (alias) kompilator przyjmuje i pomija, a użycie
+      `G.K` daje potem „unknown name 'G'” – albo dodać aliasy, albo zgłaszać błąd już w linii `using`.
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,
