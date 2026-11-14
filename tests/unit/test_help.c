@@ -5,6 +5,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#ifdef _WIN32
+#include <direct.h>
+#define make_dir(p) _mkdir(p)
+#else
+#define make_dir(p) mkdir(p, 0777)
+#endif
+
+static void write_file(const char* path, const char* text) {
+    FILE* f = fopen(path, "wb");
+    if (f) { fputs(text, f); fclose(f); }
+}
 
 static int fails;
 static void check(int cond, const char* what) { if (!cond) { fails++; printf("FAIL: %s\n", what); } }
@@ -164,6 +177,28 @@ int main(void) {
     }
     check(help_load_dir(d, "no/such/folder") == 0, "a missing folder: 0");
     help_free(d);
+
+    /* the card and the built-in copy together: a same-named file from the card replaces, a new one is added */
+    make_dir("build/tmp/help_card");
+    write_file("build/tmp/help_card/01-pierwszy-program.md", "# Nowsza wersja\n\nTekst.\n");
+    write_file("build/tmp/help_card/99-dodatkowy.md", "# Dodatkowy rozdział\n\nTekst.\n");
+    write_file("build/tmp/help_card/notatki.txt", "nie rozdział\n");
+    Help* m = help_new();
+    const char* dirs[] = { "build/tmp/help_card", "sdk/docs" };
+    int nm = help_load_dirs(m, dirs, 2);
+    check(nm == n + 1, "the chapters of both folders, the same name once");
+    check(!strcmp(help_title(m, 0), "Nowsza wersja"), "the card's file replaces the built-in one");
+    check(!strcmp(help_title(m, nm - 1), "Dodatkowy rozdział"), "a new chapter from the card is added, in name order");
+    check(!strcmp(help_title(m, 1), "Zmienne i typy"), "the other built-in chapters stay");
+    const char* gone[] = { "no/such/folder", "sdk/docs" };
+    Help* g = help_new();
+    check(help_load_dirs(g, gone, 2) == n, "no folder on the card: the built-in chapters");
+    help_free(g);
+    help_free(m);
+    remove("build/tmp/help_card/01-pierwszy-program.md");
+    remove("build/tmp/help_card/99-dodatkowy.md");
+    remove("build/tmp/help_card/notatki.txt");
+    rmdir("build/tmp/help_card");
     ui_set_backend(NULL);
     if (!fails) printf("help: ok\n");
     return fails ? 1 : 0;

@@ -104,22 +104,33 @@ static int is_chapter(const char* name) {
     size_t n = strlen(name);
     return name[0] >= '0' && name[0] <= '9' && n > 3 && !strcmp(name + n - 3, ".md");
 }
-static int cmp_name(const void* a, const void* b) { return strcmp((const char*)a, (const char*)b); }
 
-int help_load_dir(Help* h, const char* dir) {
-    DIR* d = opendir(dir);
-    if (!d) return 0;
-    static char names[MAX_CHAPTERS][64];
+/* the chapter files of the folders: one entry per file name, from the first folder that has it */
+typedef struct { char name[64]; int dir; } Found;
+static int cmp_found(const void* a, const void* b) { return strcmp(((const Found*)a)->name, ((const Found*)b)->name); }
+
+int help_load_dirs(Help* h, const char* const* dirs, int ndirs) {
+    static Found found[MAX_CHAPTERS];
     int n = 0;
-    struct dirent* e;
-    while ((e = readdir(d)) && n < MAX_CHAPTERS)
-        if (is_chapter(e->d_name) && strlen(e->d_name) < sizeof names[0]) snprintf(names[n++], sizeof names[0], "%s", e->d_name);
-    closedir(d);
-    qsort(names, n, sizeof names[0], cmp_name);
+    for (int di = 0; di < ndirs; di++) {
+        DIR* d = opendir(dirs[di]);
+        if (!d) continue;
+        struct dirent* e;
+        while ((e = readdir(d))) {
+            if (!is_chapter(e->d_name) || strlen(e->d_name) >= sizeof found[0].name) continue;
+            int dup = 0;
+            for (int i = 0; i < n && !dup; i++) dup = !strcmp(found[i].name, e->d_name);
+            if (dup || n >= MAX_CHAPTERS) continue;          /* an earlier folder has it already: that one wins */
+            snprintf(found[n].name, sizeof found[n].name, "%s", e->d_name);
+            found[n++].dir = di;
+        }
+        closedir(d);
+    }
+    qsort(found, n, sizeof found[0], cmp_found);
     int added = 0;
     for (int i = 0; i < n; i++) {
         char path[512];
-        if (snprintf(path, sizeof path, "%s/%s", dir, names[i]) >= (int)sizeof path) continue;
+        if (snprintf(path, sizeof path, "%s/%s", dirs[found[i].dir], found[i].name) >= (int)sizeof path) continue;
         FILE* f = fopen(path, "rb");
         if (!f) continue;
         fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
@@ -130,6 +141,8 @@ int help_load_dir(Help* h, const char* dir) {
     }
     return added;
 }
+
+int help_load_dir(Help* h, const char* dir) { return help_load_dirs(h, &dir, 1); }
 
 int help_chapters(const Help* h) { return h->n; }
 const char* help_title(const Help* h, int i) { return i >= 0 && i < h->n ? h->title[i] : ""; }

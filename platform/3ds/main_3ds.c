@@ -321,8 +321,9 @@ static void edit_file(const char* path) {
     ed_free(ed);
 }
 
-/* R: Help (app/help.c) – the chapters of sdk/docs. A folder on the card (sdmc:/minisharp/docs, e.g. newer chapters
- * sent over FTP) wins over the copy built into the .3dsx (romfs:/docs). */
+/* R: Help (app/help.c) – the chapters of sdk/docs built into the .3dsx (romfs:/docs) together with the ones in
+ * sdmc:/minisharp/docs (e.g. newer chapters sent over FTP): a chapter on the card replaces the built-in file of the
+ * same name, other files on the card are added. */
 static void help(void) {
     Help* h = NULL;
     if (!ui3ds_init() || !(h = help_new())) {
@@ -330,7 +331,8 @@ static void help(void) {
         printf("\ncannot open Help\n");
         return;
     }
-    if (!help_load_dir(h, APP_DIR "/docs")) help_load_dir(h, "romfs:/docs");
+    const char* dirs[] = { APP_DIR "/docs", "romfs:/docs" };   /* the card adds chapters and replaces same-named ones */
+    help_load_dirs(h, dirs, 2);
     while (aptMainLoop()) {
         hidScanInput();
         UiInput in;

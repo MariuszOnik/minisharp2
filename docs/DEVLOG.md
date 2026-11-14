@@ -157,3 +157,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Help na konsoli: `app/help.c` czyta rozdziały `sdk/docs` w tym samym małym Markdownie, zawija akapity
   do szerokości ekranu, pokazuje kod i wynik na ciemnym tle, a dopiski „Dla zaawansowanych” z paskiem. Rozdziały jadą
   w `.3dsx` jako romfs, więc Help działa bez kopiowania plików na kartę (R w menu).
+- 2026-11-14: Help łączy rozdziały z karty i wbudowane (pytanie użytkownika): wcześniej jeden rozdział na karcie
+  chował wszystkie wbudowane. Teraz plik z karty zastępuje wbudowany o tej samej nazwie, a nowe pliki się dokładają.

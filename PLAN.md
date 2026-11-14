@@ -310,5 +310,6 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    zaznaczenie, cztery narzędzia to wtedy Copy / Cut / Paste / All; jeden schowek dla wszystkich plików; test w
    `test_editor`; schowek systemowy dojdzie w wersji web), wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), ~~Help~~ (zrobione 2026-11-14: `app/help.c` – lista rozdziałów
    `sdk/docs` i czytnik z zawijaniem, blokami kodu/wyniku, dopiskami, przewijaniem, Prev/Next; test `test_help`; na 3DS
-   R w menu, rozdziały z `romfs:/docs` wbudowanych w `.3dsx`, a `sdmc:/minisharp/docs` ma pierwszeństwo). Zostało:
+   R w menu, rozdziały z `romfs:/docs` wbudowanych w `.3dsx` łączone z `sdmc:/minisharp/docs` – plik z karty zastępuje
+   wbudowany o tej samej nazwie, nowe pliki dochodzą; `help_load_dirs`). Zostało:
    Help z wnętrza edytora (przycisk) i „skopiuj przykład do edytora”.

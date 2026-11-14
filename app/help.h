@@ -18,6 +18,9 @@ Help* help_new(void);
 void help_free(Help* h);
 /* the chapters NN-*.md of a folder, in the order of their names; returns how many (0 = none or no folder) */
 int help_load_dir(Help* h, const char* dir);
+/* the chapters of several folders together, in the order of their file names; a file name found in more than one
+ * folder is taken from the first of them (e.g. the card before the copy built into the app). Returns how many. */
+int help_load_dirs(Help* h, const char* const* dirs, int ndirs);
 /* one chapter from text (copied): the title is its first "# " line */
 int help_add(Help* h, const char* text);
 
