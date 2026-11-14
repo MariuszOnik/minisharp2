@@ -54,7 +54,8 @@ enum { LF_FIND, LF_FINDLAST, LF_FINDALL, LF_FINDINDEX, LF_FINDLASTINDEX, LF_EXIS
 enum { D_NEW, D_ADD, D_REMOVE, D_CONTAINS, D_CONTAINSVAL, D_CLEAR, D_TRYGET, D_KEYS, D_VALUES, D_NEXT, D_KEYAT, D_VALAT };
 enum { Y_NEXT, Y_SECONDS, Y_CORO };
 enum { C_START, C_STOP, C_STOPALL };
-enum { L_NEW, L_ADD, L_INSERT, L_REMOVEAT, L_REMOVE, L_CLEAR, L_INDEXOF, L_ADDRANGE, L_SORT, L_REVERSE };
+enum { L_NEW, L_ADD, L_INSERT, L_REMOVEAT, L_REMOVE, L_CLEAR, L_INDEXOF, L_ADDRANGE, L_SORT, L_REVERSE,
+       L_VERSION /* list -> its version (0 for null) */, L_CHECKVER /* list, version -> (error if changed) */ };
 
 typedef struct {
     int32_t* code; int* lines; int len, cap;

@@ -148,8 +148,14 @@ Adam Kuba Ola
 
 ## Usuwanie w pętli – od końca
 
-Częsta sytuacja: przejdź po liście potworów i usuń martwe. Nie rób tego w `foreach` – lista zmienia się pod nogami
-pętli. Użyj zwykłego `for` i idź **od końca**: usunięcie elementu nie przesuwa wtedy tych, których jeszcze nie
+Częsta sytuacja: przejdź po liście potworów i usuń martwe. W `foreach` się tego nie da – lista zmieniałaby się pod
+nogami pętli, więc program zatrzyma się z błędem (tak samo jak w C#):
+
+```text
+runtime error: line 9 (Program.Main): the list was changed inside its own foreach (Add, Remove, Clear, l[i] = ...); ...
+```
+
+Użyj zwykłego `for` i idź **od końca**: usunięcie elementu nie przesuwa wtedy tych, których jeszcze nie
 sprawdziłeś.
 
 ```cs
@@ -172,6 +178,9 @@ class Program
 ```wynik
 5 3 8
 ```
+
+Inne wyjścia: przejdź po kopii listy (`foreach (int z in new List<int>(zycie))`) albo użyj `RemoveAll` z rozdziału
+o lambdach. Zmienianie **innej** listy w `foreach` jest w porządku.
 
 ## Indeks poza listą
 

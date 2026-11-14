@@ -25,7 +25,9 @@ typedef struct { Obj h; int32_t len, ulen, cacheI, cacheB; char chars[]; } ObjSt
 /* rows / cols: the dimensions of a rectangular array T[,] (items row after row); 0 for T[] */
 typedef struct { Obj h; int32_t len, rows, cols; Value items[]; } ObjArray;
 typedef struct { Obj h; int32_t cls; int32_t nfields; Value fields[]; } ObjInstance;
-typedef struct { Obj h; int32_t len, cap; Value* items; } ObjList;
+/* version: changed by every Add, Remove, Insert, Clear, Sort, l[i] = x...; foreach and ForEach stop with an error
+ * when it changes under them (as in C#) */
+typedef struct { Obj h; int32_t len, cap, version; Value* items; } ObjList;
 /* Dictionary, laid out like .NET's so foreach gives the same order: entries are kept in the order
  * they were added, and a removed entry's place goes to a free list that the next Add reuses.
  * 'index' is an open-addressing hash table of entry numbers (-1 empty, -2 removed). */

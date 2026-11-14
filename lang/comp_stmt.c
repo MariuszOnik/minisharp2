@@ -268,12 +268,15 @@ void compile_stmt(C* c, Stmt* s) {
             if (!el) cfail(c, s->line, "'foreach' needs an array, a List, a Dictionary or a string, not %s", type_name(c, ct));
             Type* vt = s->tn ? resolve_typenode(c, s->tn, 0) : el;
             if (!assignable(el, vt)) cfail(c, s->line, "'foreach': cannot convert %s to %s", type_name(c, el), type_name(c, vt));
-            int coll = alloc_temp(c), idx = alloc_temp(c);
+            int coll = alloc_temp(c), idx = alloc_temp(c), ver = ct->k == T_LIST ? alloc_temp(c) : -1;
             emit_op1(c, OP_STORE, coll); emit_pop(c);
             emit_op1(c, OP_ICONST, 0); emit_op1(c, OP_STORE, idx); emit_pop(c);
+            if (ver >= 0) { emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LIST, L_VERSION); emit_op1(c, OP_STORE, ver); emit_pop(c); }
             int var = declare_local(c, s->name, s->nlen, vt, s->line), varBoxed = c->lastBoxed;
             c->locals[c->nlocals - 1].readOnly = 1;
             int start = code_label(c);
+            /* a List changed by the body stops the loop with an error, as in C# (checked before every step, also the last) */
+            if (ver >= 0) { emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LOAD, ver); emit_op1(c, OP_LIST, L_CHECKVER); }
             emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_LOAD, coll); emit_op(c, OP_ARRLEN); emit_op(c, OP_ILT);
             int jz = emit_jump(c, OP_JZ);
             emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LOAD, idx); emit_op(c, OP_GETELEM);

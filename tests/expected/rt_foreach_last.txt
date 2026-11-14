@@ -1,0 +1,1 @@
+runtime error: line 3 (P.Main): the list was changed inside its own foreach (Add, Remove, Clear, l[i] = ...); loop over a copy (new List<T>(list)), use 'for', or RemoveAll

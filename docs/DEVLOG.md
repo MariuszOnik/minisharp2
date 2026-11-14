@@ -159,3 +159,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   w `.3dsx` jako romfs, więc Help działa bez kopiowania plików na kartę (R w menu).
 - 2026-11-14: Help łączy rozdziały z karty i wbudowane (pytanie użytkownika): wcześniej jeden rozdział na karcie
   chował wszystkie wbudowane. Teraz plik z karty zastępuje wbudowany o tej samej nazwie, a nowe pliki się dokładają.
+- 2026-11-14: Zmiana listy w jej własnym `foreach` daje błąd jak w C#: lista ma licznik zmian, pętla zapamiętuje go
+  na starcie i porównuje przed każdym krokiem (jedno porównanie na obrót). Wyjście z pętli zaraz po zmianie (`break`)
+  i pętla po kopii dalej działają. Rozdział 12 opisuje błąd i trzy wyjścia z sytuacji.

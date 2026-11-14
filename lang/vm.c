@@ -399,7 +399,7 @@ static int dict_remove(ObjDict* d, Value key) {
 static MS_COLD ObjList* new_list(VM* vm, int n) {
     ObjList* l = (ObjList*)alloc_obj(vm, sizeof(ObjList), O_LIST);
     if (!l) return NULL;
-    l->len = 0; l->cap = 0; l->items = NULL;
+    l->len = 0; l->cap = 0; l->version = 0; l->items = NULL;
     if (n > 0) {
         l->items = (Value*)malloc(sizeof(Value) * (size_t)n);
         if (!l->items) return NULL;             /* the empty list is collected later */
@@ -951,7 +951,8 @@ static int vm_run_loop(VM* vm, int startFp) {
                 if (i < 0 || i >= len) {
                     char m[80]; snprintf(m, sizeof m, "index %d is outside the %s (length %d)", i, ob->type == O_ARRAY ? "array" : "list", len); FAIL(m);
                 }
-                if (ob->type == O_ARRAY) ((ObjArray*)ob)->items[i] = sp[-1]; else ((ObjList*)ob)->items[i] = sp[-1];
+                if (ob->type == O_ARRAY) ((ObjArray*)ob)->items[i] = sp[-1];
+                else { ((ObjList*)ob)->items[i] = sp[-1]; ((ObjList*)ob)->version++; }
                 sp[-3] = sp[-1]; sp -= 2;
                 NEXT;
             }
@@ -1182,7 +1183,7 @@ static int vm_run_loop(VM* vm, int startFp) {
                     case LF_FINDALL: {
                         ObjList* nl = (ObjList*)alloc_obj(vm, sizeof(ObjList), O_LIST);
                         if (!nl) FAIL("out of memory");
-                        nl->len = 0; nl->cap = 0; nl->items = NULL;
+                        nl->len = 0; nl->cap = 0; nl->version = 0; nl->items = NULL;
                         stack[vm->sp].t = V_OBJ; stack[vm->sp].as.o = (Obj*)nl; vm->sp++;     /* kept alive while the predicate runs */
                         for (int i = 0; i < l->len; i++) {
                             arg = l->items[i];
@@ -1202,19 +1203,24 @@ static int vm_run_loop(VM* vm, int startFp) {
                         }
                         res.t = V_INT; res.as.i = n - j;
                         l->len = j;
+                        if (n != j) l->version++;
                         break;
                     }
-                    case LF_FOREACH:
+                    case LF_FOREACH: {
+                        int ver = l->version;
                         for (int i = 0; i < l->len; i++) {
                             arg = l->items[i];
                             if (!call_delegate(vm, fn, &arg, 1, &r)) FAILED();
+                            if (l->version != ver) FAIL("the list was changed inside its own ForEach");
                         }
                         break;
+                    }
                     case LF_SORT: {
                         Value t = vm_make_array(vm, l->len);   /* the buffer is a VM array, so the collector sees it */
                         if (t.t == V_NULL) FAIL("out of memory");
                         stack[vm->sp++] = t;
                         int n = l->len;
+                        l->version++;
                         if (!merge_sort(vm, l->items, ((ObjArray*)t.as.o)->items, n, fn)) FAILED();
                         vm->sp--;
                         break;
@@ -1390,8 +1396,20 @@ static int vm_run_loop(VM* vm, int startFp) {
                     SYNC();
                     ObjList* l = (ObjList*)alloc_obj(vm, sizeof(ObjList), O_LIST);
                     if (!l) FAIL("out of memory");
-                    l->len = 0; l->cap = 0; l->items = NULL;
+                    l->len = 0; l->cap = 0; l->version = 0; l->items = NULL;
                     sp->t = V_OBJ; sp->as.o = (Obj*)l; sp++;
+                    NEXT;
+                }
+                if (sub == L_VERSION) {         /* foreach: a null list is reported by the loop itself */
+                    sp[-1].as.i = sp[-1].t == V_OBJ ? ((ObjList*)sp[-1].as.o)->version : 0;
+                    sp[-1].t = V_INT;
+                    NEXT;
+                }
+                if (sub == L_CHECKVER) {
+                    if (sp[-2].t == V_OBJ && ((ObjList*)sp[-2].as.o)->version != sp[-1].as.i)
+                        FAIL("the list was changed inside its own foreach (Add, Remove, Clear, l[i] = ...); loop over a copy "
+                             "(new List<T>(list)), use 'for', or RemoveAll");
+                    sp -= 2;
                     NEXT;
                 }
                 /* stack: list, args...  (the list is checked for null here) */
@@ -1399,6 +1417,7 @@ static int vm_run_loop(VM* vm, int startFp) {
                 Value* lv = sp - 1 - nargs;
                 if (lv->t != V_OBJ) FAIL("null reference (calling a method on a null list)");
                 ObjList* l = (ObjList*)lv->as.o;
+                if (sub != L_INDEXOF) l->version++;
                 switch (sub) {
                     case L_ADD:
                         if (!list_reserve(vm, l)) FAIL("out of memory");

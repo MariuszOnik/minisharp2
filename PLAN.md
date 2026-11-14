@@ -105,8 +105,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - ~~brak `string.Join(sep, lista)`~~ (zrobione 2026-11-14: `call_join` w `comp_call.c` kompiluje pętlę – lista,
         `T[]` i wersja `Join(sep, a, b, …)`, separator `string`/`char`, `ToString` obiektów, `null` = ""; test `join`,
         błędy `join_*`). Wpis w tabeli `lib/strings.c` tylko dla podpowiedzi i sygnatury (nigdy nie wołany).
-      - usuwanie z listy w trakcie `foreach` po niej przechodzi bez błędu (C# rzuca wyjątek „Collection was modified”) –
-        znalezione przy rozdziale 12; do decyzji, czy VM ma to wykrywać (licznik zmian w `ObjList`).
+      - ~~usuwanie z listy w trakcie `foreach` po niej przechodzi bez błędu~~ (zrobione 2026-11-14, użytkownik zostawił
+        decyzję mnie: `ObjList.version` rośnie przy każdej zmianie – jak `_version` w .NET, także `l[i] = x` i `Sort`;
+        `foreach` po `List` sprawdza go przed każdym krokiem (`L_VERSION`/`L_CHECKVER`), `ForEach` po każdym wywołaniu;
+        testy `foreach_change`, `rt_foreach_*`, `rt_listforeach_add`). Zostało: to samo dla `Dictionary` (w .NET Core
+        błąd daje tylko dodanie nowego klucza; `Remove` i nadpisanie wartości są dozwolone).
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,
