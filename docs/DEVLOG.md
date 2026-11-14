@@ -162,3 +162,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Zmiana listy w jej własnym `foreach` daje błąd jak w C#: lista ma licznik zmian, pętla zapamiętuje go
   na starcie i porównuje przed każdym krokiem (jedno porównanie na obrót). Wyjście z pętli zaraz po zmianie (`break`)
   i pętla po kopii dalej działają. Rozdział 12 opisuje błąd i trzy wyjścia z sytuacji.
+- 2026-11-14: Help otwiera się też z edytora – piąty przycisk na pasku narzędzi; edytor nie zna Help, woła tylko
+  `EditorHost.help`, a host 3DS uruchamia tę samą pętlę Help co z menu, bez przełączania ekranów.

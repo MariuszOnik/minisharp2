@@ -4,7 +4,7 @@
  * tested on the PC (tests/unit/test_editor.c). Running a program is the host's job (EditorHost.run).
  * Buttons: D-pad cursor, L + D-pad line start / end / page, B delete, Y undo, R first suggestion,
  * A run, SELECT save, START leave (twice when there are unsaved changes), X selection mode: the D-pad grows the
- * selection and the four tools become Copy / Cut / Paste / All (X again: done). */
+ * selection and the tools become Copy / Cut / Paste / All / Done (X again: done). Tools: Save, Run, Undo, Redo, Help. */
 #ifndef MS_EDITOR_H
 #define MS_EDITOR_H
 
@@ -14,6 +14,8 @@
 typedef struct {
     /* runs the saved file; 1 = ok, 0 = error with the message in err ("compile error: line 3: ...") */
     int (*run)(const char* path, char* err, int errcap);
+    /* the Help tool: shows Help (app/help.h) and returns when the user leaves it; NULL = no Help */
+    void (*help)(void);
 } EditorHost;
 
 typedef struct Editor Editor;

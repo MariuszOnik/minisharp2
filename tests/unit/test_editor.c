@@ -22,6 +22,9 @@ static void write_file(const char* path, const char* text) {
     if (f) { fputs(text, f); fclose(f); }
 }
 
+static int helps;
+static void fake_help(void) { helps++; }
+
 static int fails;
 static void check(int cond, const char* what) { if (!cond) { fails++; printf("FAIL: %s\n", what); } }
 
@@ -86,7 +89,7 @@ int main(void) {
     lib_register_all();
     ui_set_backend(&REC);
     remove(PATH);
-    EditorHost host = { fake_run };
+    EditorHost host = { fake_run, NULL };
     Editor* ed = ed_new(&host);
     check(ed != NULL, "ed_new");
     check(!ed_open(ed, PATH) && tb_len(ed_buf(ed)) == 0, "a file that does not exist: empty, new");
@@ -152,6 +155,10 @@ int main(void) {
     in.touching = in.touchDown = 1; in.x = 2 * 80 + 10; in.y = 5; in.ms = now += 20;
     ed_update(ed, &in);
     check(tb_len(ed_buf(ed)) < len, "the Undo tool");
+    in = (UiInput){ 0 };
+    in.touching = in.touchDown = 1; in.x = 4 * 64 + 10; in.y = 5; in.ms = now += 20;
+    ed_update(ed, &in);
+    check(strstr(ed_status(ed), "no Help") != NULL, "the Help tool without a Help host");
 
     /* drawing: colours, line numbers, both screens */
     drawn[0] = 0; textsOn[0] = textsOn[1] = 0; colorOfWord = 0;
@@ -224,6 +231,18 @@ int main(void) {
     check(!strcmp(tb_text(ed_buf(es2)), "def"), "the clipboard is shared between files");
     ed_free(es2);
     ed_free(es);
+
+    /* the Help tool calls the host */
+    EditorHost hh = { fake_run, fake_help };
+    Editor* eh = ed_new(&hh);
+    ed_open(eh, "build/tmp/test_help_ed.cs");
+    ti.x = 4 * 64 + 10; ti.ms = now += 20;
+    ed_update(eh, &ti);
+    check(helps == 1, "the Help tool opens Help");
+    frame(eh, UI_BTN_X);
+    ed_update(eh, &ti);
+    check(helps == 1 && !ed_sel_mode(eh), "in the selection mode the fifth tool is Done");
+    ed_free(eh);
 
     /* a project: suggestions and signatures know the classes of its other files */
     make_dir("build/tmp/edproj");

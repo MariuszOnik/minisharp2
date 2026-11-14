@@ -21,11 +21,11 @@
 
 static const uint32_t KIND_RGB[] = { 0xD4D4D4, 0x569CD6, 0x4EC9B0, 0xCE9178, 0xB5CEA8, 0x6A9955 };   /* SVC_* */
 
-enum { TOOL_SAVE, TOOL_RUN, TOOL_UNDO, TOOL_REDO, NTOOLS };
-static const char* TOOL_NAMES[NTOOLS] = { "Save", "Run", "Undo", "Redo" };
-/* in the selection mode (X) the same four buttons are the clipboard */
-enum { SEL_COPY, SEL_CUT, SEL_PASTE, SEL_ALL };
-static const char* SEL_NAMES[NTOOLS] = { "Copy", "Cut", "Paste", "All" };
+enum { TOOL_SAVE, TOOL_RUN, TOOL_UNDO, TOOL_REDO, TOOL_HELP, NTOOLS };
+static const char* TOOL_NAMES[NTOOLS] = { "Save", "Run", "Undo", "Redo", "Help" };
+/* in the selection mode (X) the same buttons are the clipboard */
+enum { SEL_COPY, SEL_CUT, SEL_PASTE, SEL_ALL, SEL_DONE };
+static const char* SEL_NAMES[NTOOLS] = { "Copy", "Cut", "Paste", "All", "Done" };
 
 /* one clipboard for all files the editor opens (copy in one file, paste in another) */
 static char* clipboard;
@@ -272,6 +272,7 @@ static void sel_tool(Editor* ed, int t) {
         set_status(ed, 0x80E080, "pasted");
         break;
     case SEL_ALL: tb_select_all(ed->tb); break;
+    case SEL_DONE: set_sel_mode(ed, 0); break;
     }
 }
 
@@ -285,6 +286,10 @@ static void tool(Editor* ed, int t) {
     case TOOL_RUN: run(ed); break;
     case TOOL_UNDO: if (tb_undo(ed->tb)) edited(ed); break;
     case TOOL_REDO: if (tb_redo(ed->tb)) edited(ed); break;
+    case TOOL_HELP:
+        if (ed->host.help) ed->host.help();
+        else set_status(ed, 0xF0D080, "no Help in this host");
+        break;
     }
 }
 

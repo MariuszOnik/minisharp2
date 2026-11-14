@@ -315,4 +315,5 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    `sdk/docs` i czytnik z zawijaniem, blokami kodu/wyniku, dopiskami, przewijaniem, Prev/Next; test `test_help`; na 3DS
    R w menu, rozdziały z `romfs:/docs` wbudowanych w `.3dsx` łączone z `sdmc:/minisharp/docs` – plik z karty zastępuje
    wbudowany o tej samej nazwie, nowe pliki dochodzą; `help_load_dirs`). Zostało:
-   Help z wnętrza edytora (przycisk) i „skopiuj przykład do edytora”.
+   ~~Help z wnętrza edytora~~ (zrobione 2026-11-14: piąte narzędzie „Help”, `EditorHost.help`; w trybie zaznaczania
+   piąte to „Done”) i „skopiuj przykład do edytora”.

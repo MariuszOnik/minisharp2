@@ -301,9 +301,11 @@ static int editor_run(const char* path, char* err, int errcap) {
     return g_lastErr[0] == 0;
 }
 
+static void editor_help(void);
+
 /* the code editor (app/editor.c) on one file, until START */
 static void edit_file(const char* path) {
-    EditorHost host = { editor_run };
+    EditorHost host = { editor_run, editor_help };
     Editor* ed = ed_new(&host);
     if (!ed) return;
     ed_open(ed, path);
@@ -324,13 +326,10 @@ static void edit_file(const char* path) {
 /* R: Help (app/help.c) – the chapters of sdk/docs built into the .3dsx (romfs:/docs) together with the ones in
  * sdmc:/minisharp/docs (e.g. newer chapters sent over FTP): a chapter on the card replaces the built-in file of the
  * same name, other files on the card are added. */
-static void help(void) {
-    Help* h = NULL;
-    if (!ui3ds_init() || !(h = help_new())) {
-        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
-        printf("\ncannot open Help\n");
-        return;
-    }
+/* the Help loop on screens already in citro2d (from the menu and from the editor's Help tool); 0 = no memory */
+static int help_loop(void) {
+    Help* h = help_new();
+    if (!h) return 0;
     const char* dirs[] = { APP_DIR "/docs", "romfs:/docs" };   /* the card adds chapters and replaces same-named ones */
     help_load_dirs(h, dirs, 2);
     while (aptMainLoop()) {
@@ -343,6 +342,19 @@ static void help(void) {
         ui3ds_frame_end();
     }
     help_free(h);
+    return 1;
+}
+
+static void editor_help(void) { help_loop(); }
+
+static void help(void) {
+    int inited = ui3ds_init();
+    if (!inited || !help_loop()) {
+        if (inited) ui3ds_exit();
+        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
+        printf("\ncannot open Help\n");
+        return;
+    }
     ui3ds_exit();
     consoleInit(GFX_TOP, &top);
     consoleInit(GFX_BOTTOM, &bottom);
