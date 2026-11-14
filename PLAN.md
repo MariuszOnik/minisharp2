@@ -342,3 +342,10 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    ~~Help z wnętrza edytora~~ (zrobione 2026-11-14: piąte narzędzie „Help”, `EditorHost.help`; w trybie zaznaczania
    piąte to „Done”) i ~~„skopiuj przykład do edytora”~~ (zrobione 2026-11-14: przycisk „Copy” w czytniku Help kładzie
    pierwszy przykład widoczny na ekranie do schowka edytora – `help_set_copy`, `ed_set_clipboard`).
+
+**Stan 2026-11-14 (sesja autonomiczna z telefonu):** punkt 11 zrobiony prawie cały (karty, schowek, Help, ekran
+konsoli z `ReadLine`). Zostały z drobnych: czcionka bitmapowa 8 × 8 z polskimi literami (konsola 50 × 30),
+`Console.ReadKey` / `CursorVisible` (gry tekstowe – `ReadKey` wymaga wstrzymania VM jak `ReadLine`), podpowiedzi
+`Console.ForegroundColor` i po aliasie. **Do decyzji użytkownika – który duży etap teraz:** (a) etap 3: `Gfx`, `Input`,
+`Time`, host PC z `--frames/--press/--ppm` (gry graficzne na 3DS); (b) etap 5: edytor grafu „Bolt” (najpierw lista
+funkcji Bolta do ustalenia); (c) etap 5b: wersja web + APK z nowego rdzenia.
