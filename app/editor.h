@@ -44,7 +44,18 @@ const char* ed_status(const Editor* ed);
 int ed_top_line(const Editor* ed);
 int ed_error_line(const Editor* ed);            /* 1-based line of the last error, 0 = none */
 void ed_key(Editor* ed, const char* k);         /* text from the keyboard, KBD_BACKSPACE or KBD_ENTER */
-int ed_visible_lines(void);
+int ed_visible_lines(const Editor* ed);         /* code lines on the screen (they depend on the font size) */
+
+/* the code's size and colours: A- / A+ / Col on the touch screen, L + A / L + B. ed_set_config reads the settings
+ * file (lines "font 13", "theme name") and the schemes folder (themes/<name>.txt with lines like "keyword 569CD6";
+ * keys: text keyword type string number comment background linenumber linenumberactive currentline selection
+ * cursor errorline titlebar); every change is written back to the settings file. */
+void ed_set_config(Editor* ed, const char* settingsPath, const char* themesDir);
+void ed_set_font_size(Editor* ed, int px);      /* 9..24 */
+int ed_font_size(const Editor* ed);
+int ed_load_theme(Editor* ed, const char* path); /* 0 = cannot read; keys the file does not have keep the default */
+int ed_next_theme(Editor* ed);                  /* the next file of the themes folder by name */
+const char* ed_theme_name(const Editor* ed);    /* "" = the built-in default */
 int ed_sel_mode(const Editor* ed);              /* 1 = the selection mode (X) is on */
 const char* ed_clipboard(void);                 /* the editor's clipboard, shared by all files ("" = empty) */
 void ed_set_clipboard(const char* s);           /* e.g. an example copied in Help */

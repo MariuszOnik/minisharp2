@@ -329,6 +329,25 @@ static void copy_file(const char* from, const char* to) {
     fclose(in);
 }
 
+/* the colour schemes of the editor (romfs:/themes, from sdk/themes) go to sdmc:/minisharp/themes once; the user adds
+ * own files there (or changes these): a folder that exists is left alone */
+static void install_themes(void) {
+    struct stat st;
+    if (!stat(APP_DIR "/themes", &st)) return;
+    DIR* d = opendir("romfs:/themes");
+    if (!d) return;
+    mkdir(APP_DIR "/themes", 0777);
+    struct dirent* e;
+    while ((e = readdir(d))) {
+        if (e->d_name[0] == '.') continue;
+        char a[300], b[300];
+        snprintf(a, sizeof a, "romfs:/themes/%s", e->d_name);
+        snprintf(b, sizeof b, APP_DIR "/themes/%s", e->d_name);
+        copy_file(a, b);
+    }
+    closedir(d);
+}
+
 static void install_examples(void) {
     DIR* d = opendir("romfs:/examples");
     if (!d) return;
@@ -438,6 +457,7 @@ static void edit_file(const char* path) {
     Editor* ed = ed_new(&host);
     if (!ed) return;
     ed_open(ed, path);
+    ed_set_config(ed, APP_DIR "/editor.txt", APP_DIR "/themes");    /* the font size and the colour scheme */
     char proj[400];
     if (files_project_of(APP_DIR, path, proj, sizeof proj)) ed_set_project(ed, proj);
     while (aptMainLoop()) {
@@ -526,6 +546,7 @@ int main(void) {
     mkdir(APP_DIR, 0777);
     ensure_main();
     install_examples();
+    install_themes();
 
     ms_set_clock(frame_millis);
     ms_set_interrupt(stop_pressed);

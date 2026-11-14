@@ -6,20 +6,46 @@
 #include "keyboard.h"
 #include "service.h"
 #include "project.h"
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define CODE_Y 18                       /* code starts below the title bar */
-#define LINE_H 15
-#define FONT 13
-#define GUTTER 34                       /* line numbers */
+#define FONT_MIN 9
+#define FONT_MAX 24
+#define FONT_DEFAULT 13
+/* the code's font size (A+ / A-, L + A / L + B) decides the line height and the width of the line numbers */
+#define FONT ((float)ed->font)
+#define LINE_H ((float)(ed->font + 2))
+#define GUTTER gutter(ed)
 #define PANEL_H 240
 #define NSUG 4
 #define REPEAT_WAIT 400
 #define REPEAT_EVERY 60
 
-static const uint32_t KIND_RGB[] = { 0xD4D4D4, 0x569CD6, 0x4EC9B0, 0xCE9178, 0xB5CEA8, 0x6A9955 };   /* SVC_* */
+/* A colour scheme of the code (a themes/<name>.txt file: lines "key RRGGBB", e.g. "keyword 569CD6"; '#' comments) */
+typedef struct {
+    char name[40];
+    uint32_t kind[6];                   /* SVC_*: text, keyword, type, string, number, comment */
+    uint32_t bg, lineNum, lineNumCur, curLine, sel, cursor, errLine, title;
+} Theme;
+
+static const Theme DEFAULT_THEME = {
+    "", { 0xD4D4D4, 0x569CD6, 0x4EC9B0, 0xCE9178, 0xB5CEA8, 0x6A9955 },
+    0x1E1E1E, 0x5A6270, 0xC0C8D0, 0x1A1E26, 0x264F78, 0xFFFFFF, 0x4A1E22, 0x1C2230,
+};
+
+static const struct { const char* key; int idx; } THEME_KEYS[] = {    /* idx: 0..5 kind, 6.. the rest */
+    {"text", 0}, {"keyword", 1}, {"type", 2}, {"string", 3}, {"number", 4}, {"comment", 5},
+    {"background", 6}, {"linenumber", 7}, {"linenumberactive", 8}, {"currentline", 9}, {"selection", 10},
+    {"cursor", 11}, {"errorline", 12}, {"titlebar", 13},
+};
+
+static uint32_t* theme_slot(Theme* t, int idx) {
+    uint32_t* rest[] = { &t->bg, &t->lineNum, &t->lineNumCur, &t->curLine, &t->sel, &t->cursor, &t->errLine, &t->title };
+    return idx < 6 ? &t->kind[idx] : rest[idx - 6];
+}
 
 enum { TOOL_SAVE, TOOL_RUN, TOOL_UNDO, TOOL_REDO, TOOL_HELP, NTOOLS };
 static const char* TOOL_NAMES[NTOOLS] = { "Save", "Run", "Undo", "Redo", "Help" };
@@ -57,7 +83,12 @@ struct Editor {
     uint32_t heldSince[4], lastRepeat[4];   /* Up, Down, Left, Right, then B */
     uint32_t bSince, bLast;
     int selMode;                        /* X: the D-pad grows the selection, the tools are Copy / Cut / Paste / All */
+    int font;                           /* the code's font size in pixels */
+    Theme theme;
+    char settingsPath[320], themesDir[320];  /* ed_set_config: where the size and the scheme are kept */
 };
+
+static float gutter(const Editor* ed) { return ui_text_width("9999", (float)(ed->font - 2)) + 10; }
 
 /* ---------- layout ---------- */
 typedef struct { int codeScreen, panelScreen; float codeW, codeH, panelY, panelW; } Layout;
@@ -82,7 +113,7 @@ static Layout layout(void) {
     return L;
 }
 
-int ed_visible_lines(void) { Layout L = layout(); return (int)((L.codeH - CODE_Y) / LINE_H); }
+int ed_visible_lines(const Editor* ed) { Layout L = layout(); return (int)((L.codeH - CODE_Y) / LINE_H); }
 
 /* ---------- status ---------- */
 static void set_status(Editor* ed, uint32_t rgb, const char* s) {
@@ -100,6 +131,8 @@ Editor* ed_new(const EditorHost* host) {
     if (!ed->tb || !ed->svc) { ed_free(ed); return NULL; }
     ed->svcLen = -1;
     ed->tabs[0].tb = ed->tb; ed->ntabs = 1; ed->cur = 0;
+    ed->font = FONT_DEFAULT;
+    ed->theme = DEFAULT_THEME;
     kbd_reset();
     kbd_set_enter_label("Enter");
     return ed;
@@ -265,6 +298,107 @@ static int save_all(Editor* ed) {
         }
     return 1;
 }
+
+/* ---------- font size, colour schemes, settings ---------- */
+int ed_font_size(const Editor* ed) { return ed->font; }
+const char* ed_theme_name(const Editor* ed) { return ed->theme.name; }
+
+static void save_settings(Editor* ed) {
+    if (!ed->settingsPath[0]) return;
+    FILE* f = fopen(ed->settingsPath, "wb");
+    if (!f) return;
+    fprintf(f, "# MiniSharp editor settings\nfont %d\ntheme %s\n", ed->font, ed->theme.name);
+    fclose(f);
+}
+
+void ed_set_font_size(Editor* ed, int px) {
+    if (px < FONT_MIN) px = FONT_MIN;
+    if (px > FONT_MAX) px = FONT_MAX;
+    if (px == ed->font) return;
+    ed->font = px;
+    char m[40];
+    snprintf(m, sizeof m, "font %d px", px);
+    set_status(ed, 0x8090A0, m);
+    save_settings(ed);
+}
+
+int ed_load_theme(Editor* ed, const char* path) {
+    FILE* f = fopen(path, "rb");
+    if (!f) return 0;
+    Theme t = DEFAULT_THEME;                        /* what the file does not say stays as in the default */
+    char line[200];
+    while (fgets(line, sizeof line, f)) {
+        char key[40], val[40];
+        if (line[0] == '#' || sscanf(line, "%39s %39s", key, val) != 2) continue;
+        const char* v = val[0] == '#' ? val + 1 : val;
+        char* end;
+        unsigned long rgb = strtoul(v, &end, 16);
+        if (end == v || rgb > 0xFFFFFF) continue;
+        for (size_t i = 0; i < sizeof THEME_KEYS / sizeof THEME_KEYS[0]; i++)
+            if (!strcmp(key, THEME_KEYS[i].key)) *theme_slot(&t, THEME_KEYS[i].idx) = (uint32_t)rgb;
+    }
+    fclose(f);
+    const char* b = base_name(path);
+    int n = (int)strlen(b);
+    if (n > 4 && !strcmp(b + n - 4, ".txt")) n -= 4;
+    snprintf(t.name, sizeof t.name, "%.*s", n, b);
+    ed->theme = t;
+    return 1;
+}
+
+void ed_set_config(Editor* ed, const char* settingsPath, const char* themesDir) {
+    snprintf(ed->settingsPath, sizeof ed->settingsPath, "%s", settingsPath ? settingsPath : "");
+    snprintf(ed->themesDir, sizeof ed->themesDir, "%s", themesDir ? themesDir : "");
+    FILE* f = settingsPath ? fopen(settingsPath, "rb") : NULL;
+    if (!f) return;
+    char line[200], theme[40] = "";
+    int font = ed->font;
+    while (fgets(line, sizeof line, f)) {
+        int n;
+        if (sscanf(line, "font %d", &n) == 1) font = n;
+        sscanf(line, "theme %39s", theme);
+    }
+    fclose(f);
+    ed->font = font < FONT_MIN ? FONT_MIN : font > FONT_MAX ? FONT_MAX : font;
+    if (theme[0] && ed->themesDir[0]) {
+        char p[400];
+        snprintf(p, sizeof p, "%s/%s.txt", ed->themesDir, theme);
+        ed_load_theme(ed, p);
+    }
+}
+
+/* the next scheme of themes/ (in the order of the names, after the current one) */
+int ed_next_theme(Editor* ed) {
+    DIR* d = ed->themesDir[0] ? opendir(ed->themesDir) : NULL;
+    if (!d) { set_status(ed, 0xF0D080, "no colour schemes: put files in the themes folder"); return 0; }
+    char first[64] = "", next[64] = "";
+    struct dirent* e;
+    while ((e = readdir(d))) {
+        const char* n = e->d_name;
+        int l = (int)strlen(n);
+        if (n[0] == '.' || l < 5 || l > 60 || strcmp(n + l - 4, ".txt")) continue;
+        char nm[64];
+        snprintf(nm, sizeof nm, "%.*s", l - 4, n);
+        if (!first[0] || strcmp(nm, first) < 0) snprintf(first, sizeof first, "%s", nm);
+        if (strcmp(nm, ed->theme.name) > 0 && (!next[0] || strcmp(nm, next) < 0)) snprintf(next, sizeof next, "%s", nm);
+    }
+    closedir(d);
+    const char* pick = next[0] ? next : first;
+    if (!pick[0]) { set_status(ed, 0xF0D080, "no colour schemes: put files in the themes folder"); return 0; }
+    char p[400];
+    snprintf(p, sizeof p, "%s/%s.txt", ed->themesDir, pick);
+    if (!ed_load_theme(ed, p)) return 0;
+    char m[80];
+    snprintf(m, sizeof m, "colours: %s", ed->theme.name);
+    set_status(ed, 0x8090A0, m);
+    save_settings(ed);
+    return 1;
+}
+
+/* the small buttons at the right of the status line: A- A+ and the colour scheme */
+#define SMALL_W 30
+enum { SB_SMALLER, SB_BIGGER, SB_THEME, NSMALL };
+static const char* SMALL_NAMES[NSMALL] = { "A-", "A+", "Col" };
 
 /* ---------- the language service ---------- */
 static unsigned checksum(const char* s, int n) {
@@ -432,10 +566,16 @@ int ed_update(Editor* ed, const UiInput* in) {
     if (in->touchDown) {
         float px = (float)in->x, py = (float)in->y - L.panelY;
         if (py >= 0 && py < 22) tool(ed, (int)(px / (L.panelW / NTOOLS)));
+        else if (py >= 23 && py < 45 && px >= L.panelW - NSMALL * SMALL_W) {
+            int b = (int)((px - (L.panelW - NSMALL * SMALL_W)) / SMALL_W);
+            if (b == SB_SMALLER) ed_set_font_size(ed, ed->font - 1);
+            else if (b == SB_BIGGER) ed_set_font_size(ed, ed->font + 1);
+            else ed_next_theme(ed);
+        }
         else if (py >= 46 && py < 77) complete(ed, (int)(px / (L.panelW / NSUG)));
     }
     int sel = (in->held & UI_BTN_L) != 0;               /* L + D-pad: line start / end, page up / down */
-    int vis = ed_visible_lines();
+    int vis = ed_visible_lines(ed);
     static const uint32_t DIRS[4] = { UI_BTN_UP, UI_BTN_DOWN, UI_BTN_LEFT, UI_BTN_RIGHT };
     for (int i = 0; i < 4; i++) {
         if (!repeat(&ed->heldSince[i], &ed->lastRepeat[i], in, DIRS[i])) continue;
@@ -447,14 +587,16 @@ int ed_update(Editor* ed, const UiInput* in) {
             if (i == 3) tb_move(ed->tb, TB_END, grow);
         } else tb_move(ed->tb, i == 0 ? TB_UP : i == 1 ? TB_DOWN : i == 2 ? TB_LEFT : TB_RIGHT, grow);
     }
-    if (repeat(&ed->bSince, &ed->bLast, in, UI_BTN_B)) { tb_backspace(ed->tb); edited(ed); }
+    if (sel && (in->down & UI_BTN_A)) ed_set_font_size(ed, ed->font + 1);     /* L + A / L + B: bigger / smaller code */
+    if (sel && (in->down & UI_BTN_B)) ed_set_font_size(ed, ed->font - 1);
+    if (!sel && repeat(&ed->bSince, &ed->bLast, in, UI_BTN_B)) { tb_backspace(ed->tb); edited(ed); }
     if ((in->down & UI_BTN_Y) && !(in->held & UI_BTN_L)) { if (tb_undo(ed->tb)) edited(ed); }
     if ((in->held & UI_BTN_L) && (in->down & (UI_BTN_X | UI_BTN_Y)) && ed->ntabs > 1)   /* L + X / L + Y: next / previous tab */
         ed_switch_tab(ed, (ed->cur + (in->down & UI_BTN_X ? 1 : ed->ntabs - 1)) % ed->ntabs);
     else if (in->down & UI_BTN_X) set_sel_mode(ed, !ed->selMode);
     if ((in->down & UI_BTN_R) && ed->nsug) { complete(ed, 0); edited(ed); }
     if (in->down & UI_BTN_SELECT) ed_save(ed);
-    if (in->down & UI_BTN_A) run(ed);
+    if ((in->down & UI_BTN_A) && !sel) run(ed);
     refresh(ed);
     scroll_to_cursor(ed, &L);
     return 1;
@@ -463,7 +605,8 @@ int ed_update(Editor* ed, const UiInput* in) {
 /* ---------- drawing ---------- */
 static void draw_code(Editor* ed, const Layout* L) {
     ui_screen(L->codeScreen);
-    ui_rect(0, 0, L->codeW, 16, 0x1C2230);
+    ui_rect(0, CODE_Y - 2, L->codeW, L->codeH - CODE_Y + 2, ed->theme.bg);
+    ui_rect(0, 0, L->codeW, 16, ed->theme.title);
     /* the tabs: from the first one that still lets the current one fit before the position text */
     int first = 0;
     for (;;) {
@@ -505,11 +648,12 @@ static void draw_code(Editor* ed, const Layout* L) {
         int l = ed->top + i, ls = tb_line_start(ed->tb, l), ll = tb_line_len(ed->tb, l);
         if (ll > (int)sizeof kinds) ll = sizeof kinds;
         float y = CODE_Y + i * LINE_H;
-        if (l + 1 == ed->errLine) ui_rect(0, y, L->codeW, LINE_H, 0x4A1E22);
-        else if (l == line) ui_rect(GUTTER, y, L->codeW - GUTTER, LINE_H, 0x1A1E26);
+        if (l + 1 == ed->errLine) ui_rect(0, y, L->codeW, LINE_H, ed->theme.errLine);
+        else if (l == line) ui_rect(GUTTER, y, L->codeW - GUTTER, LINE_H, ed->theme.curLine);
         char num[12];
         snprintf(num, sizeof num, "%d", l + 1);
-        ui_text(GUTTER - 6 - ui_text_width(num, 11), y + 2, num, 11, l == line ? 0xC0C8D0 : 0x5A6270);
+        float nf = FONT - 2;
+        ui_text(GUTTER - 6 - ui_text_width(num, nf), y + 2, num, nf, l == line ? ed->theme.lineNumCur : ed->theme.lineNum);
         state = svc_colors(ed->svc, t + ls, ll, kinds, state);
         ui_clip(GUTTER, (int)y, (int)(L->codeW - GUTTER), LINE_H);
         float x = GUTTER + 4 - ed->scrollX;
@@ -520,20 +664,20 @@ static void draw_code(Editor* ed, const Layout* L) {
             float xa = ui_text_width(seg, FONT);
             memcpy(seg, t + ls + a, b - a); seg[b - a] = 0;
             float w = ui_text_width(seg, FONT);
-            ui_rect(x + xa, y, w + (sb > ls + ll ? 4 : 0), LINE_H, 0x264F78);
+            ui_rect(x + xa, y, w + (sb > ls + ll ? 4 : 0), LINE_H, ed->theme.sel);
         }
         for (int a = 0; a < ll; ) {                       /* runs of one colour */
             int b = a;
             while (b < ll && kinds[b] == kinds[a]) b++;
             memcpy(seg, t + ls + a, b - a); seg[b - a] = 0;
-            ui_text(x, y + 1, seg, FONT, KIND_RGB[kinds[a]]);
+            ui_text(x, y + 1, seg, FONT, ed->theme.kind[kinds[a]]);
             x += ui_text_width(seg, FONT);
             a = b;
         }
         if (l == line && (ed->ms / 500) % 2 == 0) {
             int c = tb_cursor(ed->tb) - ls;
             memcpy(seg, t + ls, c); seg[c] = 0;
-            ui_rect(GUTTER + 4 - ed->scrollX + ui_text_width(seg, FONT), y + 1, 1.5f, LINE_H - 2, 0xFFFFFF);
+            ui_rect(GUTTER + 4 - ed->scrollX + ui_text_width(seg, FONT), y + 1, 1.5f, LINE_H - 2, ed->theme.cursor);
         }
         ui_unclip();
     }
@@ -549,8 +693,13 @@ static void draw_panel(Editor* ed, const Layout* L) {
         float tw = ui_text_width(name, 12);
         ui_text(i * bw + (bw - tw) / 2, y + 4, name, 12, 0xFFFFFF);
     }
-    /* the signature of the call at the cursor, otherwise the status */
-    ui_clip(0, (int)(y + 23), (int)L->panelW, 22);
+    /* the small buttons A- A+ Col at the right, then the signature of the call at the cursor, otherwise the status */
+    for (int i = 0; i < NSMALL; i++) {
+        float bx = L->panelW - (NSMALL - i) * SMALL_W;
+        ui_rect(bx + 1, y + 24, SMALL_W - 2, 20, 0x2A3346);
+        ui_text(bx + (SMALL_W - ui_text_width(SMALL_NAMES[i], 12)) / 2, y + 27, SMALL_NAMES[i], 12, 0xFFFFFF);
+    }
+    ui_clip(0, (int)(y + 23), (int)L->panelW - NSMALL * SMALL_W, 22);
     if (ed->sig[0] && !ed->leaveArmed && !ed->errLine) {
         char hint[160];
         snprintf(hint, sizeof hint, "%s  [arg %d]", ed->sig, ed->sigArg + 1);

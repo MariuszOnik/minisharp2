@@ -257,9 +257,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - **własne klawisze**: użytkownik przypisuje akcje do przycisków (np. kasowanie pod inny przycisk niż domyślne A = spacja,
         B = backspace); domyślny układ jako przycisk „Przywróć”. Akcje edytora mają nazwy (tabela akcja → klawisz), żeby
         przypisanie działało tak samo na 3DS, Switch i w przeglądarce;
-      - **schematy kolorowania** wczytywane z pliku (np. `themes/*.txt`: kolor dla słów kluczowych, typów, napisów, komentarzy,
-        tła, zaznaczenia), kilka wbudowanych do wyboru;
-      - **czcionki** do wyboru (inne pliki czcionek) i **powiększanie / zmniejszanie** czcionki w edytorze (też skrótem);
+      - ~~**schematy kolorowania** wczytywane z pliku~~ (zrobione 2026-11-14: `themes/<nazwa>.txt`, linie `klucz RRGGBB`,
+        14 kluczy, brakujące = domyślne; wbudowane `ciemny`, `jasny`, `fosfor` z `sdk/themes` kopiowane do
+        `sdmc:/minisharp/themes`; przycisk „Col” przełącza; `ed_load_theme`, `ed_next_theme`);
+      - czcionki do wyboru – później (decyzja użytkownika: czcionka systemowa może zostać); ~~**powiększanie /
+        zmniejszanie**~~ (zrobione 2026-11-14: 9–24 px, przyciski A- / A+ i L + A / L + B, wysokość linii i numery liczone
+        od rozmiaru; rozmiar i schemat w `sdmc:/minisharp/editor.txt` – `ed_set_config`; test w `test_editor`; rozdział 18);
       - **zaznacz, kopiuj, wytnij, wklej** (schowek edytora; w przeglądarce także systemowy).
 - [ ] **„Idź do definicji / pokaż API”** (prośba użytkownika 2026-11-13): kursor na nazwie klasy + przycisk otwiera tę klasę,
       żeby podejrzeć jej metody i pola. Usługa języka zwraca, *skąd* jest klasa:

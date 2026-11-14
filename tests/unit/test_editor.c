@@ -171,7 +171,7 @@ int main(void) {
     tb_set_text(ed_buf(ed), "");
     for (int i = 0; i < 40; i++) type(ed, "x\n");
     frame(ed, 0);
-    int vis = ed_visible_lines();
+    int vis = ed_visible_lines(ed);
     check(vis == 14, "14 lines on the 240-pixel screen");
     check(ed_top_line(ed) == 40 - vis + 1, "scrolled down with the cursor");
     tb_set_cursor(ed_buf(ed), 0, 0);
@@ -243,6 +243,58 @@ int main(void) {
     ed_update(eh, &ti);
     check(helps == 1 && !ed_sel_mode(eh), "in the selection mode the fifth tool is Done");
     ed_free(eh);
+
+    /* font size and colour schemes: A- / A+ / Col, L + A / L + B, the settings file */
+    make_dir("build/tmp/edthemes");
+    write_file("build/tmp/edthemes/czerwony.txt", "# test\nkeyword #FF0000\nbackground 000010\nzly wpis\n");
+    write_file("build/tmp/edthemes/zielony.txt", "keyword 00FF00\n");
+    remove("build/tmp/edsettings.txt");
+    Editor* ef = ed_new(&host);
+    ed_open(ef, "build/tmp/test_font.cs");
+    tb_set_text(ed_buf(ef), "class A {}");
+    ed_set_config(ef, "build/tmp/edsettings.txt", "build/tmp/edthemes");
+    check(ed_font_size(ef) == 13 && ed_visible_lines(ef) == 14 && !ed_theme_name(ef)[0], "the default: 13 px, 14 lines, the built-in colours");
+    UiInput fi = { 0 };
+    fi.held = UI_BTN_L | UI_BTN_A; fi.down = UI_BTN_A; fi.ms = now += 20;
+    int runsBefore = runs;
+    ed_update(ef, &fi);
+    check(ed_font_size(ef) == 14 && runs == runsBefore, "L + A: bigger, and A with L does not run");
+    fi.held = UI_BTN_L | UI_BTN_B; fi.down = UI_BTN_B; fi.ms = now += 20;
+    int lenBefore = tb_len(ed_buf(ef));
+    ed_update(ef, &fi);
+    fi.held = fi.down = 0; fi.ms = now += 20;
+    ed_update(ef, &fi);
+    check(ed_font_size(ef) == 13 && tb_len(ed_buf(ef)) == lenBefore, "L + B: smaller, and B with L does not delete");
+    for (int i = 0; i < 7; i++) {                       /* the A+ button: 13 -> 20 */
+        fi = (UiInput){ 0 };
+        fi.touching = fi.touchDown = 1; fi.x = 320 - 2 * 30 + 10; fi.y = 30; fi.ms = now += 20;
+        ed_update(ef, &fi);
+    }
+    check(ed_font_size(ef) == 20 && ed_visible_lines(ef) == 10, "A+ seven times: 20 px, 10 lines");
+    ed_set_font_size(ef, 99);
+    check(ed_font_size(ef) == 24, "at most 24 px");
+    ed_set_font_size(ef, 16);
+    fi = (UiInput){ 0 };
+    fi.touching = fi.touchDown = 1; fi.x = 320 - 30 + 10; fi.y = 30; fi.ms = now += 20;   /* Col */
+    ed_update(ef, &fi);
+    check(!strcmp(ed_theme_name(ef), "czerwony"), "Col: the first scheme by name");
+    colorOfWord = 0;
+    ed_draw(ef);
+    check(colorOfWord == 0xFF0000, "'class' in the scheme's keyword colour");
+    ed_next_theme(ef);
+    check(!strcmp(ed_theme_name(ef), "zielony"), "the next scheme");
+    ed_next_theme(ef);
+    check(!strcmp(ed_theme_name(ef), "czerwony"), "after the last one: the first again");
+    const char* st = read_all("build/tmp/edsettings.txt");
+    check(st && strstr(st, "font 16") && strstr(st, "theme czerwony"), "the settings file keeps the size and the scheme");
+    ed_free(ef);
+    Editor* eg = ed_new(&host);
+    ed_set_config(eg, "build/tmp/edsettings.txt", "build/tmp/edthemes");
+    check(ed_font_size(eg) == 16 && !strcmp(ed_theme_name(eg), "czerwony"), "a new editor reads them back");
+    check(!ed_load_theme(eg, "build/tmp/edthemes/brak.txt"), "a missing scheme file: 0");
+    ed_free(eg);
+    remove("build/tmp/edthemes/czerwony.txt"); remove("build/tmp/edthemes/zielony.txt"); rmdir("build/tmp/edthemes");
+    remove("build/tmp/edsettings.txt");
 
     /* a project: suggestions and signatures know the classes of its other files */
     make_dir("build/tmp/edproj");

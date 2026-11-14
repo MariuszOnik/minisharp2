@@ -1,0 +1,15 @@
+# Jasny – ciemny tekst na jasnym tle (dobry w słońcu).
+background       FAFAFA
+text             202020
+keyword          0000C8
+type             1A7A8A
+string           A31515
+number           098658
+comment          008000
+linenumber       A0A0A0
+linenumberactive 303030
+currentline      ECECF4
+selection        ADD6FF
+cursor           000000
+errorline        F8C8C8
+titlebar         D8DCE6

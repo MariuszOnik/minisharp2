@@ -113,7 +113,8 @@ void files_scan(Files* fs) {
             snprintf(path, sizeof path, "%s/%s", fs->dir, nm);
             Entry* e = &fs->e[fs->n];
             if (is_dir(path)) {
-                if (!in_root(fs) || !strcmp(nm, "tests")) continue;     /* projects are one level deep */
+                if (!in_root(fs) || !strcmp(nm, "tests") || !strcmp(nm, "themes") || !strcmp(nm, "docs"))
+                    continue;                                   /* projects are one level deep; app folders are not projects */
                 e->isDir = 1;
                 e->ncs = project_count_cs(path);
                 snprintf(e->name, sizeof e->name, "%s/", nm);

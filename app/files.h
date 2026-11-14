@@ -5,7 +5,7 @@
  * The list is on the touch screen (tap = select, tap again = open), the hints and the name on the other one.
  * Buttons: D-pad choose, L/R page, A open, B back (from a project to the root, from the root out), X new file,
  * Y new project (in the root), SELECT twice delete (a project folder only when empty), START out. Draws only through app/ui.h; tested on the PC (tests/unit/test_files.c).
- * The folders "tests" and dot-folders of the root are not listed (the console test runner uses "tests"). */
+ * The folders "tests", "themes", "docs" and dot-folders of the root are not listed (they belong to the app). */
 #ifndef MS_FILES_H
 #define MS_FILES_H
 

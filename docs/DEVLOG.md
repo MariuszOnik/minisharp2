@@ -202,3 +202,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Ekrany logiczne (`Gfx.Layout`) i stałe tempo gry: `Update` 60 razy na sekundę na każdym urządzeniu,
   `Draw` co odświeżenie albo świadomie rzadziej (`Gfx.FrameRate(30)`). Rytm klatek przyciąga się do vsync, żeby
   drgania zegara nie dawały na przemian 0 i 2 kroków.
+- 2026-11-14: Edytor: wielkość kodu 9–24 px (A-/A+, L + A / L + B) i schematy kolorów z plików `themes/*.txt` (Col
+  przełącza; trzy wbudowane). Ustawienia zostają w `editor.txt`. Nowy rozdział 18 opisuje aplikację i format schematu.

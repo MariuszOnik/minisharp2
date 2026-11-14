@@ -1,0 +1,15 @@
+# Fosfor – zielony monitor jak w starych terminalach.
+background       001400
+text             33FF66
+keyword          9CFFB0
+type             66FF99
+string           CCFF99
+number           B0FF60
+comment          1F8A3A
+linenumber       1F6A2A
+linenumberactive 66FF99
+currentline      002A08
+selection        1F5A2A
+cursor           9CFFB0
+errorline        5A1A00
+titlebar         002000
