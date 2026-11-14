@@ -40,7 +40,8 @@ enum {
     BTN_START = 1 << 6, BTN_SELECT = 1 << 7, BTN_UP = 1 << 8, BTN_DOWN = 1 << 9, BTN_LEFT = 1 << 10, BTN_RIGHT = 1 << 11,
 };
 void lib_input_frame(uint32_t held, int touching, int x, int y);
-/* Time.Delta (seconds since the last frame) and Time.Frame: the host calls it once per frame */
+/* Time.Delta (seconds since the last frame) and Time.Frame: the host calls it once per frame, after Draw.
+ * The next frame then starts on the top screen and opaque again (Gfx.Screen and Gfx.Alpha last one frame). */
 void lib_time_frame(float delta);
 /* a new program: no buttons, frame 0, opaque drawing, the top screen, no pictures */
 void lib_gfx_reset(void);

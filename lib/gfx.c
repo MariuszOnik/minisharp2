@@ -49,7 +49,11 @@ void lib_input_frame(uint32_t h, int t, int x, int y) {
     if (t) { touchX = x; touchY = y; }
 }
 
-void lib_time_frame(float d) { delta = d; frame++; }
+void lib_time_frame(float d) {
+    delta = d; frame++;
+    alpha = 1.0f; screen = 0;                   /* every frame starts on the top screen, opaque */
+    if (be && be->select) be->select(0);
+}
 
 /* ---------- Gfx ---------- */
 static uint32_t argb(int rgb) {

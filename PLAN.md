@@ -79,8 +79,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       przypisaniu i w metodzie, struct czy klasa). Właściwości są już w rozdziale 10.
 - [x] Rozdział 15 „Przestrzenie nazw” (`namespace`, pełne nazwy, `using`, ta sama nazwa w dwóch przestrzeniach,
       przestrzenie zagnieżdżone, kolejność szukania).
+- [x] Rozdział 16 „Pierwsza gra: Update i Draw” (klatki, rysowanie, przyciski i dotyk, czas, gra „zbierz gwiazdki”).
 - [ ] Kolejne rozdziały (propozycja kolejności):
-      korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
+      obrazki i sprite'y, korutyny, projekty (`uses.txt`), dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 
 ### Etap 2 – biblioteka i projekty

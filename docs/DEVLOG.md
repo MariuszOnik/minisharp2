@@ -193,3 +193,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Obrazki: `Gfx.LoadImage` + `Image`/`ImagePart`/`ImageRot` z odbiciem, skalą i przezroczystością; PNG dekoduje
   `stb_image`. Na 3DS tekstury układam ręcznie w kafelki 8×8 (porządek Mortona, wiersze od dołu) – do sprawdzenia na
   konsoli. Przy okazji wyszło, że program z samym `Draw()` nie dostawał klatek, a test grafiki porównywał czarny ekran.
+- 2026-11-14: Rozdział 16 „Pierwsza gra”. Sprawdzając grę z rozdziału zrzutem ekranu z hosta PC wyszło, że po
+  `Gfx.Screen(Screen.Bottom)` następna klatka rysowała dalej na dolnym ekranie – teraz każda klatka zaczyna od górnego.
