@@ -71,8 +71,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 10 „Klasy i obiekty” (pola, metody, konstruktor, `this`, obiekty w listach, referencje i `null`, `static`, właściwości, `private`).
 - [x] Rozdział 11 „Dziedziczenie” (`: base(...)`, `virtual`/`override`, lista różnych obiektów, `base.`, `ToString`,
       `protected`, `abstract`, `is`/`as`, interfejsy).
+- [x] Rozdział 12 „List i Dictionary” (dodawanie, szukanie, `Sort`, usuwanie od końca, słownik, `TryGetValue`,
+      `foreach` po parach, liczenie słów, listy obiektów).
 - [ ] Kolejne rozdziały (propozycja kolejności):
-      List i Dictionary, lambdy, enum/struct/właściwości, przestrzenie nazw,
+     , lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 
@@ -96,7 +98,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         `lang/text.c`, napisy dalej w UTF-8, `ObjString.ulen` liczone leniwie + pamięć ostatniej pozycji; `Length`, `s[i]`,
         `Substring`, `IndexOf`, `Split`, `ToUpper/ToLower` z polskimi literami, grekiem i cyrylicą; testy `unicode`,
         `rt_strindex`). Zostało: sortowanie napisów po polsku (dziś `ą` po `z`, kolejność kodów).
-      - brak `string.Join(sep, lista)` (znalezione przy teście `readline`, 2026-11-13) – `'string' has no method 'Join'`.
+      - ~~brak `string.Join(sep, lista)`~~ (zrobione 2026-11-14: `call_join` w `comp_call.c` kompiluje pętlę – lista,
+        `T[]` i wersja `Join(sep, a, b, …)`, separator `string`/`char`, `ToString` obiektów, `null` = ""; test `join`,
+        błędy `join_*`). Zostało: `Join` nie ma go w podpowiedziach (nie ma wpisu w tabeli funkcji wbudowanych).
+      - usuwanie z listy w trakcie `foreach` po niej przechodzi bez błędu (C# rzuca wyjątek „Collection was modified”) –
+        znalezione przy rozdziale 12; do decyzji, czy VM ma to wykrywać (licznik zmian w `ObjList`).
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**
       - ~~parametry z wartością domyślną (`int b = 10`)~~ (zrobione 2026-11-13);
       - ~~`ref` / `out` we własnych metodach i `int.TryParse(s, out int n)`~~ (zrobione 2026-11-13; zostało: pola,

@@ -1,0 +1,17 @@
+a, b, c
+1-2-3
+1.5 -2 0.25
+TrueFalse
+x|ż|z
+(1,2); (3,4)
+Zielony,Czerwony
+Pusty
+[]
+[a, , c]
+45
+1 + dwa + 3.5 + (0,0)
+tylko jeden
+Liczby() raz
+1/2/3
+ALA_MA_KOTA
+6

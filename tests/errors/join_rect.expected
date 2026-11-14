@@ -1,0 +1,1 @@
+compile error: line 1: string.Join works on T[] and List<T>, not on int[,]

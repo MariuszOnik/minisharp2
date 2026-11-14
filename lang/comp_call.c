@@ -232,12 +232,68 @@ static Type* call_tryparse(C* c, Expr* e, int isFloat) {
     return &tBool;
 }
 
+/* string.Join(sep, list or array) and string.Join(sep, a, b, ...): compiled to a loop, so every element is turned
+ * into text the same way as in "" + x (an object's ToString override too). A null element gives "", like C#.
+ *   s = sep; coll = list; r = ""; for (i = 0; i < coll.Count; i++) { if (i > 0) r += s; r += coll[i]; } -> r */
+static Type* call_join(C* c, Expr* e) {
+    if (e->nargs < 2) cfail(c, e->line, "string.Join needs a separator and what to join: string.Join(\", \", list)");
+    int ns = c->nextSlot;
+    Type* st = compile_expr(c, e->args[0]);
+    c->line = e->line;
+    if (st->k != T_STRING && st->k != T_NULL) {
+        if (st->k != T_CHAR) cfail(c, e->line, "the separator of string.Join is a string or a char, not %s", type_name(c, st));
+        emit_tostr(c, st, 0, e->line);
+    }
+    int sep = alloc_temp(c), r = alloc_temp(c);
+    emit_op1(c, OP_STORE, sep); emit_pop(c);
+    emit_op1(c, OP_SCONST, add_string(c, "", 0)); emit_op1(c, OP_STORE, r); emit_pop(c);
+    Type* ct = e->nargs == 2 ? peek_type(c, e->args[1]) : NULL;
+    if (ct && ((ct->k == T_ARRAY && ct->rank != 2) || ct->k == T_LIST)) {
+        compile_expr(c, e->args[1]);
+        c->line = e->line;
+        Type* el = ct->elem;
+        if (el->k == T_VOID) cfail(c, e->line, "cannot join void values");
+        int coll = alloc_temp(c), idx = alloc_temp(c);
+        emit_op1(c, OP_NULLCHK, 0);
+        emit_op1(c, OP_STORE, coll); emit_pop(c);
+        emit_op1(c, OP_ICONST, 0); emit_op1(c, OP_STORE, idx); emit_pop(c);
+        int start = code_label(c);
+        emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_LOAD, coll); emit_op(c, OP_ARRLEN); emit_op(c, OP_ILT);
+        int jend = emit_jump(c, OP_JZ);
+        emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_ICONST, 0); emit_op(c, OP_IGT);
+        int jfirst = emit_jump(c, OP_JZ);
+        emit_op1(c, OP_LOAD, r); emit_op1(c, OP_LOAD, sep); emit_op(c, OP_CONCAT); emit_op1(c, OP_STORE, r); emit_pop(c);
+        patch_jump(c, jfirst);
+        emit_op1(c, OP_LOAD, r);
+        emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LOAD, idx); emit_op(c, OP_GETELEM);
+        if (el->k != T_STRING) emit_tostr(c, el, 0, e->line);
+        emit_op(c, OP_CONCAT); emit_op1(c, OP_STORE, r); emit_pop(c);
+        emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_ICONST, 1); emit_op(c, OP_IADD); emit_op1(c, OP_STORE, idx); emit_pop(c);
+        emit_jump_back(c, OP_JMP, start);
+        patch_jump(c, jend);
+    } else {
+        if (ct && ct->k == T_ARRAY) cfail(c, e->line, "string.Join works on T[] and List<T>, not on %s", type_name(c, ct));
+        for (int i = 1; i < e->nargs; i++) {               /* string.Join(", ", a, b, c) */
+            emit_op1(c, OP_LOAD, r);
+            if (i > 1) { emit_op1(c, OP_LOAD, sep); emit_op(c, OP_CONCAT); }
+            Type* t = compile_expr(c, e->args[i]);
+            c->line = e->line;
+            if (t->k != T_STRING && t->k != T_NULL) emit_tostr(c, t, 0, e->line);
+            emit_op(c, OP_CONCAT); emit_op1(c, OP_STORE, r); emit_pop(c);
+        }
+    }
+    emit_op1(c, OP_LOAD, r);
+    c->nextSlot = ns;
+    return &tString;
+}
+
 /* Built-in method from the native table. With 'self' the receiver is already on the stack and
  * the table lists it as the first parameter (class names starting with '.', e.g. ".string"). */
 static Type* call_native(C* c, Expr* e, const char* cls, int clen, int self) {
     Expr* f = e->a;
     if (!self && namecs(f->name, f->nlen, "TryParse") && (namecs(cls, clen, "int") || namecs(cls, clen, "float")))
         return call_tryparse(c, e, namecs(cls, clen, "float"));
+    if (!self && namecs(f->name, f->nlen, "Join") && namecs(cls, clen, "string")) return call_join(c, e);
     /* overloads: same name, pick by argument count, then exact types, then convertible types */
     Type* at[MS_MAXNATIVEARGS];
     if (e->nargs > MS_MAXNATIVEARGS) cfail(c, e->line, "too many arguments for '%.*s'", f->nlen, f->name);

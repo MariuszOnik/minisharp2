@@ -142,3 +142,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Usuwanie na liście plików: SELECT pyta („SELECT again: delete …”), drugi SELECT na tej samej pozycji
   usuwa, każdy inny przycisk lub zmiana wyboru odwołuje. Projekt (folder) znika tylko pusty, więc jedno złe naciśnięcie
   nie skasuje całej pracy.
+- 2026-11-14: Rozdział 12 „List i Dictionary” (11 przykładów) i przy okazji `string.Join`: kompilator zamienia go na
+  pętlę z ukrytymi zmiennymi, więc każdy element zamienia się w tekst tak jak w `"" + x` (także przez `ToString`
+  obiektu), bez nowej instrukcji VM. Wyszło, że usuwanie z listy w `foreach` nie daje błędu jak w C# – w „Braki”.
