@@ -124,8 +124,25 @@ Najmniejsza rzecz, która sprawdza cały pomysł, zanim powstaną pełne edytory
       piętra) + 120 ruchomych ludzików, 20 klatek: kolejność zgodna z testem wszystkich par (0 błędów); mały widok
       400×240; usuwanie / ponowne dodanie / zmiana rozmiaru; dwa niezależne sortery. Wynik: ~970 par na klatkę
       zamiast ~242 tys. wszystkich. Jeszcze nie: zmiana `TileAngle`/`TileRatio` w teście kolejności, obiekty 2×2.
-- [ ] API MiniSharp: `IsoWorld` (parametry kafelka, `Origin`, `IsoToScreen`, `ScreenToIso(p, z)`, `TouchTile`),
-      `IsoObject` (`Position`, `Size`, `TilePosition`, `Moving`), rysowanie posortowanych sprajtów, kamera (przesunięcie, zoom).
+- [ ] **`Vector3` / `Vector2` w bibliotece** (decyzja użytkownika 2026-11-14, przed API iso): `struct` jak w Unity
+      (`x, y, z`, `+ - *`, `Vector3.zero`, `magnitude`, `normalized`, `Distance`, `Lerp`), w `lib/` (zwykła biblioteka, nie
+      moduł iso – przyda się też 3D i grom), testy + rozdział dokumentacji. Punkt także w PLAN.md (Etap 2).
+- [ ] API MiniSharp (decyzja użytkownika 2026-11-14): **klasy C# modułu (`source`) jako cienka nakładka** na funkcje
+      C z numerami; programista nie widzi numerów:
+      ```cs
+      public class IsoObject {
+          int id;                                     // numer w IsoSort, ukryty
+          public Vector3 Position { get => ...; set => ...; }   // woła natywne __Move(id, ...)
+          public Vector3 Size { get; set; }  public bool Moving { get; }  public Vector3 TilePosition { get; set; }
+      }
+      public class IsoWorld {
+          public float TileSize, TileRatio, TileAngle, TileHeight;  public Vector2 Origin;
+          public IsoObject Add(Vector3 pos, Vector3 size, bool moving);  public void Remove(IsoObject o);
+          public Vector2 IsoToScreen(Vector3 p);  public Vector3 ScreenToIso(Vector2 p, float z = 0);  public Vector3 TouchTile();
+          public void Draw();                         // posortowane sprajty + kamera (przesunięcie, zoom)
+      }
+      ```
+      Funkcje C modułu z prefiksem `__` (nie pokazywane w podpowiedziach, jak w `lib/console.c`).
 - [ ] Przykład / test runtime: stres test w stylu `Gra.cs` (budynki, ludziki, liczniki par i zależności).
 - [ ] **Scalanie** grupy płaskich kafelków w jedną bryłę sortowania (sprawdzenie warunków: pełny prostokąt, jedna
       wysokość, sprajty w bryle) + test zgodności kolejności z wersją bez scalania.
@@ -194,11 +211,6 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 
 ## Do decyzji
 
-- **Kształt API modułu iso w MiniSharp** (potrzebne do dalszej części I1). Propozycja: klasy C# modułu (`source`) jako
-  cienka nakładka na funkcje C z numerami – `class IsoObject { int id; public Vector3 Position { get; set; } ... }`,
-  `class IsoWorld { public float TileSize ...; public IsoObject Add(...); public void Draw(); }` – a programista nie
-  widzi numerów. Brak w języku typu `Vector3`: osobne `X, Y, Z` czy dodać struct `Vector3` do biblioteki (jak Unity)?
-
 - **Gdzie trzymać `IsometricLib/`** (projekt Unity + zip Kenneya, ~2 MB): propozycja – poza repo (np.
   `E:\minsharpProject\IsometricLib`) albo w `.gitignore`; do repo tylko sprajty potrzebne testom.
 - (rozstrzygnięte 2026-11-14: podłoga to zwykłe sortowane obiekty, do sprawdzenia scalanie w prototypie.)
@@ -217,6 +229,7 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 Prototyp P1, w tej kolejności:
 1. [x] I2a (refleksja po stronie C) – zrobione 2026-11-14.
 2. [x] I0: minimalne API modułów – zrobione 2026-11-14. I1: [x] przeniesienie `iso.c` z testem; dalej API MiniSharp
-   (`IsoWorld`, `IsoObject`, rysowanie, kamera) – wymaga decyzji o kształcie API (zob. „Do decyzji”), potem scalanie.
+   (`IsoWorld`, `IsoObject`, rysowanie, kamera): decyzja 2026-11-14 – cienka nakładka C# + `Vector3` w bibliotece
+   (najpierw `Vector3`), potem scalanie. **Wstrzymane** – użytkownik pracuje teraz nad czymś innym.
 3. Scena z pliku + flagi + `IsoBehaviour` + `Sygnał` (część I3), test bez okna, stres test na 3DS.
 Potem P2 (mini edytor) i dalsze etapy.

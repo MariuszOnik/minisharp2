@@ -157,6 +157,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       rejestrują hooki (`ms_register_hook("Update")`, `ms_hook(p, "Update")`) i swoje klasy C# (`ms_register_source`, np. `Node`
       grafu – `graph/` zarejestruje go w etapie 5). Brak punktu wejścia zgłasza host. Test jednostkowy `tests/unit/test_hooks.c`.
 
+- [ ] **`Vector2` / `Vector3` w bibliotece** (decyzja użytkownika 2026-11-14, potrzebne modułowi iso – PLAN-ISO.md I1):
+      `struct` jak w Unity (`x, y, z`, operatory, `zero`/`one`, `magnitude`, `normalized`, `Distance`, `Lerp`, `Dot`),
+      testy i rozdział dokumentacji.
+
 ### Etap 3 – platforma 3DS i host testów PC
 - [x] **Grafika 2D, Input, Time, App – wspólne API** (decyzja użytkownika 2026-11-14: etap 3, na razie tylko 2D):
       `lib/gfx.c` – `Gfx.Screen/Clear/Rect/RectLine/Circle/Line/Pixel/Text/TextWidth/Alpha/Rgb/Lerp/Width/Height`,
