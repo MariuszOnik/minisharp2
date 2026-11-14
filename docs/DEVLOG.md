@@ -136,3 +136,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Rozdział 11 „Dziedziczenie” – 10 sprawdzanych przykładów (klasa bazowa, `base(...)`, `virtual`/`override`,
   lista potworów, `base.Metoda()`, `ToString`, `protected`, `abstract`, `is`/`as`, interfejsy). Sesja z telefonu,
   praca w chmurze na Linuksie; ostrzeżenie z `compiler.c:330` już nie występuje w gcc na Linuksie.
+- 2026-11-14: Edytor zna cały projekt: `ed_set_project` wczytuje pozostałe pliki folderu (i bibliotek z `uses.txt`)
+  do usługi języka, więc `s.` podpowiada metody klasy z innego pliku, a sygnatura wywołania też ją zna. Edytowany
+  plik dalej idzie z bufora (tekst 0), inne z karty – karty plików przyjdą osobno.

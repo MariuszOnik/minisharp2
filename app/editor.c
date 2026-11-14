@@ -1,9 +1,11 @@
 /* MiniSharp - code editor (see editor.h). Moved in parts from the old source3ds/editor.c: the screen layout, the
  * colours, the buttons and run-then-jump-to-the-error; the buffer is app/textbuf.c and the language knowledge
- * is lang/service.c now. One file for now (tabs and projects come next). */
+ * is lang/service.c now. One file is edited; the other files of its project (ed_set_project) are read from the
+ * card so that suggestions and signatures know their classes (tabs come next). */
 #include "editor.h"
 #include "keyboard.h"
 #include "service.h"
+#include "project.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +40,7 @@ struct Editor {
     char sig[128];
     int sigArg;
     int svcLen; unsigned svcSum;        /* the text the service has (to give it a new one only after changes) */
+    char** others; int nothers;         /* the other files of the project (read-only, for the service) */
     uint32_t ms;
     uint32_t heldSince[4], lastRepeat[4];   /* Up, Down, Left, Right, then B */
     uint32_t bSince, bLast;
@@ -88,8 +91,16 @@ Editor* ed_new(const EditorHost* host) {
     return ed;
 }
 
+static void free_others(Editor* ed) {
+    for (int i = 0; i < ed->nothers; i++) free(ed->others[i]);
+    free(ed->others);
+    ed->others = NULL; ed->nothers = 0;
+    ed->svcLen = -1;
+}
+
 void ed_free(Editor* ed) {
     if (!ed) return;
+    free_others(ed);
     tb_free(ed->tb);
     svc_free(ed->svc);
     free(ed);
@@ -105,21 +116,51 @@ static const char* base_name(const char* p) {
     return s ? s + 1 : p;
 }
 
+/* the whole file, 0-terminated (free it); NULL = cannot open (*missing = 1) or read */
+static char* read_file(const char* path, int* missing) {
+    FILE* f = fopen(path, "rb");
+    if (missing) *missing = !f;
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
+    char* s = n >= 0 ? (char*)malloc(n + 1) : NULL;
+    if (!s || fread(s, 1, n, f) != (size_t)n) { fclose(f); free(s); return NULL; }
+    s[n] = 0;
+    fclose(f);
+    return s;
+}
+
 int ed_open(Editor* ed, const char* path) {
     snprintf(ed->path, sizeof ed->path, "%s", path);
     ed->top = 0; ed->scrollX = 0; ed->errLine = 0; ed->leaveArmed = 0; ed->svcLen = -1;
-    FILE* f = fopen(path, "rb");
-    if (!f) { tb_set_text(ed->tb, ""); set_status(ed, 0xF0D080, "new file"); return 0; }
-    fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
-    char* s = (char*)malloc(n + 1);
-    if (!s || fread(s, 1, n, f) != (size_t)n) { fclose(f); free(s); tb_set_text(ed->tb, ""); set_status(ed, 0xFF7070, "cannot read the file"); return 0; }
-    s[n] = 0;
-    fclose(f);
+    free_others(ed);
+    int missing;
+    char* s = read_file(path, &missing);
+    if (!s && missing) { tb_set_text(ed->tb, ""); set_status(ed, 0xF0D080, "new file"); return 0; }
+    if (!s) { tb_set_text(ed->tb, ""); set_status(ed, 0xFF7070, "cannot read the file"); return 0; }
     tb_set_text(ed->tb, s);
     free(s);
     set_status(ed, 0x8090A0, base_name(path));
     return 1;
 }
+
+int ed_set_project(Editor* ed, const char* dir) {
+    free_others(ed);
+    if (!dir) return 0;
+    Project pr;
+    char err[200];
+    if (!project_load(dir, &pr, err, sizeof err)) return 0;
+    ed->others = (char**)calloc(pr.nfiles > 0 ? pr.nfiles : 1, sizeof(char*));
+    if (!ed->others) { project_free(&pr); return 0; }
+    for (int i = 0; i < pr.nfiles; i++) {
+        if (!strcmp(pr.files[i].path, ed->path)) continue;     /* the edited file comes from the buffer */
+        char* t = read_file(pr.files[i].path, NULL);
+        if (t) ed->others[ed->nothers++] = t;
+    }
+    project_free(&pr);
+    return ed->nothers;
+}
+
+int ed_project_files(const Editor* ed) { return ed->nothers; }
 
 int ed_save(Editor* ed) {
     FILE* f = fopen(ed->path, "wb");                   /* written as it is: UTF-8 without BOM, '\n' */
@@ -145,8 +186,17 @@ static void refresh(Editor* ed) {
     const char* t = tb_text(ed->tb);
     int n = tb_len(ed->tb);
     unsigned sum = checksum(t, n);
-    if (n != ed->svcLen || sum != ed->svcSum) {         /* the index is rebuilt only after a change */
-        svc_set_texts(ed->svc, &t, 1);
+    if (ed->svcLen < 0) {                               /* new file or project: the buffer is text 0, then the others */
+        const char** all = (const char**)malloc(sizeof(char*) * (ed->nothers + 1));
+        if (all) {
+            all[0] = t;
+            for (int i = 0; i < ed->nothers; i++) all[i + 1] = ed->others[i];
+            svc_set_texts(ed->svc, all, ed->nothers + 1);
+            free(all);
+        } else svc_set_texts(ed->svc, &t, 1);
+        ed->svcLen = n; ed->svcSum = sum;
+    } else if (n != ed->svcLen || sum != ed->svcSum) {  /* the index is rebuilt only after a change */
+        svc_set_text(ed->svc, 0, t);
         ed->svcLen = n; ed->svcSum = sum;
     }
     int cur = tb_cursor(ed->tb);

@@ -291,6 +291,8 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    X nowy plik (program z `Main` albo pusta klasa w projekcie), Y nowy projekt (`Program.cs`); nazwa z klawiatury
    ekranowej. Na 3DS: B w menu → lista → edytor, START w edytorze wraca do listy; Run pliku z projektu uruchamia
    folder (`files_project_of`). **Sprawdzić na konsoli**: lista, dotyk, nowy plik/projekt, Run projektu.
-11. Edytor, dalej: karty kilku plików projektu (usługa języka dostaje wszystkie pliki – dziś podpowiedzi tylko z
-   otwartego pliku), usuwanie pliku, zaznaczanie i schowek (L + D-pad zajęte przez Home/End – np. tryb zaznaczania
+11. Edytor, dalej: ~~usługa języka dostaje wszystkie pliki projektu~~ (zrobione 2026-11-14: `ed_set_project` czyta
+   pozostałe pliki projektu i folderów z `uses.txt` przez `project_load`, edytowany plik to tekst 0 usługi, reszta tylko
+   do odczytu; 3DS woła to po `ed_open`, gdy plik leży w projekcie; test w `test_editor`). Zostało: karty kilku plików
+   projektu (dziś inne pliki są brane z karty w chwili otwarcia), usuwanie pliku, zaznaczanie i schowek (L + D-pad zajęte przez Home/End – np. tryb zaznaczania
    przyciskiem), wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), Help.

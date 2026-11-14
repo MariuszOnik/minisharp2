@@ -21,6 +21,10 @@ Editor* ed_new(const EditorHost* host);
 void ed_free(Editor* ed);
 int ed_open(Editor* ed, const char* path);      /* 0 = the file does not exist yet: an empty one with that name */
 int ed_save(Editor* ed);                        /* 1 = written */
+/* the project the open file belongs to (its folder, with uses.txt), NULL = a single file. Its other files are read
+ * now so that suggestions and signatures know their classes; returns how many were read. Call after ed_open. */
+int ed_set_project(Editor* ed, const char* dir);
+int ed_project_files(const Editor* ed);
 /* one frame of input; 0 = leave the editor */
 int ed_update(Editor* ed, const UiInput* in);
 void ed_draw(Editor* ed);

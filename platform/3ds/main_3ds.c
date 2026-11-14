@@ -305,6 +305,8 @@ static void edit_file(const char* path) {
     Editor* ed = ed_new(&host);
     if (!ed) return;
     ed_open(ed, path);
+    char proj[400];
+    if (files_project_of(APP_DIR, path, proj, sizeof proj)) ed_set_project(ed, proj);
     while (aptMainLoop()) {
         hidScanInput();
         UiInput in;

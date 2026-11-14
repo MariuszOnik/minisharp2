@@ -1,5 +1,6 @@
 /* Unit test: the code editor (app/editor.c) – open / save, typing through the keyboard path, buttons, run with a
- * jump to the error line, suggestions and the call signature, scrolling, leaving with unsaved changes, drawing.
+ * jump to the error line, suggestions and the call signature, scrolling, leaving with unsaved changes, drawing,
+ * suggestions from the other files of a project (ed_set_project).
  * Prints "FAIL: ..." lines; exit code 0 = all passed. */
 #include "editor.h"
 #include "keyboard.h"
@@ -7,6 +8,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#ifdef _WIN32
+#include <direct.h>
+#define make_dir(p) _mkdir(p)
+#else
+#define make_dir(p) mkdir(p, 0777)
+#endif
+
+static void write_file(const char* path, const char* text) {
+    FILE* f = fopen(path, "wb");
+    if (f) { fputs(text, f); fclose(f); }
+}
 
 static int fails;
 static void check(int cond, const char* what) { if (!cond) { fails++; printf("FAIL: %s\n", what); } }
@@ -165,6 +179,35 @@ int main(void) {
 
     ed_free(ed);
     remove(PATH);
+
+    /* a project: suggestions and signatures know the classes of its other files */
+    make_dir("build/tmp/edproj");
+    write_file("build/tmp/edproj/Ship.cs", "class Ship\n{\n    public int hp;\n    public void Hit(int dmg, bool crit) { hp -= dmg; }\n}\n");
+    write_file("build/tmp/edproj/Main.cs", "class Program\n{\n    static void Main()\n    {\n    }\n}\n");
+    Editor* ep = ed_new(&host);
+    check(ed_open(ep, "build/tmp/edproj/Main.cs"), "open a project file");
+    check(ed_set_project(ep, "build/tmp/edproj") == 1 && ed_project_files(ep) == 1, "the other file of the project is read");
+    TextBuf* pb = ed_buf(ep);
+    tb_set_cursor(pb, tb_line_start(pb, 3) + tb_line_len(pb, 3), 0);
+    ed_key(ep, KBD_ENTER);
+    type(ep, "Ship s = new Ship();");
+    ed_key(ep, KBD_ENTER);
+    type(ep, "s.Hi");
+    frame(ep, 0);
+    frame(ep, UI_BTN_R);
+    const char* l5 = tb_text(pb) + tb_line_start(pb, 5);
+    check(!strncmp(l5, "        s.Hit", 13), "R completes a method of a class from another file");
+    type(ep, "(3, ");
+    frame(ep, 0);
+    drawn[0] = 0;
+    ed_draw(ep);
+    check(strstr(drawn, "Hit(int dmg, bool crit)") != NULL && strstr(drawn, "[arg 2]") != NULL,
+          "the signature of a method from another file");
+    check(ed_set_project(ep, NULL) == 0 && ed_project_files(ep) == 0, "no project: the other files are dropped");
+    ed_free(ep);
+    remove("build/tmp/edproj/Ship.cs");
+    remove("build/tmp/edproj/Main.cs");
+    rmdir("build/tmp/edproj");
     ui_set_backend(NULL);
     if (!fails) printf("editor: ok\n");
     return fails ? 1 : 0;
