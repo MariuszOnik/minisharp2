@@ -1,5 +1,5 @@
 // Pictures: Gfx.LoadImage (next to the program, the same file once), ImageWidth/Height, Image with scale and mirror,
-// ImagePart (a sprite sheet: two 8x8 frames), ImageRot, transparency of the picture and Gfx.Alpha (--hash, opcje.txt)
+// (a negative scale mirrors left-right only: the blue dot stays at the top), ImagePart (a sprite sheet: two 8x8 frames), ImageRot, transparency of the picture and Gfx.Alpha (--hash, opcje.txt)
 class Game
 {
     static int sheet;

@@ -315,8 +315,10 @@ static void d_image(Img* im, float sx, float sy, float sw, float sh, float x, fl
     View* v = cur_view();
     if (be && be->image) be->image(im->id, sx, sy, sw, sh, v->ox + x * v->s, v->oy + y * v->s, w * v->s, h * v->s, angle, argb(0xFFFFFF));
 }
+/* a negative scale mirrors left-right only: the height takes the scale without its sign (else the picture would
+ * also turn upside down) */
 static void draw_part(Img* im, float sx, float sy, float sw, float sh, float x, float y, float sc, float angle) {
-    d_image(im, sx, sy, sw, sh, x, y, sw * sc, sh * sc, angle);
+    d_image(im, sx, sy, sw, sh, x, y, sw * sc, sh * fabsf(sc), angle);
 }
 /* Gfx.Image(img, x, y [, scale]): the whole picture with its top left corner at x, y; a negative scale mirrors it */
 static Value n_image4(VM* vm, Value* a) {
@@ -347,7 +349,7 @@ static Value n_imagepart(VM* vm, Value* a) {
 static Value n_imagerot(VM* vm, Value* a) {
     Img* im = image_of(vm, a[0], "Gfx.ImageRot");
     if (im) {
-        float sc = a[4].as.f, w = im->w * sc, h = im->h * sc;
+        float sc = a[4].as.f, w = im->w * sc, h = im->h * fabsf(sc);   /* mirrored left-right only */
         float aw = w < 0 ? -w : w, ah = h < 0 ? -h : h;
         d_image(im, 0, 0, (float)im->w, (float)im->h, a[1].as.f - aw / 2, a[2].as.f - ah / 2, w, h, a[3].as.f * 3.14159265f / 180.0f);
     }

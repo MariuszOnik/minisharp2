@@ -84,7 +84,8 @@ static int g_image_create(const unsigned char* rgba, int w, int h) {
     u32* dst = (u32*)p->tex.data;
     memset(dst, 0, (size_t)tw * th * 4);
     for (int y = 0; y < h; y++) {
-        int fy = th - 1 - y;                        /* the texture's first row is the picture's bottom */
+        int fy = y;     /* rows as they are: with top = 1 - sy / th below the picture is upright (as in the old app;
+                         * flipping them here drew every picture upside down on the console) */
         for (int x = 0; x < w; x++) {
             const unsigned char* c = rgba + ((size_t)y * w + x) * 4;
             u32 tile = (u32)(((fy >> 3) * (tw >> 3) + (x >> 3)) << 6);

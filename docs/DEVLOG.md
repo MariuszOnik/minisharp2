@@ -209,3 +209,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   na `oldMinisharp`), a każde uruchomienie pisze osobny log `logs/<program>_<czas>.txt` z pamięcią przed / po.
 - 2026-11-14: Graficzne menu (`app/menu.c`): kafelki na dotyk, ostatnie pliki z edytora, opis i linia stanu na górnym
   ekranie. Host 3DS nie przełącza już ekranów między konsolą tekstową a citro2d (poza testami X).
+- 2026-11-14: Dwa błędy obrazków na konsoli: tekstura 3DS była wgrywana z odwróconymi wierszami (każdy obrazek do góry
+  nogami), a ujemna skala (`Gfx.Image(img, x, y, -3)`) odbijała też w pionie. Teraz minus odbija tylko w poziomie,
+  jak opisuje rozdział 17; test `gfx_image` ma nowy hash.
