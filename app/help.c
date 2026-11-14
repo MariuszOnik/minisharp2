@@ -29,6 +29,8 @@ struct Help {
     int top;
     float scrollX;
     float width;                        /* the width the open chapter was laid out for */
+    void (*copy)(const char* text);     /* the Copy button: where an example goes (the editor's clipboard) */
+    char status[120];
     uint32_t ms, since[4], last[4];
 };
 
@@ -277,6 +279,7 @@ int help_open(Help* h, int i) {
     Layout L = layout();
     h->open = i;
     h->top = 0; h->scrollX = 0;
+    h->status[0] = 0;
     h->width = L.textW - 2 * MARGIN;
     lay_out(h, h->text[i], h->width);
     return 1;
@@ -297,8 +300,37 @@ static void clamp_top(Help* h, const Layout* L) {
     if (h->top < 0) h->top = 0;
 }
 
-enum { RT_BACK, RT_PREV, RT_NEXT, NRT };
-static const char* RT_NAMES[NRT] = { "Back", "Prev", "Next" };
+enum { RT_BACK, RT_PREV, RT_NEXT, RT_COPY, NRT };
+static const char* RT_NAMES[NRT] = { "Back", "Prev", "Next", "Copy" };
+
+void help_set_copy(Help* h, void (*copy)(const char* text)) { h->copy = copy; }
+const char* help_status(const Help* h) { return h->status; }
+
+/* the first example (a cs block) that has a line on screen, joined with '\n' (malloc, free it); NULL = none */
+char* help_example_on_screen(const Help* h) {
+    Layout L = layout();
+    int rows = text_rows(&L), i = h->top;
+    while (i < h->nlines && i < h->top + rows && h->lines[i].kind != HL_CODE) i++;
+    if (i >= h->nlines || i >= h->top + rows) return NULL;
+    while (i > 0 && h->lines[i - 1].kind == HL_CODE) i--;          /* from the start of that block */
+    size_t n = 1;
+    int e = i;
+    for (; e < h->nlines && h->lines[e].kind == HL_CODE; e++) n += strlen(h->lines[e].s) + 1;
+    char* s = (char*)malloc(n);
+    if (!s) return NULL;
+    size_t o = 0;
+    for (int k = i; k < e; k++) { size_t l = strlen(h->lines[k].s); memcpy(s + o, h->lines[k].s, l); o += l; s[o++] = '\n'; }
+    s[o] = 0;
+    return s;
+}
+
+static void copy_example(Help* h) {
+    char* s = help_example_on_screen(h);
+    if (!s) { snprintf(h->status, sizeof h->status, "no example on the screen: scroll to one first"); return; }
+    if (h->copy) { h->copy(s); snprintf(h->status, sizeof h->status, "example copied: Paste it in the editor (X, Paste)"); }
+    else snprintf(h->status, sizeof h->status, "copying is not possible here");
+    free(s);
+}
 
 int help_update(Help* h, const UiInput* in) {
     h->ms = in->ms;
@@ -338,7 +370,8 @@ int help_update(Help* h, const UiInput* in) {
         if (py >= 0 && py < TOOLS_H) {
             int t = (int)(in->x / (L.listW / NRT));
             if (t == RT_BACK) { h->open = -1; return 1; }
-            if (t == RT_PREV && h->open > 0) { h->sel = h->open - 1; help_open(h, h->sel); }
+            if (t == RT_COPY) copy_example(h);
+            else if (t == RT_PREV && h->open > 0) { h->sel = h->open - 1; help_open(h, h->sel); }
             else if (t == RT_NEXT && h->open < h->n - 1) { h->sel = h->open + 1; help_open(h, h->sel); }
         }
     }
@@ -393,6 +426,7 @@ static void draw_reader(Help* h, const Layout* L) {
         ui_text(8, y, h->title[h->open], 14, 0xFFFFFF);
         const char* HINTS[] = { "Up / Down: scroll    L / R: page", "Left / Right: long code lines", "B: chapters    START: leave Help" };
         for (int i = 0; i < 3; i++) ui_text(8, y + 26 + i * 16, HINTS[i], 12, 0xA0A8B0);
+        if (h->status[0]) ui_text(8, y + 26 + 4 * 16, h->status, 12, 0x80E080);
     }
 }
 

@@ -368,6 +368,15 @@ static void sel_tool(Editor* ed, int t) {
 }
 
 const char* ed_clipboard(void) { return clipboard ? clipboard : ""; }
+void ed_set_clipboard(const char* s) {
+    size_t n = s ? strlen(s) : 0;
+    char* c = (char*)malloc(n + 1);
+    if (!c) return;
+    if (n) memcpy(c, s, n);
+    c[n] = 0;
+    free(clipboard);
+    clipboard = c;
+}
 int ed_sel_mode(const Editor* ed) { return ed->selMode; }
 
 static void tool(Editor* ed, int t) {

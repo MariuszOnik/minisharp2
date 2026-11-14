@@ -171,3 +171,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Karty w edytorze: wszystkie pliki projektu są otwarte naraz (L + X / L + Y), podpowiedzi widzą
   niezapisane zmiany w innych kartach, Run zapisuje wszystko, a błąd kompilacji w innym pliku przełącza na jego kartę
   i linię. Pasek tytułu pokazuje karty z gwiazdką przy zmienionych.
+- 2026-11-14: Przycisk „Copy” w Help: przykład widoczny na ekranie trafia do schowka edytora, więc można go wkleić
+  (X, Paste) i od razu uruchomić. Help nie zna edytora – dostaje tylko funkcję kopiowania od hosta.

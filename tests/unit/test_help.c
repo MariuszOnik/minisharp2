@@ -37,6 +37,9 @@ static float b_width(const char* s, float size) { return strlen(s) * size / 2; }
 static const UiBackend REC = { 2, 1, { 400, 320 }, { 240, 240 }, b_select, b_rect, b_text, b_width, NULL };
 static const UiBackend ONE = { 1, 0, { 640, 0 }, { 360, 0 }, b_select, b_rect, b_text, b_width, NULL };
 
+static char copied[512];
+static void fake_copy(const char* t) { snprintf(copied, sizeof copied, "%s", t); }
+
 static uint32_t now = 1000;
 static int frame(Help* h, uint32_t down) {
     UiInput in = { 0 };
@@ -131,8 +134,18 @@ int main(void) {
     check(help_top(h) == (endTop > 12 ? endTop - 12 : 0), "L: a page up (not above the start)");
     frame(h, UI_BTN_R);
     check(help_top(h) == endTop, "R: a page down (not past the end)");
+    /* Copy: the example on screen goes to the copy function */
+    tap(h, 3 * 80 + 10, 5);
+    check(strstr(help_status(h), "not possible") != NULL, "Copy without a copy function");
+    help_set_copy(h, fake_copy);
+    tap(h, 3 * 80 + 10, 5);
+    check(!strcmp(copied, "class Program { static void Main() { Console.WriteLine(\"Hej\"); } }\n")
+          && strstr(help_status(h), "copied"), "Copy: the example on screen");
     tap(h, 2 * 106 + 10, 5);
     check(help_reading(h) == 1 && help_top(h) == 0, "Next opens the next chapter");
+    copied[0] = 0;
+    tap(h, 3 * 80 + 10, 5);
+    check(!copied[0] && strstr(help_status(h), "no example"), "Copy without an example on screen");
     tap(h, 1 * 106 + 10, 5);
     check(help_reading(h) == 0, "Prev");
     frame(h, UI_BTN_B);

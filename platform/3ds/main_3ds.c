@@ -332,6 +332,7 @@ static int help_loop(void) {
     if (!h) return 0;
     const char* dirs[] = { APP_DIR "/docs", "romfs:/docs" };   /* the card adds chapters and replaces same-named ones */
     help_load_dirs(h, dirs, 2);
+    help_set_copy(h, ed_set_clipboard);                       /* Copy: the example goes to the editor's clipboard */
     while (aptMainLoop()) {
         hidScanInput();
         UiInput in;

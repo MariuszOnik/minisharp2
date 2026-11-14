@@ -47,5 +47,6 @@ void ed_key(Editor* ed, const char* k);         /* text from the keyboard, KBD_B
 int ed_visible_lines(void);
 int ed_sel_mode(const Editor* ed);              /* 1 = the selection mode (X) is on */
 const char* ed_clipboard(void);                 /* the editor's clipboard, shared by all files ("" = empty) */
+void ed_set_clipboard(const char* s);           /* e.g. an example copied in Help */
 
 #endif

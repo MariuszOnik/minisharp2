@@ -3,7 +3,7 @@
  * bigger screen, the list of chapters and the buttons on the touch screen (or all on one screen).
  * Draws and reads input only through app/ui.h; tested on the PC (tests/unit/test_help.c).
  * List: D-pad choose, A / tap twice open, B or START leave. Reader: D-pad Up/Down scroll, L/R page, Left/Right move
- * long code lines sideways, B back to the list, START leave; touch: Back, Prev, Next. */
+ * long code lines sideways, B back to the list, START leave; touch: Back, Prev, Next, Copy (the example on screen). */
 #ifndef MS_HELP_H
 #define MS_HELP_H
 
@@ -36,5 +36,10 @@ int help_reading(const Help* h);                /* -1 = the list, otherwise the 
 int help_lines(const Help* h);                  /* laid-out lines of the open chapter */
 const char* help_line(const Help* h, int i, int* kind);
 int help_top(const Help* h);                    /* first line on screen */
+
+/* the Copy button of the reader: the first example with a line on screen goes to copy() (the editor's clipboard) */
+void help_set_copy(Help* h, void (*copy)(const char* text));
+char* help_example_on_screen(const Help* h);    /* malloc'ed, NULL = none */
+const char* help_status(const Help* h);
 
 #endif
