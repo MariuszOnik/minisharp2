@@ -12,3 +12,4 @@ rt_setcursor --grid 10x3
 gfx_draw --frames 1 --hash
 input_frames --frames 30 --press Right@2-6 --press A@3-4 --press B@4 --touch 8-9@120,40
 gfx_image --frames 1 --hash
+gfx_layout --frames 8 --touch 2@40,60 --touch 5@40,60 --hash

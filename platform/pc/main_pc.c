@@ -307,14 +307,18 @@ int main(int argc, char** argv) {
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
     if (ok && (up >= 0 || dr >= 0)) {           /* the frames: Update and / or Draw */
-        for (int f = 0; f < frames && ok; f++) {
+        for (int f = 0; f < frames && ok; f++) {   /* one Update step per round (1/60 s); Draw by Gfx.FrameRate */
             g_ms += 1000.0 / 60;
             input_for_frame(f);
-            swgfx_begin_frame();
             ok = up < 0 || call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);    /* after Update, before Draw, like Unity */
-            if (ok && dr >= 0) ok = call(vm, dr);
             lib_time_frame(1.0f / 60);
+            int every = 60 / lib_draw_rate();
+            if (ok && dr >= 0 && f % every == every - 1) {
+                swgfx_begin_frame();
+                lib_draw_begin();
+                ok = call(vm, dr);
+            }
         }
     }
     if (hash) printf("screens: %08x\n", swgfx_hash());

@@ -199,3 +199,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   obrazkami (zrzut ekranu: kręcące się monety, odbity gracz, licznik).
 - 2026-11-14: Dwie gry przykładowe (Gwiazdki, Monety) w aplikacji – kopiują się na kartę przy pierwszym starcie, więc
   grafikę i obrazki można sprawdzić na konsoli od razu: B w menu, folder projektu, Run.
+- 2026-11-14: Ekrany logiczne (`Gfx.Layout`) i stałe tempo gry: `Update` 60 razy na sekundę na każdym urządzeniu,
+  `Draw` co odświeżenie albo świadomie rzadziej (`Gfx.FrameRate(30)`). Rytm klatek przyciąga się do vsync, żeby
+  drgania zegara nie dawały na przemian 0 i 2 kroków.

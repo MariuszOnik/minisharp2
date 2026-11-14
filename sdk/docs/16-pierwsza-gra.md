@@ -95,14 +95,44 @@ klatka 20, minęło 0.3333333 s
 klatka 40, minęło 0.6666667 s
 ```
 
-- `Time.Frame()` – numer klatki (0, 1, 2, …); 60 klatek to sekunda.
-- `Time.Delta()` – ile sekund trwała ostatnia klatka (zwykle 1/60). Ruch `x += 180 * Time.Delta()` jest „180 pikseli na
-  sekundę” niezależnie od tego, czy gra zwolni.
+- `Time.Frame()` – numer kroku `Update` (0, 1, 2, …); 60 kroków to zawsze sekunda.
+- `Time.Delta()` – czas jednego kroku: 1/60 sekundy. Ruch `x += 180 * Time.Delta()` to „180 pikseli na sekundę”.
 - `Time.Millis()` – milisekundy od startu programu.
 - `App.Quit()` – koniec programu.
 
 `Console.WriteLine` działa także w grze: tekst trafia do dziennika (`log.txt`), a gdy program się skończy, widać go
 na ekranie konsoli.
+
+## Tempo gry: 60 kroków na sekundę
+
+`Update()` wykonuje się **zawsze 60 razy na sekundę** – na 3DS, w przeglądarce, na telefonie z ekranem 120 Hz.
+Dzięki temu „3 piksele na klatkę” znaczy wszędzie to samo i gra nie przyspiesza na szybszym urządzeniu. `Draw()`
+rysuje tyle razy, ile ekran się odświeża. Gdy rysowanie nie zdąży, gra zrobi dwa kroki `Update` na jedno `Draw`:
+obraz traci płynność, ale gra nie zwalnia.
+
+Jeśli wiesz, że Twoja gra rysuje dużo i 60 klatek nie wyjdzie, poproś o równe 30:
+
+```text
+Gfx.FrameRate(30);    // Draw 30 razy na sekundę (można 60, 30, 20, 15); Update dalej 60
+```
+
+Obraz zmienia się wtedy co drugi krok, ale równo – bez skakania między 60 a 30.
+
+## Ekrany: dwa, jeden albo cały wyświetlacz
+
+Program rysuje na **ekranach logicznych**, a aplikacja kładzie je na prawdziwym wyświetlaczu urządzenia:
+
+```text
+Gfx.Layout(Layout.TwoScreens);           // domyślnie: górny 400 × 240 i dolny 320 × 240, jak na 3DS
+Gfx.Layout(Layout.OneScreen, 200, 120);  // jeden ekran o wybranym rozmiarze, powiększony do wyświetlacza
+Gfx.Layout(Layout.Fill);                 // jeden ekran w rozmiarze wyświetlacza (na 3DS: górny, 400 × 240)
+```
+
+Na 3DS dwa ekrany to dwa prawdziwe ekrany. Na urządzeniu z jednym wyświetlaczem (telefon, przeglądarka, Switch)
+oba pojawią się obok siebie albo jeden pod drugim, powiększone. `OneScreen` przydaje się do pixel artu: ekran
+200 × 120 na 3DS jest powiększony dwa razy, a na wyświetlaczu 1280 × 720 – sześć razy, zawsze ostro. Współrzędne
+w programie są zawsze w pikselach ekranu logicznego, a `Gfx.Width()` i `Gfx.Height()` podają jego rozmiar. Dotyk też
+jest przeliczany: `Input.TouchX()` mówi, gdzie na ekranie logicznym, a `Input.TouchScreen()` – na którym.
 
 ## Gra: zbierz gwiazdki
 
@@ -180,6 +210,6 @@ usuwamy (zob. rozdział 12).
 
 > **Dla zaawansowanych:** w każdej klatce aplikacja woła najpierw `Update()` wszystkich klas, które ją mają, potem
 > korutyny, potem `Draw()`. Kolejność klas ustala atrybut `[Order(n)]`. Ekrany są czyszczone na czarno przed każdą
-> klatką. Program bez `Draw()`, za to z `Update()`, też dostaje klatki – wtedy na ekranie widać jego konsolę (gry
+> klatką; rysuj tylko w `Draw()`. Program bez `Draw()`, za to z `Update()`, też dostaje klatki – wtedy na ekranie widać jego konsolę (gry
 > tekstowe). Na PC testy uruchamia się z `--frames 120 --press A@10 --press Left@5-20`, a `--ppm obraz.ppm` zapisuje
 > zrzut obu ekranów.

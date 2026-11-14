@@ -125,8 +125,9 @@ static void g_image_free_all(void) {
 }
 
 static const GfxBackend GFX = { 2, { 400, 320 }, { 240, 240 }, s_select, g_clear, g_rect, g_circle, g_line, g_text, s_width,
-                                g_image_create, g_image, g_image_free_all };
+                                g_image_create, g_image, g_image_free_all, 1 };
 const GfxBackend* ui3ds_gfx(void) { return &GFX; }
+void ui3ds_set_frame_rate(float fps) { C3D_FrameRate(fps); }
 
 int ui3ds_init(void) {
     /* the text console switched the screens to RGB565 without double buffering; citro2d wants them as at start */

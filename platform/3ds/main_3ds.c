@@ -61,6 +61,7 @@ static int stop_pressed(void) {
 static ConScreen* g_cs;
 static u64 g_lastDraw;
 static int g_inGameFrame;                      /* between ui3ds_frame_begin and _end of a game's frame (Draw) */
+static int g_game;                             /* the program has Draw: the screens are the game's, not the console's */
 
 static void cs_frame(void) {
     ui3ds_frame_begin(0x000000, 0x0C0C0C);
@@ -72,7 +73,7 @@ static void cs_frame(void) {
 static void out_write(const char* s) {
     if (g_cs) {                                 /* the text is in the grid already (lib/console.c): show it now and then */
         if (g_out) fputs(s, g_out);
-        if (!g_inGameFrame && osGetTime() - g_lastDraw > 50) cs_frame();
+        if (!g_inGameFrame && !g_game && osGetTime() - g_lastDraw > 50) cs_frame();
         return;
     }
     if (g_screen) { consoleSelect(&top); fputs(s, stdout); }
@@ -178,30 +179,48 @@ static void run(const char* path, int isProject, int frames) {
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
     if (ok && (up >= 0 || dr >= 0)) {           /* the frames: Update and / or Draw */
+        /* the game loop (PLAN.md, decisions 2026-11-14): Update 60 times a second, as many steps as the real time
+         * asks (lib_frame_steps); Draw once per shown frame, Gfx.FrameRate of them a second (C3D_FrameRate) */
+        g_game = g_cs && frames < 0 && dr >= 0;
         for (int f = 0; (frames < 0 || f < frames) && ok; f++) {
-            int game = 0;                           /* a frame of a game: Draw paints the screens */
+            int steps = 1;
+            UiInput in;
+            memset(&in, 0, sizeof in);
             if (frames < 0) {
                 if (!aptMainLoop()) break;
                 hidScanInput();
                 if (g_cs) {
-                    UiInput in;
                     ui3ds_input(&in);
                     if ((in.held & UI_BTN_START) && (in.held & UI_BTN_SELECT)) break;   /* START alone is Btn.Start */
-                    lib_input_frame(in.held, in.touching, in.x, in.y);
-                    if (dr >= 0) { ui3ds_frame_begin(0x000000, 0x000000); g_inGameFrame = game = 1; }
+                    steps = lib_frame_steps((double)osGetTime());
                 } else {
                     if (hidKeysDown() & KEY_START) break;
                     gspWaitForVBlank();
                 }
             }
-            g_ms += 1000.0 / 60;
-            ok = up < 0 || call(vm, up);
-            if (ok) ok = vm_tick_coroutines(vm);
-            if (ok && dr >= 0) ok = call(vm, dr);
-            if (g_inGameFrame) { ui3ds_frame_end(); g_inGameFrame = 0; }
-            else if (g_cs && frames < 0 && !game) cs_frame();   /* a text program with Update: the console screen */
-            lib_time_frame(1.0f / 60);
+            for (int k = 0; k < steps && ok; k++) {
+                if (g_cs) lib_input_frame(in.held, in.touching, in.x, in.y);
+                g_ms += 1000.0 / 60;
+                ok = up < 0 || call(vm, up);
+                if (ok) ok = vm_tick_coroutines(vm);
+                lib_time_frame(1.0f / 60);
+            }
+            if (!ok) break;
+            if (g_game) {
+                ui3ds_set_frame_rate((float)lib_draw_rate());
+                ui3ds_frame_begin(0x000000, 0x000000);
+                g_inGameFrame = 1;
+                lib_draw_begin();
+                ok = call(vm, dr);
+                if (g_inGameFrame) ui3ds_frame_end();
+                g_inGameFrame = 0;
+            } else if (dr >= 0) {                   /* the tests (X): Draw without screens */
+                lib_draw_begin();
+                ok = call(vm, dr);
+            } else if (g_cs && frames < 0) cs_frame();   /* a text program with Update: the console screen */
         }
+        if (g_game) ui3ds_set_frame_rate(60);
+        g_game = 0;
     }
     lib_set_gfx(NULL);
     if (!ok && !ms_vm_quit_requested(vm)) {

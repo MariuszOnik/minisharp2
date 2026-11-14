@@ -290,6 +290,21 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [ ] `modules/iso`, `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).
 - [ ] Przeniesienie części ToEE do modułu w `toee-models` (osobny build `MiniSharp-ToEE.3dsx`).
 
+## Decyzje 2026-11-14 (grafika)
+
+- **Ekrany logiczne a wyświetlacz** (decyzja użytkownika): program rysuje na ekranach logicznych, platforma układa je na
+  wyświetlaczu. `Gfx.Layout(Layout.TwoScreens)` (domyślnie, 400×240 + 320×240 jak 3DS), `Gfx.Layout(Layout.OneScreen,
+  szer, wys)` (dowolny rozmiar, skalowany), `Gfx.Layout(Layout.Fill)` (natywna rozdzielczość urządzenia: Switch
+  1280×720 / 1920×1080, telefon). Skalowanie całkowite, gdy się da; dotyk przeliczany na ekran logiczny.
+- **Pętla gry** (decyzja użytkownika): pętla należy do hosta (wasm, `aptMainLoop`, Stop, `ReadLine`); `Update` stałe
+  60 razy na sekundę (akumulator, najwyżej 4 kroki na klatkę), `Draw` raz na odświeżenie ekranu.
+- **Zrobione 2026-11-14:** `Gfx.Layout` (TwoScreens / OneScreen w, h / Fill) w `lib/gfx.c` – widoki logiczne ze skalą
+  i przesunięciem na ekranach fizycznych backendu (przy jednym wyświetlaczu: dwa ekrany jeden pod drugim albo obok,
+  co da większą skalę; jeszcze bez przycinania – dojdzie z pierwszą platformą jednoekranową), dotyk przeliczany
+  (`Input.TouchScreen`). Pętla: `lib_frame_steps` (akumulator, przyciąganie do rytmu vsync ±2 ms, najwyżej 4 kroki),
+  `lib_draw_begin`; `Gfx.FrameRate(60/30/20/15)` – tylko `Draw`, na 3DS przez `C3D_FrameRate` (prośba użytkownika:
+  świadome 30 kl./s). Testy `gfx_layout`, `rt_layout_screen`, `rt_framerate`, `test_framesteps`; rozdział 16.
+
 ## Do decyzji
 
 - (rozstrzygnięte 2026-11-13: `char` = punkt kodowy Unicode; `int[,]` – dodać do języka.)

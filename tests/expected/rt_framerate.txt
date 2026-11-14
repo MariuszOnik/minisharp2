@@ -1,0 +1,1 @@
+runtime error: line 2 (P.Main): Gfx.FrameRate(45): use 60, 30, 20 or 15 (Update stays at 60)

@@ -16,5 +16,6 @@ void ui3ds_input(UiInput* in);                              /* after hidScanInpu
 /* lib/gfx.h on citro2d (Gfx.Rect, Circle, Line, Text...): valid between ui3ds_init and ui3ds_exit */
 #include "gfx.h"
 const GfxBackend* ui3ds_gfx(void);
+void ui3ds_set_frame_rate(float fps);   /* frames a second shown (60 by default; 30 = every second vsync) */
 
 #endif

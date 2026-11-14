@@ -1,0 +1,10 @@
+two: 400x240
+fill: 400x240
+one: 200x120
+draw 1 after 2 updates
+two again: 400x240
+draw 2 after 4 updates
+touched screen 1 at 40,60 in frame 5
+draw 3 after 6 updates
+draw 4 after 8 updates
+screens: f9b4f1c5

@@ -27,7 +27,12 @@ typedef struct {
     int (*imageCreate)(const unsigned char* rgba, int w, int h);
     void (*image)(int id, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, float angle, uint32_t argb);
     void (*imageFreeAll)(void);
+    int touchScreen;                                /* the physical screen with the touch (-1 = none) */
 } GfxBackend;
+
+/* Gfx.Layout: the logical screens a program draws on (PLAN.md, decisions 2026-11-14). lib/gfx.c places them on the
+ * backend's physical screens (scale and offset), so a platform only draws in its own pixels. */
+enum { LAYOUT_TWO, LAYOUT_ONE, LAYOUT_FILL };
 
 /* NULL = no screen: drawing does nothing, Gfx.Width/Height give 0 */
 void lib_set_gfx(const GfxBackend* b);
@@ -39,10 +44,16 @@ enum {
     BTN_A = 1 << 0, BTN_B = 1 << 1, BTN_X = 1 << 2, BTN_Y = 1 << 3, BTN_L = 1 << 4, BTN_R = 1 << 5,
     BTN_START = 1 << 6, BTN_SELECT = 1 << 7, BTN_UP = 1 << 8, BTN_DOWN = 1 << 9, BTN_LEFT = 1 << 10, BTN_RIGHT = 1 << 11,
 };
-void lib_input_frame(uint32_t held, int touching, int x, int y);
-/* Time.Delta (seconds since the last frame) and Time.Frame: the host calls it once per frame, after Draw.
- * The next frame then starts on the top screen and opaque again (Gfx.Screen and Gfx.Alpha last one frame). */
-void lib_time_frame(float delta);
+void lib_input_frame(uint32_t held, int touching, int x, int y);   /* x, y: pixels of the backend's touchScreen */
+/* The game loop (PLAN.md, decisions 2026-11-14): Update runs 60 times a second on every device, Draw once per
+ * refresh of the display. Per displayed frame the host asks lib_frame_steps(now in ms) how many Update steps to run
+ * (0..4; the first call gives 1), and for each step calls lib_input_frame, Update, the coroutines and
+ * lib_time_frame(1/60); then lib_draw_begin and Draw. A host with a fixed frame (PC tests) simply runs one step. */
+int lib_frame_steps(double nowMs);
+void lib_time_frame(float delta);       /* after an Update step: Time.Frame + 1 */
+void lib_draw_begin(void);
+/* Gfx.FrameRate(n): how many times a second Draw runs (60, 30, 20 or 15); Update stays at 60 */
+int lib_draw_rate(void);              /* before Draw: the first logical screen, opaque (Gfx.Screen / Alpha last a frame) */
 /* a new program: no buttons, frame 0, opaque drawing, the top screen, no pictures */
 void lib_gfx_reset(void);
 /* the folder Gfx.LoadImage("hero.png") looks in: the program's folder (a project) or the folder of its .cs file */

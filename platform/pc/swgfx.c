@@ -121,7 +121,7 @@ static void s_image(int id, float sx, float sy, float sw, float sh, float dx, fl
 }
 
 static const GfxBackend BACKEND = { 2, { 400, 320 }, { 240, 240 }, s_select, s_clear, s_rect, s_circle, s_line, s_text, s_width,
-                                     s_image_create, s_image, s_image_free_all };
+                                     s_image_create, s_image, s_image_free_all, 1 };
 
 const GfxBackend* swgfx_init(void) {
     for (int i = 0; i < 2; i++) {
