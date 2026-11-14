@@ -148,3 +148,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Zaznaczanie i schowek w edytorze: X przełącza tryb zaznaczania, w którym D-pad zaznacza, a pasek
   narzędzi zmienia się w Copy / Cut / Paste / All. Schowek jest wspólny dla plików, więc można przenieść kod między
   plikami projektu.
+- 2026-11-14: Rozdział 13 „Lambdy” – 8 sprawdzanych przykładów: od `x => x * 2` przez `Find`/`RemoveAll`/`Sort`
+  na listach po licznik pamiętający zmienną i zdarzenia z `+=`/`-=`. Wszystko działało bez zmian w języku.
