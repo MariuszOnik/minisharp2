@@ -27,12 +27,13 @@ jobs:
       - name: Buduj MiniSharp.3dsx
         run: |
           if [ ! -d platform/3ds ]; then echo "::notice::Brak platform/3ds (etap 3) – pomijam build 3DS"; exit 0; fi
-          make 3ds
-          cp build/MiniSharp.3dsx MiniSharp.3dsx
+          # the run number and the commit in the title (Homebrew Launcher) and in the menu, so builds can be told apart
+          make 3ds BUILD_NUM=${{ github.run_number }} GIT_ID=$(echo "$GITHUB_SHA" | cut -c1-7)
+          cp build/MiniSharp.3dsx MiniSharp-${{ github.run_number }}.3dsx
       - uses: actions/upload-artifact@v4
         with:
           name: MiniSharp-3dsx
-          path: MiniSharp.3dsx
+          path: MiniSharp-*.3dsx
           if-no-files-found: ignore
 
   # APK = wersja web (wasm) w WebView Androida, więc potrzebuje platform/web i folderu android/.
@@ -91,7 +92,8 @@ jobs:
             gh release delete "$1" --yes --cleanup-tag || true
             gh release create "$1" "$2" --target "$GITHUB_SHA" --title "$3" --notes "$4"
           }
-          publish 3ds-latest MiniSharp-3dsx/MiniSharp.3dsx "MiniSharp na 3DS (ostatni build)" \
-            "Skopiuj MiniSharp.3dsx do sdmc:/3ds/ i uruchom z Homebrew Launchera."
+          f3ds=$(ls MiniSharp-3dsx/MiniSharp-*.3dsx 2>/dev/null | head -1)
+          publish 3ds-latest "$f3ds" "MiniSharp na 3DS – build nr ${{ github.run_number }}" \
+            "Build nr ${{ github.run_number }}, commit $(echo "$GITHUB_SHA" | cut -c1-7). Skopiuj plik .3dsx do sdmc:/3ds/ i uruchom z Homebrew Launchera – w launcherze i w menu widać numer buildu."
           publish android-latest MiniSharp-apk/MiniSharp.apk "MiniSharp na Androida (ostatni build)" \
             "Pobierz MiniSharp.apk i otwórz go na telefonie (Android zapyta raz o zgodę na instalację z tego źródła)."

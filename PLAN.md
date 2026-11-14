@@ -201,11 +201,11 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `platform/3ds/main_3ds.c` (konsola tekstowa libctru, A = `sdmc:/minisharp/main.cs`, X = testy z `/minisharp/tests/`
       do `tests/out/`, START = wyjście, log w `log.txt`), `make 3ds`, `tools/3ds_send.sh` (FTP), `tools/3ds_tests.sh`
       (prepare/compare). Emulator Azahar: 177 ok, 6 czeka (Gfx/Input/App).
-- [ ] **Nazwa builda na konsoli** (prośba użytkownika 2026-11-13): każdy build musi dać się odróżnić na karcie. Jest:
+- [x] **Nazwa builda na konsoli** (prośba użytkownika 2026-11-13): każdy build musi dać się odróżnić na karcie. Jest:
       tytuł w Homebrew Launcherze `MiniSharp2 RRRR-MM-DD GG:MM`, w opisie commit, w menu commit i data, plik na karcie
-      `/3ds/MiniSharp-RRRRMMDD-GGMM.3dsx` (`tools/3ds_send.sh`). Do zrobienia: to samo dla builda z Actions (wydanie
-      `3ds-latest` – nazwa pliku z datą albo numerem przebiegu `github.run_number`) i data/numer na ekranie startowym
-      pełnej wersji (etap 3).
+      `/3ds/MiniSharp-RRRRMMDD-GGMM.3dsx` (`tools/3ds_send.sh`). Build z Actions (2026-11-14): plik `MiniSharp-<nr>.3dsx`
+      w wydaniu `3ds-latest`, tytuł w launcherze `MiniSharp2 nr <nr> <data>`, w menu `build <nr> / <commit>, <data>`
+      (`BUILD_NUM` w `platform/3ds/Makefile`). Data z Actions jest w UTC.
 - [x] Testy na prawdziwej konsoli (2026-11-13: 177 ok, 6 czeka; ułamki zgodne z PC): `sh tools/3ds_send.sh tests` (FTP konsoli: `192.168.1.90:5000`), X w menu,
       `sh tools/3ds_tests.sh fetch <katalog>` i `sh tools/3ds_tests.sh compare <katalog>` (punkt „Przenośność” niżej).
 - [ ] Menu na 3DS (oddzielone od pętli gry), uruchamianie programów i projektów, log na kartę – rozbudowa minimalnego hosta.

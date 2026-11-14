@@ -185,3 +185,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Program uruchomiony na 3DS (A w menu, Run w edytorze) pisze do siatki `Console` na górnym ekranie,
   z kolorami, a `Console.ReadLine` wreszcie działa poza terminalem: pole i klawiatura na dolnym ekranie. Ekran odświeża
   się co 50 ms podczas pisania i co klatkę w pętli `Update`; konsola tekstowa libctru zostaje tylko dla testów (X).
+- 2026-11-14: Buildy z Actions da się rozróżnić: plik w wydaniu nazywa się `MiniSharp-<nr przebiegu>.3dsx`, a ten sam
+  numer widać w Homebrew Launcherze i w menu.

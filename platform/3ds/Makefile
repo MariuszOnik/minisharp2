@@ -20,8 +20,9 @@ BUILD    := build/obj3ds
 GIT_ID     ?= $(shell git -C $(TOPDIR) rev-parse --short HEAD 2>/dev/null)$(shell git -C $(TOPDIR) diff --quiet HEAD -- 2>/dev/null || echo +)
 BUILD_TIME ?= $(shell date +"%Y-%m-%d %H:%M")
 export GIT_ID BUILD_TIME
-BUILD_ID        := $(GIT_ID), $(BUILD_TIME)
-APP_TITLE       := MiniSharp2 $(BUILD_TIME)
+# BUILD_NUM: the number of the GitHub Actions run (make 3ds BUILD_NUM=57), empty for a local build
+BUILD_ID        := $(if $(BUILD_NUM),build $(BUILD_NUM) / )$(GIT_ID), $(BUILD_TIME)
+APP_TITLE       := MiniSharp2 $(if $(BUILD_NUM),nr $(BUILD_NUM) )$(BUILD_TIME)
 APP_DESCRIPTION := $(BUILD_ID)
 APP_AUTHOR      := MariuszOnik
 
