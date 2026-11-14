@@ -165,6 +165,8 @@ static void test_line(void) {
     check(n >= 2 && !strcmp(out[0], "max") && !strcmp(out[1], "Math") && start == 4, "caller's words, then classes");
     n = svc_complete_line("Math.Sq", 7, &start, out, 8, "");
     check(n == 1 && !strcmp(out[0], "Sqrt"), "built-in members");
+    n = svc_complete_line("string.Jo", 9, &start, out, 8, "");
+    check(n == 1 && !strcmp(out[0], "Join"), "string.Join in the hints (compiled by the compiler, listed in the table)");
 }
 
 int main(void) {

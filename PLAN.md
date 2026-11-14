@@ -102,7 +102,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         `rt_strindex`). Zostało: sortowanie napisów po polsku (dziś `ą` po `z`, kolejność kodów).
       - ~~brak `string.Join(sep, lista)`~~ (zrobione 2026-11-14: `call_join` w `comp_call.c` kompiluje pętlę – lista,
         `T[]` i wersja `Join(sep, a, b, …)`, separator `string`/`char`, `ToString` obiektów, `null` = ""; test `join`,
-        błędy `join_*`). Zostało: `Join` nie ma go w podpowiedziach (nie ma wpisu w tabeli funkcji wbudowanych).
+        błędy `join_*`). Wpis w tabeli `lib/strings.c` tylko dla podpowiedzi i sygnatury (nigdy nie wołany).
       - usuwanie z listy w trakcie `foreach` po niej przechodzi bez błędu (C# rzuca wyjątek „Collection was modified”) –
         znalezione przy rozdziale 12; do decyzji, czy VM ma to wykrywać (licznik zmian w `ObjList`).
 - [ ] **Braki względem C# znalezione przy rozdziale 6:**

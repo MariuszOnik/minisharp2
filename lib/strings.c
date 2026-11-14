@@ -123,6 +123,10 @@ static Value n_split(VM* vm, Value* a) {
 }
 static Value n_isnullorempty(VM* vm, Value* a) { (void)vm; return vbool(a[0].t != V_OBJ || sobj(a[0])->len == 0); }
 
+/* string.Join is compiled to a loop (call_join in lang/comp_call.c); this entry only makes it known to the hints,
+ * the signature and the graph's catalogue, and is never called */
+static Value n_join(VM* vm, Value* a) { (void)a; ms_vm_fail(vm, "internal error: string.Join"); return vnone(); }
+
 static const NativeDef strings[] = {
     {".string", "Substring", 3, {S, I, I}, S, n_substring2},
     {".string", "Substring", 2, {S, I}, S, n_substring1},
@@ -137,5 +141,6 @@ static const NativeDef strings[] = {
     {".string", "Replace", 3, {S, S, S}, S, n_replace},
     {".string", "Split", 2, {S, CH}, SA, n_split},
     {"string", "IsNullOrEmpty", 1, {S}, B, n_isnullorempty},
+    {"string", "Join", 2, {S, T_LIST}, S, n_join},
 };
 void lib_register_strings(void) { MS_REGISTER(strings); }

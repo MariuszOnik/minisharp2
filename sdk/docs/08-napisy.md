@@ -204,6 +204,35 @@ Ala (poziom 13 po awansie), klasa: łucznik
 `int.Parse` zamienia napis z cyframi na liczbę (zob. rozdział 2). Gdy napis może nie być liczbą, użyj
 `int.TryParse` (zob. rozdział 6).
 
+## Sklejanie kawałków: string.Join
+
+`string.Join` robi odwrotność `Split`: skleja elementy tablicy (albo listy, zob. rozdział 12) w jeden napis,
+wstawiając między nie podany separator. Liczby same zamieniają się na tekst:
+
+```cs
+class Program
+{
+    static void Main()
+    {
+        string[] slowa = "raz dwa trzy".Split(' ');
+        Console.WriteLine(string.Join(" + ", slowa));
+
+        int[] wyniki = { 10, 25, 7 };
+        Console.WriteLine("Wyniki: " + string.Join(", ", wyniki));
+        Console.WriteLine(string.Join("-", "2026", 11, 14));
+    }
+}
+```
+
+```wynik
+raz + dwa + trzy
+Wyniki: 10, 25, 7
+2026-11-14
+```
+
+Separator stoi tylko **między** elementami – na końcu nie ma zbędnego przecinka. Zamiast tablicy można też podać
+kilka wartości po przecinku, jak w ostatniej linii.
+
 ## Pusty napis i null
 
 `""` to napis bez znaków (`Length` równe 0). `null` to brak napisu – na nim nie da się wywołać metody.
@@ -235,4 +264,5 @@ False
 - `+` i `$"... {x} ..."` budują napisy; `\n`, `\t`, `\"`, `\\` to znaki specjalne.
 - `s.Length` i `s[i]` – długość i znak, jak w tablicy; napisu nie zmienia się w miejscu.
 - `Trim`, `ToUpper`, `Contains`, `IndexOf`, `Substring`, `Replace`, `Split` – każda oddaje nowy wynik.
+- `string.Join(sep, tablica)` – skleja kawałki z separatorem.
 - `string.IsNullOrEmpty(s)` – czy napis jest pusty albo go nie ma.
