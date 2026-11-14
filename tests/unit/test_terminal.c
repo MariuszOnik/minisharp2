@@ -44,12 +44,6 @@ static void press(Terminal* t, uint32_t btn) {
 
 static const char* last(Terminal* t, int back) { return term_line(t, term_lines(t) - 1 - back); }
 
-/* is there a line equal to s among the last n? */
-static int has_line(Terminal* t, const char* s, int n) {
-    for (int i = 0; i < n && i < term_lines(t); i++) if (!strcmp(last(t, i), s)) return 1;
-    return 0;
-}
-
 static void test_run(void) {
     Terminal* t = term_new();
     check(t != NULL, "term_new");

@@ -133,3 +133,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   korutyna) – czytelny błąd. PC czyta stdin, terminal bierze odpowiedź z następnej linii, rozdział 9 z blokiem `wejscie`.
 - 2026-11-13: Rozdział 10 „Klasy i obiekty” – 8 sprawdzanych przykładów (pola, konstruktor, `this`, lista obiektów,
   dwie zmienne na jeden obiekt, `static`, właściwości, `private` z dokładnym komunikatem błędu).
+- 2026-11-14: Rozdział 11 „Dziedziczenie” – 10 sprawdzanych przykładów (klasa bazowa, `base(...)`, `virtual`/`override`,
+  lista potworów, `base.Metoda()`, `ToString`, `protected`, `abstract`, `is`/`as`, interfejsy). Sesja z telefonu,
+  praca w chmurze na Linuksie; ostrzeżenie z `compiler.c:330` już nie występuje w gcc na Linuksie.
