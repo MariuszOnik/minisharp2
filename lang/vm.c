@@ -116,6 +116,7 @@ static MS_COLD void collect(VM* vm) {
     for (int i = 0; i < vm->sp; i++) mark_value(vm, vm->stack[i]);
     for (int i = 0; i < vm->p->nstatics; i++) mark_value(vm, vm->statics[i]);
     for (int i = 0; i < vm->ncoros; i++) { Value v; v.t = V_OBJ; v.as.o = (Obj*)vm->coros[i]; mark_value(vm, v); }
+    for (int i = 0; i < vm->nkept; i++) mark_value(vm, vm->kept[i]);
     for (int i = 0; i < vm->fp; i++)
         if (vm->frames[i].clo) { Value v; v.t = V_OBJ; v.as.o = vm->frames[i].clo; mark_value(vm, v); }
     while (vm->ngray > 0) {
@@ -261,6 +262,7 @@ void vm_free(VM* vm) {
     while (o) { Obj* n = o->next; free_obj(vm, o, alloc_size(o)); o = n; }
     for (void* b = vm->blocks; b; ) { void* n = *(void**)b; free(b); b = n; }
     free(vm->gray); free(vm->stack); free(vm->statics); free(vm->coros);
+    free(vm->kept); free(vm->freeKept);
     free(vm);
 }
 
@@ -517,6 +519,148 @@ int vm_call(VM* vm, int func) {
     for (int i = 0; i < fr->f->nlocals; i++) { vm->stack[vm->sp + i].t = V_NULL; vm->stack[vm->sp + i].as.o = NULL; }
     vm->sp += fr->f->nlocals;
     return vm_run(vm, startFp);
+}
+
+/* ================= calls and objects for the host (reflection, ms.h) ================= */
+int vm_call_args(VM* vm, int func, const Value* args, int argc, Value* result) {
+    if (vm->waitInput) { snprintf(vm->err, sizeof vm->err, "the program is waiting for input (vm_resume_input)"); return 0; }
+    Program* P = vm->p;
+    if (func < 0 || func >= P->nfuncs) { snprintf(vm->err, sizeof vm->err, "no function %d", func); return 0; }
+    Func* f = &P->funcs[func];
+    if (argc != f->nparams) {
+        snprintf(vm->err, sizeof vm->err, "'%s' takes %d argument%s (with 'this'), not %d", f->name, f->nparams, f->nparams == 1 ? "" : "s", argc);
+        return 0;
+    }
+    if (f->isIter) { snprintf(vm->err, sizeof vm->err, "'%s' is a coroutine and cannot be called here; use StartCoroutine", f->name); return 0; }
+    if (vm->fp >= MS_FRAMES || vm->sp + f->nlocals + 512 >= MS_STACK) { snprintf(vm->err, sizeof vm->err, "stack overflow"); return 0; }
+    int startFp = vm->fp, base = vm->sp;
+    Value* st = vm->stack + base;
+    for (int i = 0; i < argc; i++) st[i] = args[i];
+    for (int i = argc; i < f->nlocals; i++) { st[i].t = V_NULL; st[i].as.o = NULL; }
+    Frame* fr = &vm->frames[vm->fp++];
+    fr->f = f; fr->ip = 0; fr->base = base; fr->clo = NULL;
+    vm->sp = base + f->nlocals;
+    int r = vm_run(vm, startFp);
+    if (r == 1) {
+        if (result) *result = vm->stack[base];     /* RETV leaves the result at base (meaningless for a void function) */
+        vm->sp = base;
+    } else if (r == 0) vm->sp = base;
+    return r;
+}
+
+int vm_new_object(VM* vm, int cls, Value* out) {
+    Program* P = vm->p;
+    if (!ms_class_can_create(P, cls)) {
+        snprintf(vm->err, sizeof vm->err, cls >= 0 && cls < P->nclasses
+                 ? "cannot create an object of '%s' (abstract, static, an enum, an interface or no constructor without parameters)"
+                 : "no class %s", cls >= 0 && cls < P->nclasses ? P->classes[cls].name : "with that number");
+        return 0;
+    }
+    if (vm->sp + 64 >= MS_STACK) { snprintf(vm->err, sizeof vm->err, "stack overflow"); return 0; }
+    Obj* o = new_instance(vm, cls);
+    if (!o) { snprintf(vm->err, sizeof vm->err, "out of memory"); return 0; }
+    Value v; v.t = V_OBJ; v.as.o = o;
+    *out = v;
+    int ctor = P->classes[cls].ctor0;
+    return ctor >= 0 ? vm_call_args(vm, ctor, &v, 1, NULL) : 1;    /* a struct without one: zeroed, as new S() in C# */
+}
+
+static const char* kind_name(int k) {
+    switch (k) {
+        case T_INT: return "int"; case T_FLOAT: return "float"; case T_BOOL: return "bool"; case T_STRING: return "string";
+        case T_CHAR: return "char"; case T_ENUM: return "an enum"; case T_CLASS: return "an object"; case T_STRUCT: return "a struct";
+        case T_ARRAY: return "an array"; case T_LIST: return "a List"; case T_DICT: return "a Dictionary";
+        case T_FUNC: return "a delegate"; case T_CORO: return "a coroutine"; default: return "another type";
+    }
+}
+static const char* value_kind_name(Value v) {
+    switch (v.t) {
+        case V_NULL: return "null"; case V_INT: return "an int"; case V_FLOAT: return "a float"; case V_BOOL: return "a bool";
+        case V_CHAR: return "a char";
+        default:
+            switch (v.as.o->type) {
+                case O_STRING: return "a string"; case O_ARRAY: return "an array"; case O_LIST: return "a List";
+                case O_DICT: return "a Dictionary"; case O_CLOSURE: return "a delegate"; case O_CORO: return "a coroutine";
+                default: return "an object";
+            }
+    }
+}
+
+int ms_set_field(VM* vm, Value obj, int i, Value v) {
+    Program* P = vm->p;
+    int ci = ms_class_of(obj);
+    if (ci < 0 || ci >= P->nclasses) { snprintf(vm->err, sizeof vm->err, "setting a field of %s, not of an object", value_kind_name(obj)); return 0; }
+    ClassRT* k = &P->classes[ci];
+    if (i < 0 || i >= k->nfields || !k->fi) { snprintf(vm->err, sizeof vm->err, "'%s' has no field %d", k->name, i); return 0; }
+    RtField* f = &k->fi[i];
+    int obt = v.t == V_OBJ ? v.as.o->type : -1;
+    int ok;
+    switch (f->kind) {
+        case T_INT: case T_ENUM: ok = v.t == V_INT; break;
+        case T_FLOAT: ok = v.t == V_FLOAT || v.t == V_INT; if (v.t == V_INT) { v.t = V_FLOAT; v.as.f = (float)v.as.i; } break;
+        case T_BOOL: ok = v.t == V_BOOL; break;
+        case T_CHAR: ok = v.t == V_CHAR; break;
+        case T_STRING: ok = v.t == V_NULL || obt == O_STRING; break;
+        case T_CLASS:
+            ok = v.t == V_NULL || (obt == O_INSTANCE && f->cls >= 0 && P->classes[((ObjInstance*)v.as.o)->cls].isa[f->cls]
+                                   && !P->classes[((ObjInstance*)v.as.o)->cls].isStruct);
+            break;
+        case T_STRUCT:
+            ok = obt == O_INSTANCE && ((ObjInstance*)v.as.o)->cls == f->cls;
+            if (ok) {
+                if (vm->sp + 64 >= MS_STACK) { snprintf(vm->err, sizeof vm->err, "stack overflow"); return 0; }
+                vm->stack[vm->sp++] = obj;          /* keep the object alive while the copy is made */
+                Obj* cp = copy_instance(vm, (ObjInstance*)v.as.o);
+                vm->sp--;
+                if (!cp) { snprintf(vm->err, sizeof vm->err, "out of memory"); return 0; }
+                v.as.o = cp;
+            }
+            break;
+        case T_ARRAY: ok = v.t == V_NULL || (obt == O_ARRAY && (((ObjArray*)v.as.o)->rows != 0) == (f->rank == 2)); break;
+        case T_LIST: ok = v.t == V_NULL || obt == O_LIST; break;
+        case T_DICT: ok = v.t == V_NULL || obt == O_DICT; break;
+        case T_FUNC: ok = v.t == V_NULL || obt == O_CLOSURE; break;
+        case T_CORO: ok = v.t == V_NULL || obt == O_CORO; break;
+        default: ok = 0;
+    }
+    if (!ok) {
+        const char* fname = P->strings[f->name]->chars;
+        if (f->cls >= 0 && (f->kind == T_CLASS || f->kind == T_STRUCT || f->kind == T_ENUM))
+            snprintf(vm->err, sizeof vm->err, "field '%s' of '%s' is %s, not %s", fname, k->name, P->classes[f->cls].name, value_kind_name(v));
+        else
+            snprintf(vm->err, sizeof vm->err, "field '%s' of '%s' is %s, not %s", fname, k->name, kind_name(f->kind), value_kind_name(v));
+        return 0;
+    }
+    ((ObjInstance*)obj.as.o)->fields[i] = v;
+    return 1;
+}
+
+/* kept values: slots 0..nkept-1; a released slot holds null and its number waits in freeKept[0..nfreeKept-1] */
+int ms_vm_keep(VM* vm, Value v) {
+    if (vm->nfreeKept > 0) { int h = vm->freeKept[--vm->nfreeKept]; vm->kept[h] = v; return h; }
+    if (vm->nkept == vm->capkept) {
+        int nc = vm->capkept ? vm->capkept * 2 : 64;
+        Value* k = (Value*)realloc(vm->kept, sizeof(Value) * (size_t)nc);
+        if (!k) return -1;
+        vm->kept = k;
+        int* fr = (int*)realloc(vm->freeKept, sizeof(int) * (size_t)nc);
+        if (!fr) return -1;
+        vm->freeKept = fr;
+        vm->capkept = nc;
+    }
+    vm->kept[vm->nkept] = v;
+    return vm->nkept++;
+}
+
+Value ms_vm_kept(VM* vm, int h) {
+    Value v; v.t = V_NULL; v.as.o = NULL;
+    return h >= 0 && h < vm->nkept && vm->kept[h].t != V_NULL ? vm->kept[h] : v;
+}
+
+void ms_vm_release(VM* vm, int h) {
+    if (h < 0 || h >= vm->nkept || (vm->kept[h].t == V_NULL && vm->kept[h].as.o == (Obj*)vm)) return;   /* already released */
+    vm->kept[h].t = V_NULL; vm->kept[h].as.o = (Obj*)vm;    /* mark: released (a kept null has as.o NULL) */
+    vm->freeKept[vm->nfreeKept++] = h;                      /* freeKept has room for every slot */
 }
 
 /* ================= coroutines ================= */

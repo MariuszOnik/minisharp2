@@ -7,6 +7,71 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+/* ================= reflection: what the program keeps about its classes (lang/reflect.c reads it) ================= */
+static void rt_class_info(C* c, int i) {
+    CClass* k = &c->classes[i];
+    ClassDecl* d = k->decl;
+    ClassRT* rt = &c->P->classes[i];
+    char full[160];
+    int n = d->ns.l ? snprintf(full, sizeof full, "%.*s.%.*s", d->ns.l, d->ns.s, d->nlen, d->name)
+                    : snprintf(full, sizeof full, "%.*s", d->nlen, d->name);
+    if (n >= (int)sizeof full) n = (int)sizeof full - 1;
+    rt->fullName = add_string(c, full, n);
+    rt->kind = (uint8_t)(k->isEnum ? MS_CK_ENUM : k->isInterface ? MS_CK_INTERFACE : k->isStruct ? MS_CK_STRUCT : MS_CK_CLASS);
+    rt->isAbstract = (uint8_t)(k->isAbstract || k->isInterface);
+    rt->isStatic = (uint8_t)d->isStatic;
+    rt->fromSource = (uint8_t)d->fromSource;
+    rt->ctor0 = -1;
+}
+
+static void rt_type(Type* t, uint8_t* kind, int32_t* cls) {
+    *kind = (uint8_t)(t ? t->k : T_VOID);
+    *cls = t && (t->k == T_CLASS || t->k == T_STRUCT || t->k == T_ENUM) ? t->cls : -1;
+}
+
+/* instance fields by slot: the base class's (already done: classes go in c->order) and then its own */
+static void rt_fields(C* c, int i) {
+    CClass* k = &c->classes[i];
+    ClassRT* rt = &c->P->classes[i];
+    rt->fi = (RtField*)calloc(k->ninst ? k->ninst : 1, sizeof(RtField));
+    if (!rt->fi) cfail(c, k->decl->line, "out of memory");
+    if (k->base >= 0) memcpy(rt->fi, c->P->classes[k->base].fi, sizeof(RtField) * c->classes[k->base].ninst);
+    for (int j = 0; j < k->nf; j++) {
+        CField* f = &k->fields[j];
+        if (f->isStatic) continue;
+        RtField* r = &rt->fi[f->slot];
+        r->name = add_string(c, f->name, f->nlen);
+        rt_type(f->type, &r->kind, &r->cls);
+        Type* t = f->type;
+        r->elemCls = r->keyCls = -1;
+        if (t->k == T_ARRAY || t->k == T_LIST || t->k == T_DICT || t->k == T_KVP) rt_type(t->elem, &r->elemKind, &r->elemCls);
+        if (t->k == T_DICT || t->k == T_KVP) rt_type(t->key, &r->keyKind, &r->keyCls);
+        r->rank = (uint8_t)(t->k == T_ARRAY ? t->rank : 0);
+        r->access = (uint8_t)(f->decl ? f->decl->access : AC_NONE);
+        r->readOnly = (uint8_t)(f->decl ? f->decl->readOnly : 0);
+        r->owner = i;
+    }
+}
+
+/* own methods (with their function numbers) and the constructor without parameters */
+static void rt_methods(C* c, int i) {
+    CClass* k = &c->classes[i];
+    ClassRT* rt = &c->P->classes[i];
+    for (int j = 0; j < k->nctors; j++) if (k->ctors[j].np == 0) rt->ctor0 = k->ctors[j].func;
+    rt->meth = (RtMethod*)calloc(k->nm ? k->nm : 1, sizeof(RtMethod));
+    if (!rt->meth) cfail(c, k->decl->line, "out of memory");
+    rt->nmeth = k->nm;
+    for (int j = 0; j < k->nm; j++) {
+        CMethod* m = &k->methods[j];
+        RtMethod* r = &rt->meth[j];
+        r->name = add_string(c, m->name, m->nlen);
+        r->func = m->func;
+        r->np = (uint8_t)m->np; r->isStatic = (uint8_t)m->isStatic;
+        r->retKind = (uint8_t)(m->ret ? m->ret->k : T_VOID);
+        r->access = (uint8_t)(m->decl ? m->decl->access : AC_NONE);
+    }
+}
+
 /* ================= classes and methods ================= */
 static void begin_func(C* c, int func, int cls, const char* mname, int mlen, int isStatic) {
     c->fn = &c->P->funcs[func];
@@ -424,6 +489,7 @@ static void collect(C* c, ProgramAST* ast) {
         rt->nfields = k->ninst;
         rt->base = k->base;
         rt->isStruct = (uint8_t)k->isStruct; rt->isFlags = (uint8_t)d->isFlags;
+        rt_class_info(c, i);
         rt->defaults = (Value*)calloc(k->ninst ? k->ninst : 1, sizeof(Value));
         if (k->isEnum) {
             rt->nenum = k->nf;
@@ -456,6 +522,7 @@ static void collect(C* c, ProgramAST* ast) {
             if (f->isStatic) P->staticDefaults[f->slot] = default_value(f->type);
             else rt->defaults[f->slot] = default_value(f->type);
         }
+        rt_fields(c, i);
         int nctor = 0;
         for (int j = 0; j < d->nmethods; j++) nctor += d->methods[j].isCtor;
         k->methods = (CMethod*)arena_alloc(&c->A, sizeof(CMethod) * (d->nmethods ? d->nmethods : 1));
@@ -537,6 +604,7 @@ static void collect(C* c, ProgramAST* ast) {
             memset(ct, 0, sizeof *ct);
             ct->name = k->name; ct->nlen = k->nlen; ct->ret = &tVoid; ct->owner = i; ct->sel = -1; ct->func = fi++;
         }
+        rt_methods(c, i);
     }
     P->staticInit = fi++;
     P->nfuncs = fi;
@@ -874,6 +942,7 @@ void ms_free_program(Program* p) {
         ClassRT* k = &p->classes[i];
         free(k->defaults); free(k->vtable); free(k->isa);
         free(k->structfIdx); free(k->structfCls); free(k->enumVals); free(k->enumStr);
+        free(k->fi); free(k->meth);
     }
     free(p->classes);
     free(p->staticDefaults);

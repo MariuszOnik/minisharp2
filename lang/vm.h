@@ -66,8 +66,29 @@ typedef struct {
     char name[64];
 } Func;
 
+/* Reflection (lang/reflect.c): what a scene loader or an inspector needs to know about a class at run time.
+ * Names are indices of Program.strings. */
+typedef struct {
+    int32_t name;                       /* string index */
+    uint8_t kind, elemKind, keyKind, rank;  /* T_* of the field; of the items (T[], List<T>, Dictionary value); of the key */
+    uint8_t access, readOnly;           /* AC_* (ast.h), 1 readonly / 2 const */
+    int32_t cls, elemCls, keyCls;       /* class / struct / enum of the field, the items, the key; -1 none */
+    int32_t owner;                      /* class that declares it */
+} RtField;
+typedef struct {
+    int32_t name;                       /* string index */
+    int32_t func;                       /* function index (-1: abstract, no body) */
+    uint8_t np, isStatic, retKind, access;
+} RtMethod;
+
 typedef struct {
     char name[32]; int nfields; Value* defaults;
+    int32_t fullName;                   /* string index of "Namespace.Name" (just the name in the global namespace) */
+    uint8_t kind;                       /* MS_CK_* (ms.h) */
+    uint8_t isAbstract, isStatic, fromSource;
+    int ctor0;                          /* function of the constructor without parameters, -1 none */
+    RtField* fi;                        /* [nfields]: instance fields by slot (inherited ones first) */
+    RtMethod* meth; int nmeth;          /* own methods */
     int base;                           /* base class or -1 */
     int* vtable;                        /* [Program.nsel]: function for each virtual selector, -1 none */
     uint8_t* isa;                       /* [nclasses]: 1 if an object of this class is also that class / interface */
@@ -112,6 +133,8 @@ struct VM {
     int waitFp;                                 /* the startFp of the stopped vm_run, for vm_resume_input */
     /* small objects (up to MS_POOL_MAX bytes) come from 16 KB blocks; a freed one goes to the list of its size */
     void* pool[17]; void* blocks; char* bump; size_t bumpLeft;
+    /* values the host keeps between calls (ms_vm_keep): GC roots; released slots wait in freeKept for reuse */
+    Value* kept; int nkept, capkept; int* freeKept; int nfreeKept;
 };
 #define MS_POOL_MAX 128
 

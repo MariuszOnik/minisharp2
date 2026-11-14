@@ -125,14 +125,24 @@ Najmniejsza rzecz, która sprawdza cały pomysł, zanim powstaną pełne edytory
 - [ ] Rozdział dokumentacji „Świat izometryczny”.
 
 ### I2 – refleksja w języku (rdzeń, decyzja użytkownika 2026-11-14: dodajemy)
-Nazwy jak w C# (`System.Reflection`, podzbiór), żeby program poprawny w C# działał i u nas.
+Po co: plik sceny zapisuje obiekty jako tekst (`"class": "Drzwi"`, `"Zamkniete": true`). Loader musi z nazwy zrobić
+obiekt i ustawić pola po nazwie, a inspektor – wypisać klasy dziedziczące po `IsoBehaviour` i ich publiczne pola.
+
+**I2a – po stronie C (potrzebne prototypowi):**
+- [x] Zrobione 2026-11-14: kompilator zapisuje w `ClassRT` pełną nazwę (`Gra.Drzwi`), rodzaj, konstruktor bez
+      parametrów, pola instancji wg slotów (typ, element / klucz, `T[,]`, dostęp, `readonly`, klasa deklarująca)
+      i własne metody. API w `ms.h` (`lang/reflect.c` + `vm.c`): `ms_class_find/name/full_name/kind/base/is/can_create`,
+      `ms_field_count/info/find`, `ms_enum_*`, `ms_method_find` (override wygrywa, `owner` mówi, czy skrypt nadpisał
+      metodę), `vm_new_object` (inicjalizatory pól + konstruktor), `vm_call_args`, `ms_set_field` (typ sprawdzany jak
+      przypisanie w C#: `int` → `float`, struktura kopiowana, klasa pochodna do pola bazowej), `ms_get_field`,
+      `ms_vm_keep/kept/release` (obiekty trzymane przez hosta są korzeniami GC). Test `tests/unit/test_reflect.c`.
+
+**I2b – API dla programisty MiniSharp (później, nazwy jak w C#, podzbiór `System.Reflection`):**
 - [ ] `obj.GetType()`, `typeof(T)`, `Type.Name`, `Type.FullName`, `Type.BaseType`, `IsSubclassOf`, `Type.GetType("Nazwa")`.
 - [ ] `Activator.CreateInstance(type)` (konstruktor bez parametrów).
 - [ ] `type.GetFields()` / `GetField("x")` → `FieldInfo` (`Name`, `FieldType`, `IsPublic`, `GetValue`, `SetValue`);
       potem `GetProperties` / `GetMethods` w razie potrzeby.
-- [ ] To samo od strony C (dla sceny i inspektora): utwórz obiekt klasy po nazwie, ustaw/odczytaj pole po nazwie,
-      lista klas dziedziczących po danej, lista publicznych pól z typami.
-- [ ] Testy (`tests/`), błędy (nieznana klasa, zły typ w `SetValue`), rozdział dokumentacji „Refleksja”.
+- [ ] Testy, błędy (nieznana klasa, zły typ w `SetValue`), rozdział dokumentacji „Refleksja”.
 
 ### I3 – scena, hierarchia, prefaby, IsoBehaviour (bez edytora)
 - [ ] Model sceny w C (węzły, komponenty, pozycje światowe, przesunięcie IsoWorld przesuwa całą mapę) + testy PC.
@@ -180,8 +190,11 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 - **Gdzie trzymać `IsometricLib/`** (projekt Unity + zip Kenneya, ~2 MB): propozycja – poza repo (np.
   `E:\minsharpProject\IsometricLib`) albo w `.gitignore`; do repo tylko sprajty potrzebne testom.
 - (rozstrzygnięte 2026-11-14: podłoga to zwykłe sortowane obiekty, do sprawdzenia scalanie w prototypie.)
-- **Wspólne dane między scenami** (np. ekwipunek gracza przy przejściu na inną mapę): pliki `Zmienna`/`Sygnał` żyją
-  w projekcie, nie w scenie, więc przetrwają zmianę sceny – czy to wystarczy, czy potrzebny jest zapis stanu gry.
+- **Wspólne dane między scenami** (np. ekwipunek gracza przy przejściu na inną mapę). Propozycja (rozmowa
+  2026-11-14): obiekt **`Game`** należący do hosta, żyje przez całą grę – zna listę scen projektu
+  (`Game.LoadScene("piwnica")`: stara scena znika, nowa się wczytuje) i trzyma dane przetrwające zmianę mapy jako
+  nazwane `Zmienna`/`Sygnał` (podpinane w inspektorze, w teście podmieniane – żeby nie stał się singletonem „na
+  wszystko”). Do potwierdzenia: czy to wystarczy, czy potrzebny jest też zapis stanu gry na kartę.
 - **Format `.scene` / `.prefab`**: JSON (wspólny `json.c` z edytorem grafu, PLAN.md Etap 5) czy prosty tekst wierszowy.
   Propozycja: JSON.
 - **Edytor map a pętla gry**: czy „Graj” uruchamia scenę w tym samym procesie co edytor (szybko), czy jak zwykły program
@@ -190,7 +203,7 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 ## Następny krok
 
 Prototyp P1, w tej kolejności:
-1. I2 (refleksja) – niezależne od reszty, rdzeń języka, można zacząć od razu.
+1. [x] I2a (refleksja po stronie C) – zrobione 2026-11-14.
 2. I0: minimalne API modułów, potem I1 (przeniesienie `iso.c` z testem, scalanie).
 3. Scena z pliku + flagi + `IsoBehaviour` + `Sygnał` (część I3), test bez okna, stres test na 3DS.
 Potem P2 (mini edytor) i dalsze etapy.

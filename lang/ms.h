@@ -150,6 +150,62 @@ void ms_vm_set_deadline(VM* vm, long long deadline);   /* REPL: a loop still run
 void ms_vm_push_root(VM* vm, Value v);
 void ms_vm_pop_root(VM* vm);
 
+/* ---------- reflection (lang/reflect.c): classes, fields and methods of a compiled program ----------
+ * For layers above the language that build objects from data: a scene loader makes an object of the class named in
+ * the scene file and sets its fields by name, an inspector lists the classes derived from a base class and their
+ * public fields. Class, field and method numbers are valid for the program they came from. */
+enum { MS_CK_CLASS, MS_CK_STRUCT, MS_CK_ENUM, MS_CK_INTERFACE };
+enum { MS_ACC_NONE, MS_ACC_PUBLIC, MS_ACC_PRIVATE, MS_ACC_PROTECTED, MS_ACC_INTERNAL };   /* = AC_* of the parser */
+typedef struct {
+    const char* name;
+    int kind, cls;              /* T_*; class / struct / enum (T_CLASS, T_STRUCT, T_ENUM), else -1 */
+    int elemKind, elemCls;      /* T[] / T[,] / List<T>: the item type; Dictionary<K,V>: V */
+    int keyKind, keyCls;        /* Dictionary<K,V>: K */
+    int rank;                   /* 2 for T[,], else 0 */
+    int access;                 /* MS_ACC_*; MS_ACC_NONE = nothing written (private in C#) */
+    int readOnly;               /* 1 readonly, 2 const */
+    int owner;                  /* class that declares it (a base class for an inherited field) */
+} MsField;
+int ms_class_count(const Program* p);
+const char* ms_class_name(const Program* p, int cls);       /* "Drzwi"; NULL outside 0..count-1 */
+const char* ms_class_full_name(const Program* p, int cls);  /* "Gra.Drzwi" (namespace.name) */
+/* by full name, or by the name alone when one class has it; -1 = none or more than one */
+int ms_class_find(const Program* p, const char* name);
+int ms_class_kind(const Program* p, int cls);               /* MS_CK_*, -1 bad number */
+int ms_class_base(const Program* p, int cls);               /* base class or -1 */
+int ms_class_is(const Program* p, int cls, int other);      /* 1: an object of cls is also other (itself, a base, an interface) */
+int ms_class_is_abstract(const Program* p, int cls);        /* abstract class or interface */
+int ms_class_from_source(const Program* p, int cls);        /* added by a layer (ms_register_source), not written by the user */
+int ms_class_can_create(const Program* p, int cls);         /* vm_new_object works: a class (not abstract, static, enum,
+                                                               interface) or struct with a constructor without parameters */
+int ms_field_count(const Program* p, int cls);              /* instance fields, inherited ones first */
+int ms_field_info(const Program* p, int cls, int i, MsField* out);  /* 1 ok, 0 bad numbers */
+int ms_field_find(const Program* p, int cls, const char* name);     /* -1 none */
+int ms_enum_count(const Program* p, int cls);               /* members of an enum (0 for other classes) */
+const char* ms_enum_name(const Program* p, int cls, int i);
+int ms_enum_value(const Program* p, int cls, int i);
+/* Instance method 'name' with nargs parameters that an object of class cls runs (an override in a derived class
+ * wins); -1 = none or abstract. *owner (if not NULL) = class whose method it is: a layer can see whether a script
+ * overrides Update or just inherits the empty one of its base class. Overloads differ by the number of parameters. */
+int ms_method_find(const Program* p, int cls, const char* name, int nargs, int* owner);
+
+/* A new object of class cls, made as 'new Cls()' does (field initializers, the constructor without parameters).
+ * 1 = ok (*out = the object; keep it with ms_vm_keep if the host holds it across calls), 0 = error (ms_vm_error). */
+int vm_new_object(VM* vm, int cls, Value* out);
+/* Calls function func (e.g. from ms_method_find; an instance method takes the object as args[0]) with argc
+ * arguments; *result (if not NULL) = what it returns. Same result codes as vm_call. */
+int vm_call_args(VM* vm, int func, const Value* args, int argc, Value* result);
+int ms_class_of(Value v);                                   /* class of an object (instance or struct), else -1 */
+Value ms_get_field(Value obj, int i);                       /* field i (ms_field_info numbering); null if not there */
+/* obj.field i = v, with the type checked as an assignment in C# would (an int goes into a float field; a struct is
+ * copied). 1 = ok, 0 = wrong object, field or type (the reason in ms_vm_error). */
+int ms_set_field(VM* vm, Value obj, int i, Value v);
+/* Values the host holds between calls (objects of a scene): the GC does not free them until released.
+ * ms_vm_keep returns a handle (>= 0) or -1 (out of memory). */
+int ms_vm_keep(VM* vm, Value v);
+Value ms_vm_kept(VM* vm, int handle);
+void ms_vm_release(VM* vm, int handle);
+
 /* ---------- host hooks (the language knows no platform) ---------- */
 /* Milliseconds since some fixed moment, for WaitForSeconds. Default: the C clock(). */
 void ms_set_clock(int (*millis)(void));

@@ -220,3 +220,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: PLAN-ISO dopracowany: każda mapa to niezależna scena, obiekty z prefabu albo jednorazowe, flagi
   Statyczny/Ruchomy, Widoczny, Aktywny, lista skryptów w inspektorze. Tabela „co złe w Unity” (wg Hipple'a): typowane
   odwołania zamiast GetComponent, sygnały zamiast singletonów, stała kolejność Update, testy bez okna. Podłoga sortowana, w prototypie sprawdzimy scalanie kafelków.
+- 2026-11-14: Refleksja po stronie C (PLAN-ISO I2a): kompilator zostawia w programie opis klas – pola z typami,
+  konstruktor bez parametrów, metody – a host może z nazwy klasy zrobić obiekt, ustawić mu pola z kontrolą typu, zawołać
+  jego `Update` i trzymać go poza stosem bez obawy o GC. Na tym stanie loader sceny i inspektor; test `test_reflect`.

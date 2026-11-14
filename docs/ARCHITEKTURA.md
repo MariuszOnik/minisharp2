@@ -78,7 +78,16 @@ int        ms_entry(p, MS_ENTRY_MAIN) / ms_hook(p, "Update");        // indeks f
 int        ms_register(const NativeDef* table, int n);               // warstwy i moduły dokładają funkcje (jest: lang/register.c)
 int        ms_register_hook("Update");                               // pętla gry jest warstwy wyżej: rdzeń zna tylko Main
 int        ms_register_source(const char* cs);                       // klasy C# dokładane przez warstwę (np. Node grafu)
+// refleksja (lang/reflect.c) – dla warstw, które budują obiekty z danych (scena, inspektor):
+int        ms_class_find(p, "Gra.Drzwi"); ms_field_count / ms_field_info / ms_field_find; ms_method_find(p, cls, "Update", 0, &owner);
+int        vm_new_object(vm, cls, &obj); ms_set_field(vm, obj, i, v);  // tworzenie po nazwie, pola z kontrolą typu
+int        vm_call_args(vm, func, args, n, &wynik);                  // metoda obiektu (args[0] = obiekt)
+int        ms_vm_keep(vm, obj) / ms_vm_release(vm, h);               // obiekty trzymane przez hosta = korzenie GC
 ```
+
+Refleksja po stronie C (decyzja 2026-11-14, [PLAN-ISO.md](../PLAN-ISO.md) I2a): kompilator zapisuje w `ClassRT` pełną nazwę,
+rodzaj klasy, konstruktor bez parametrów, pola instancji wg slotów (typ, element, klucz, dostęp, `readonly`, klasa
+deklarująca) i własne metody. API dla programisty MiniSharp (`GetType`, `typeof`, `FieldInfo`) to osobny punkt (I2b).
 
 Rdzeń nie wie o pętli gry: `Update`/`Draw` rejestruje host albo aplikacja (`ms_register_hook`), on też decyduje, czy program
 bez `Main` i bez `Update` jest błędem. Kompilator dla każdej zarejestrowanej nazwy robi jedną funkcję wołającą `static void X()`
