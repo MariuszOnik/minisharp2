@@ -214,3 +214,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   jak opisuje rozdział 17; test `gfx_image` ma nowy hash.
 - 2026-11-14: Odbity obrazek przeskakiwał o swoją szerokość: biblioteka przesuwała go w prawo, a backendy i tak rysują
   ujemną szerokość od `x`. Teraz `x` to zawsze lewy brzeg, odbity czy nie (sprawdzone na pikselach z `--ppm`).
+- 2026-11-14: Osobny plan silnika izometrycznego (PLAN-ISO.md): moduł iso na bazie unity-iso-tools i starego `iso.c`,
+  scena z hierarchią, prefaby, skrypty `IsoBehaviour` z inspektorem, fizyka lite i edytor map w menu hosta. Do języka
+  dojdzie refleksja (podzbiór `System.Reflection`); modele 3D i pełna fizyka odłożone.

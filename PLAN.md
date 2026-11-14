@@ -338,7 +338,9 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       (`using Iso;` – klasy modułu widoczne dopiero wtedy). Build z modułami: osobny `.3dsx` albo wszystkie moduły
       w jednym. Na webie to samo (jeden `.wasm`). Wolna pamięć: kod modułu zajmuje miejsce zawsze, dane dopiero po `using`.
 - [ ] API modułów (folder, tabela funkcji, `api.cs`, testy, włączanie w buildzie).
-- [ ] `modules/iso`, `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).
+- [ ] `modules/iso` – **osobny plan: [PLAN-ISO.md](PLAN-ISO.md)** (silnik iso, scena z hierarchią, prefaby, skrypty
+      `IsoBehaviour`, fizyka lite, edytor map w menu hosta; refleksja w języku).
+- [ ] `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).
 - [ ] Przeniesienie części ToEE do modułu w `toee-models` (osobny build `MiniSharp-ToEE.3dsx`).
 
 ## Decyzje 2026-11-14 (grafika)
@@ -359,6 +361,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
   platformie, także bez klatek (benchmark w `Main` mierzy naprawdę; host daje zegar przez `lib_set_real_clock`, 3DS:
   `osGetTime`). Zegar gry (`ms_set_clock`: `WaitForSeconds`, `Time.Delta`, `Time.Frame`) liczy kroki `Update` po 1/60 s
   – dzięki temu gra działa tak samo na każdym urządzeniu, a testy na PC wychodzą powtarzalnie.
+
+## Decyzje 2026-11-14 (silnik iso)
+
+- Osobny plan [PLAN-ISO.md](PLAN-ISO.md): moduł `iso` + edytor map i narzędzie do prefabów jako kafelek w menu hosta,
+  hierarchia sceny, skrypty `IsoBehaviour` przypisywane w inspektorze.
+- **Refleksja w języku: dodajemy** (`GetType`, `typeof`, `Activator.CreateInstance`, `FieldInfo` – podzbiór C#; punkt I2).
+- Fizyka tylko „lite” (proste kolizje + prosta grawitacja); modele 3D na mapie iso i pełna fizyka – na razie nie.
 
 ## Do decyzji
 
