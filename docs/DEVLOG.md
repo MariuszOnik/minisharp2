@@ -175,3 +175,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   (X, Paste) i od razu uruchomić. Help nie zna edytora – dostaje tylko funkcję kopiowania od hosta.
 - 2026-11-14: `foreach` po słowniku: błąd tylko przy dodaniu nowego klucza – sprawdzone w źródłach .NET, że od
   .NET Core 3.0 `Remove`, `Clear` i nadpisanie wartości w trakcie pętli są dozwolone, więc u nas też.
+- 2026-11-14: Siatka znaków pod `Console` (`lib/textgrid.c`): sama logika, bez rysowania – platforma czyta komórki.
+  Pełny wiersz zawija się dopiero przy następnym znaku, więc 50 znaków i `\n` na ekranie 50×30 to jedna linia, nie dwie.
