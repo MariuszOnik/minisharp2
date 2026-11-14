@@ -1,0 +1,6 @@
+Yellow on DarkBlue
+read back: yes
+15 DarkGray
+White
+Gray Black
+Write still works

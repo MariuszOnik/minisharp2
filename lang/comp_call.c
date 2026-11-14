@@ -506,6 +506,7 @@ Type* compile_call(C* c, Expr* e) {
         fold_ns(c, f);
         if (f->a->k == E_NAME) {
             Res r = resolve_name(c, f->a->name, f->a->nlen);
+            builtin_fallback(c, &r, f->a->name, f->a->nlen, f->name, f->nlen);
             if (r.k == R_CLASS) {
                 if (c->classes[r.idx].isEnum) cfail(c, e->line, "enum '%.*s' has no methods", f->a->nlen, f->a->name);
                 CMethod* m = find_call(c, r.idx, f->name, f->nlen, e);

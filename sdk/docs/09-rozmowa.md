@@ -201,6 +201,51 @@ Na liście jest 3 rzeczy:
 `(linia = Console.ReadLine()) != ""` robi dwie rzeczy naraz: zapisuje odpowiedź w `linia` i sprawdza, czy nie jest
 pusta.
 
+## Kolory, czyszczenie ekranu i pozycja kursora
+
+Tekst może mieć kolor. `Console.ForegroundColor` to kolor liter, `Console.BackgroundColor` – tła; wartości bierzesz
+z `ConsoleColor` (16 kolorów: `Black`, `Blue`, `Green`, `Red`, `Yellow`, `White`, `Gray`, `DarkBlue`…).
+Kolor działa na wszystko, co wypiszesz **potem**. `Console.ResetColor()` wraca do szarego na czarnym.
+
+```cs
+class Program
+{
+    static void Main()
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Uwaga, smok!");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Mikstura leczy 5 życia.");
+        Console.ResetColor();
+        Console.WriteLine($"Teraz kolor to {Console.ForegroundColor}.");
+    }
+}
+```
+
+```wynik
+Uwaga, smok!
+Mikstura leczy 5 życia.
+Teraz kolor to Gray.
+```
+
+Na ekranie konsoli pierwsza linia jest czerwona, druga zielona (w tekście wyniku powyżej kolorów nie widać).
+
+Dwie metody przydają się w grach tekstowych, które rysują planszę:
+
+- `Console.Clear()` czyści cały ekran i ustawia kursor w lewym górnym rogu;
+- `Console.SetCursorPosition(x, y)` przenosi kursor do kolumny `x` i wiersza `y` (liczone od 0) – następny `Write`
+  pisze właśnie tam, np. gwiazdkę gracza w środku planszy.
+
+```text
+Console.Clear();
+Console.SetCursorPosition(10, 5);
+Console.Write("@");
+```
+
+> **Dla zaawansowanych:** gdy program pisze do pliku albo do zwykłego okna tekstowego (np. testy na PC bez
+> `--grid`), `Clear` i `SetCursorPosition` nic nie robią, a kolory są tylko zapamiętywane. Pozycja spoza ekranu to
+> błąd, jak wyjątek w C#. Na ekranie 3DS konsola ma 50 kolumn i 30 wierszy.
+
 ## W terminalu
 
 W terminalu `ReadLine` też działa: następna linia, którą wpiszesz, jest odpowiedzią, a nie nowym poleceniem.

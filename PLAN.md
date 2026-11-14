@@ -166,7 +166,13 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `tg_version` do odświeżania, paleta), test `test_textgrid`.
       Podłączone do `Console` (2026-11-14): `lib_console_set_grid` – `Write` trafia też do siatki, działają `Console.Clear()`,
       `SetCursorPosition(x, y)` (poza siatką błąd jak wyjątek C#), `ResetColor()`; bez siatki te trzy nic nie robią.
-      Host PC: `--grid 50x30` (na końcu wypisuje wiersze siatki); testy `console_grid`, `rt_setcursor`. (3) Umowa z platformą – kilka funkcji: narysuj siatkę, daj
+      Host PC: `--grid 50x30` (na końcu wypisuje wiersze siatki); testy `console_grid`, `rt_setcursor`.
+      Kolory (2026-11-14): `enum ConsoleColor` i właściwości `Console.ForegroundColor` / `BackgroundColor` napisane w
+      MiniSharpie w `lib/console.c` (`ms_register_source`) nad funkcjami `Console.__Get/SetForeground`; nowa zasada
+      kompilatora: **klasa ze źródła o nazwie klasy wbudowanej ją rozszerza** (`builtin_fallback`: czego klasa nie ma,
+      to bierze z tabel). Błąd w kodzie takiej klasy pokazuje linię programu, który ją wywołał (`Func.fromSource`).
+      Testy `console_colors`, `rt_consolecolor`; rozdział 9. Zostało: podpowiedzi po `Console.` nie pokazują jeszcze
+      `ForegroundColor` (codeindex nie czyta źródeł zarejestrowanych), `CursorVisible`, `Console.ReadKey`. (3) Umowa z platformą – kilka funkcji: narysuj siatkę, daj
       wpisaną linię, czy naciśnięto Stop (`platform/3ds`, `web`, `pc`). Host decyduje, gdzie siatka jest widoczna (cały ekran,
       okienko w menu/edytorze, tekst w testach). Kompilator i VM widzą `Console` jak każdą zarejestrowaną klasę.
 - [x] **Przenieść `repl.c` z `lang/` do `app/`** (zrobione 2026-11-13: `app/repl.c`, `app` w obu Makefile'ach) (decyzja użytkownika 2026-11-13): terminal to narzędzie na języku (jak edytor),

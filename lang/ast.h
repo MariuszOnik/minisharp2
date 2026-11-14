@@ -140,6 +140,7 @@ typedef struct {
     PropDecl* props; int nprops;
     const char *s0, *s1;                    /* source text from the first attribute or modifier to the closing '}' */
     int order;                              /* [Order(n)]: its Main/Update/Draw run before the ones of higher numbers (0 by default) */
+    int fromSource;                         /* added by ms_register_source, not written in the program */
 } ClassDecl;
 typedef struct { ClassDecl* classes; int nclasses; int nlambdas; } ProgramAST;
 

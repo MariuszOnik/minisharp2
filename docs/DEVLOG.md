@@ -179,3 +179,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   Pełny wiersz zawija się dopiero przy następnym znaku, więc 50 znaków i `\n` na ekranie 50×30 to jedna linia, nie dwie.
 - 2026-11-14: `Console.Clear`, `SetCursorPosition`, `ResetColor` na siatce znaków; host PC dostał `--grid 20x6`, który na
   końcu wypisuje zawartość siatki – tak testujemy programy rysujące tekstem (ramki, plansze roguelike'a).
+- 2026-11-14: Kolory konsoli jak w C# (`Console.ForegroundColor = ConsoleColor.Red`). Zamiast dokładać do kompilatora
+  „właściwości funkcji wbudowanych”, klasa ze źródła o nazwie wbudowanej klasy ją rozszerza – właściwości i enum są
+  napisane w MiniSharpie, a błąd w nich wskazuje linię użytkownika, nie linię ukrytego źródła.

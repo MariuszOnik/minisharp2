@@ -266,6 +266,7 @@ static LV lvalue(C* c, Expr* e) {
         fold_ns(c, e);
         if (e->a->k == E_NAME) {
             Res r = resolve_name(c, e->a->name, e->a->nlen);
+            builtin_fallback(c, &r, e->a->name, e->a->nlen, e->name, e->nlen);
             if (r.k == R_CLASS) {
                 if (c->classes[r.idx].isEnum) cfail(c, e->line, "enum members cannot be changed");
                 CField* f = use_field(c, find_field(c, r.idx, e->name, e->nlen), e->line);
@@ -526,6 +527,7 @@ Type* compile_expr(C* c, Expr* e) {
                     emit_op1(c, OP_LOAD, r.idx + (isKey ? 0 : 1));
                     return isKey ? r.type->key : r.type->elem;
                 }
+                builtin_fallback(c, &r, e->a->name, e->a->nlen, e->name, e->nlen);
                 if (r.k == R_CLASS) {
                     CClass* k = &c->classes[r.idx];
                     CField* f = use_field(c, find_field(c, r.idx, e->name, e->nlen), e->line);

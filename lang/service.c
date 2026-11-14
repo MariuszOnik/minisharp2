@@ -150,7 +150,7 @@ int svc_complete_line(const char* line, int cursor, int* start, char out[][SVC_W
         if (olen == 0) return 0;
         for (int i = 0; i < ms_nnatives; i++) {
             const NativeDef* d = &ms_natives[i];
-            if ((int)strlen(d->cls) == olen && !memcmp(d->cls, line + os, olen))
+            if ((int)strlen(d->cls) == olen && !memcmp(d->cls, line + os, olen) && strncmp(d->name, "__", 2))  /* "__": helpers */
                 n = offer(out, n, max, d->name, (int)strlen(d->name), pre, plen);
         }
         for (int i = 0; i < ms_nconsts; i++) {

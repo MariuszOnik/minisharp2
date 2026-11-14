@@ -62,6 +62,7 @@ typedef struct {
     int32_t* code; int* lines; int len, cap;
     int nparams, nlocals;
     uint8_t isIter;                     /* calling it makes a coroutine */
+    uint8_t fromSource;                 /* from a registered source (ms_register_source): errors show the caller's line */
     char name[64];
 } Func;
 

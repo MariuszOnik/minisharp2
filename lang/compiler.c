@@ -11,6 +11,7 @@
 static void begin_func(C* c, int func, int cls, const char* mname, int mlen, int isStatic) {
     c->fn = &c->P->funcs[func];
     snprintf(c->fn->name, sizeof c->fn->name, "%.*s.%.*s", c->classes[cls].nlen, c->classes[cls].name, mlen, mname);
+    c->fn->fromSource = (uint8_t)c->classes[cls].decl->fromSource;
     c->cur = cls; c->scope = cls; c->curStatic = isStatic;
     c->nlocals = 0; c->nextSlot = isStatic ? 0 : 1;
     c->fdepth = 0; c->lam = NULL; c->caps.n = 0;
@@ -804,6 +805,7 @@ static void add_sources(C* c, ProgramAST* ast) {
             int cap = ast->nclasses;
             ast->classes = (ClassDecl*)arena_grow(&c->A, ast->classes, ast->nclasses, &cap, sizeof(ClassDecl));
             ast->classes[ast->nclasses++] = *x;
+            ast->classes[ast->nclasses - 1].fromSource = 1;
         }
     }
 }

@@ -368,6 +368,13 @@ int find_class(C* c, const char* n0, int l0) {
     }
     return found;
 }
+/* A registered source class with the name of a built-in class extends it (lib/console.c: Console.ForegroundColor
+ * written in MiniSharp next to the C functions WriteLine...): a member the class does not have is the built-in one. */
+void builtin_fallback(C* c, Res* r, const char* cls, int clen, const char* m, int ml) {
+    if (r->k != R_CLASS || !is_builtin_class(cls, clen)) return;
+    if (find_field(c, r->idx, m, ml) || find_prop(c, r->idx, m, ml) || find_method(c, r->idx, m, ml)) return;
+    r->k = R_BUILTIN;
+}
 /* for 'unknown class X' errors: " (there is Lib.X: add 'using Lib;')" or "" */
 const char* class_hint(C* c, const char* n, int l) {
     static char buf[160];

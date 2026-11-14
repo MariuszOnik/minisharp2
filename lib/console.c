@@ -33,9 +33,30 @@ static Value n_write(VM* vm, Value* a) { print_value(vm, a[0]); return vnone(); 
  * is the result, given by vm_resume_input */
 static Value n_readline(VM* vm, Value* a) { (void)a; ms_vm_wait_input(vm); return vnone(); }
 
+/* the colours, without a grid remembered here (so ForegroundColor reads back what was set) */
+static int fgNoGrid = TG_GRAY, bgNoGrid = TG_BLACK;
+static Value vint(int i) { Value v; v.t = V_INT; v.as.i = i; return v; }
+static Value n_getfg(VM* vm, Value* a) { (void)vm; (void)a; return vint(grid ? tg_fg(grid) : fgNoGrid); }
+static Value n_getbg(VM* vm, Value* a) { (void)vm; (void)a; return vint(grid ? tg_bg(grid) : bgNoGrid); }
+static Value n_setfg(VM* vm, Value* a) {
+    if (a[0].as.i < 0 || a[0].as.i > 15) { ms_vm_fail(vm, "ForegroundColor: %d is not a ConsoleColor (0..15)", a[0].as.i); return vnone(); }
+    if (grid) tg_set_colors(grid, a[0].as.i, -1); else fgNoGrid = a[0].as.i;
+    return vnone();
+}
+static Value n_setbg(VM* vm, Value* a) {
+    if (a[0].as.i < 0 || a[0].as.i > 15) { ms_vm_fail(vm, "BackgroundColor: %d is not a ConsoleColor (0..15)", a[0].as.i); return vnone(); }
+    if (grid) tg_set_colors(grid, -1, a[0].as.i); else bgNoGrid = a[0].as.i;
+    return vnone();
+}
+
 /* without a grid (output to a file or stdout) these do nothing */
 static Value n_clear(VM* vm, Value* a) { (void)vm; (void)a; if (grid) tg_clear(grid); return vnone(); }
-static Value n_resetcolor(VM* vm, Value* a) { (void)vm; (void)a; if (grid) tg_reset_colors(grid); return vnone(); }
+static Value n_resetcolor(VM* vm, Value* a) {
+    (void)vm; (void)a;
+    if (grid) tg_reset_colors(grid);
+    fgNoGrid = TG_GRAY; bgNoGrid = TG_BLACK;
+    return vnone();
+}
 static Value n_setcursor(VM* vm, Value* a) {
     if (!grid) return vnone();
     if (!tg_set_cursor(grid, a[0].as.i, a[1].as.i))
@@ -52,8 +73,33 @@ static const NativeDef console[] = {
     { "Console", "Clear", 0, { 0 }, T_VOID, n_clear },
     { "Console", "SetCursorPosition", 2, { T_INT, T_INT }, T_VOID, n_setcursor },
     { "Console", "ResetColor", 0, { 0 }, T_VOID, n_resetcolor },
+    /* for the properties below (not shown in hints: names starting with "__") */
+    { "Console", "__GetForeground", 0, { 0 }, T_INT, n_getfg },
+    { "Console", "__SetForeground", 1, { T_INT }, T_VOID, n_setfg },
+    { "Console", "__GetBackground", 0, { 0 }, T_INT, n_getbg },
+    { "Console", "__SetBackground", 1, { T_INT }, T_VOID, n_setbg },
 };
-void lib_register_console(void) { MS_REGISTER(console); }
+
+/* The parts of Console that are easier in MiniSharp than in the C tables: the ConsoleColor enum and the colour
+ * properties. A source class named like a built-in class extends it (builtin_fallback in lang/comp_types.c). */
+static const char CONSOLE_SRC[] =
+    "enum ConsoleColor { Black, DarkBlue, DarkGreen, DarkCyan, DarkRed, DarkMagenta, DarkYellow, Gray,\n"
+    "    DarkGray, Blue, Green, Cyan, Red, Magenta, Yellow, White }\n"
+    "static class Console\n"
+    "{\n"
+    "    public static ConsoleColor ForegroundColor\n"
+    "    {\n"
+    "        get { return (ConsoleColor)Console.__GetForeground(); }\n"
+    "        set { Console.__SetForeground((int)value); }\n"
+    "    }\n"
+    "    public static ConsoleColor BackgroundColor\n"
+    "    {\n"
+    "        get { return (ConsoleColor)Console.__GetBackground(); }\n"
+    "        set { Console.__SetBackground((int)value); }\n"
+    "    }\n"
+    "}\n";
+
+void lib_register_console(void) { MS_REGISTER(console); ms_register_source(CONSOLE_SRC); }
 
 void lib_register_all(void) {
     lib_register_console();

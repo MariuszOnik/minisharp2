@@ -138,6 +138,7 @@ static void compile_lambda(C* c, Expr* e, Type* ft) {
     c->lam = &lc; c->fdepth++;
     c->fn = &P->funcs[fi];
     snprintf(c->fn->name, sizeof c->fn->name, "%.50s.lambda", sfn->name);
+    c->fn->fromSource = sfn->fromSource;
     c->fn->nparams = ft->np + 1; c->fn->nlocals = 1;
     c->nextSlot = 1; c->loop = NULL; c->lastOp = c->prevOp = c->prevOp2 = -1; c->lastLabel = -1;
     c->isCtor = 0; c->isIter = 0; c->retType = ft->elem;

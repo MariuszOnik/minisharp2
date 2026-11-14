@@ -265,6 +265,12 @@ void vm_free(VM* vm) {
 }
 
 static int runtime_error(VM* vm, Frame* fr, int ip, const char* msg) {
+    /* inside a class of a registered source (Console.ForegroundColor...): the line of the program that called it */
+    for (int i = (int)(fr - vm->frames); fr->f->fromSource && i > 0; ) {
+        Frame* below = &vm->frames[--i];
+        if (!below->f) break;
+        fr = below; ip = below->ip;
+    }
     int line = (ip > 0 && ip <= fr->f->len) ? fr->f->lines[ip - 1] : 0;
     snprintf(vm->err, sizeof vm->err, "line %d (%.63s): %.170s", line, fr->f->name, msg);
     return 0;

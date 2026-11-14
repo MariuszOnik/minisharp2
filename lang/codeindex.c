@@ -613,7 +613,8 @@ void ci_member_names(const CodeIndex* ci, const char* type, const char* viewer, 
             if (!strcmp(ci->m[i].cls, from[f]) && visible(ci, &ci->m[i], viewer) && !has_word(out, ci->m[i].name)) ADD(ci->m[i].name);   /* an override once */
     const char* cls = !strcmp(type, "string") ? ".string" : type;
     for (int i = 0; i < ms_nnatives; i++)
-        if (!strcmp(ms_natives[i].cls, cls) && !has_word(out, ms_natives[i].name)) ADD(ms_natives[i].name);
+        if (!strcmp(ms_natives[i].cls, cls) && strncmp(ms_natives[i].name, "__", 2) && !has_word(out, ms_natives[i].name))
+            ADD(ms_natives[i].name);                                   /* "__X": helpers of a source class, not shown */
     for (int i = 0; i < ms_nconsts; i++) if (!strcmp(ms_consts[i].cls, type)) ADD(ms_consts[i].name);
 #undef ADD
 }

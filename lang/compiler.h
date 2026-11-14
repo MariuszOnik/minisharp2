@@ -142,6 +142,7 @@ int class_in(C* c, int i, const char* ns, int nsl, const char* n, int l);
 int find_class(C* c, const char* n0, int l0);
 const char* class_hint(C* c, const char* n, int l);
 int is_builtin_class(const char* n, int l);
+void builtin_fallback(C* c, Res* r, const char* cls, int clen, const char* m, int ml);
 int find_local(C* c, const char* n, int l);
 void check_writable_local(C* c, const char* n, int l, int line);   /* error for the variable of a foreach */
 Res resolve_name(C* c, const char* n, int l);
