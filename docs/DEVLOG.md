@@ -152,3 +152,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   na listach po licznik pamiętający zmienną i zdarzenia z `+=`/`-=`. Wszystko działało bez zmian w języku.
 - 2026-11-14: Rozdział 14 „enum i struct” – 7 przykładów; najważniejsze porównanie: struktura kopiowana przy
   przypisaniu obok klasy dzielonej przez dwie zmienne.
+- 2026-11-14: Lista plików ma czwarty przycisk „Delete” dla rysika – działa jak SELECT: pierwsze dotknięcie pyta
+  („Delete?” na czerwono), drugie usuwa.

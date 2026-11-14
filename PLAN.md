@@ -305,7 +305,7 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    pozostałe pliki projektu i folderów z `uses.txt` przez `project_load`, edytowany plik to tekst 0 usługi, reszta tylko
    do odczytu; 3DS woła to po `ed_open`, gdy plik leży w projekcie; test w `test_editor`). Zostało: karty kilku plików
    projektu (dziś inne pliki są brane z karty w chwili otwarcia), ~~usuwanie pliku~~ (zrobione 2026-11-14: SELECT dwa razy
-   na liście; folder projektu tylko pusty; test w `test_files`; brak jeszcze przycisku dotykowego),
+   na liście; folder projektu tylko pusty; test w `test_files`; też narzędzie „Delete” na dotyk, dwa dotknięcia),
    ~~zaznaczanie i schowek~~ (zrobione 2026-11-14: X włącza tryb zaznaczania – D-pad i L + D-pad powiększają
    zaznaczenie, cztery narzędzia to wtedy Copy / Cut / Paste / All; jeden schowek dla wszystkich plików; test w
    `test_editor`; schowek systemowy dojdzie w wersji web), wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), Help.

@@ -190,6 +190,16 @@ int main(void) {
     frame(fs, UI_BTN_B);
     frame(fs, UI_BTN_SELECT); frame(fs, UI_BTN_SELECT);
     check(find(fs, "Nowy/") < 0, "an empty project folder is deleted");
+    /* the Delete tool: the same two steps by touch */
+    touch_file(ROOT "/Usun.cs", "class U {}\n");
+    files_scan(fs);
+    while (strcmp(files_name(fs, files_selected(fs)), "Usun.cs")) frame(fs, UI_BTN_DOWN);
+    tap(fs, 3 * 80 + 10, 5);
+    drawn[0] = 0;
+    files_draw(fs);
+    check(read_all(ROOT "/Usun.cs") && strstr(drawn, "Delete?|"), "the first tap on Delete asks");
+    tap(fs, 3 * 80 + 10, 5);
+    check(!read_all(ROOT "/Usun.cs"), "the second tap deletes");
 
     check(frame(fs, UI_BTN_START) == FILES_LEAVE, "START leaves");
     files_free(fs);

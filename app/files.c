@@ -310,14 +310,15 @@ static void keep_visible(Files* fs, const Layout* L) {
     if (fs->top < 0) fs->top = 0;
 }
 
-/* the tool buttons at the top of the list: Open, New file, New project / Back */
-enum { TOOL_OPEN, TOOL_NEWFILE, TOOL_THIRD, NTOOLS };
+/* the tool buttons at the top of the list: Open, New file, New project / Back, Delete (tap twice, like SELECT) */
+enum { TOOL_OPEN, TOOL_NEWFILE, TOOL_THIRD, TOOL_DELETE, NTOOLS };
 
 static int tool(Files* fs, int t) {
     switch (t) {
     case TOOL_OPEN: return open_selected(fs);
     case TOOL_NEWFILE: start_naming(fs, NAMING_FILE); break;
     case TOOL_THIRD: if (in_root(fs)) start_naming(fs, NAMING_PROJECT); else go_up(fs); break;
+    case TOOL_DELETE: delete_selected(fs); break;
     }
     return 0;
 }
@@ -360,7 +361,11 @@ int files_update(Files* fs, const UiInput* in) {
     if (in->down & UI_BTN_Y) start_naming(fs, NAMING_PROJECT);
     if (in->touchDown && !open) {
         float px = (float)in->x, py = (float)in->y - L.listY;
-        if (py >= 0 && py < TOOLS_H) open = tool(fs, (int)(px / (L.listW / NTOOLS)));
+        if (py >= 0 && py < TOOLS_H) {
+            int t = (int)(px / (L.listW / NTOOLS));
+            if (t != TOOL_DELETE && fs->armed[0]) { fs->armed[0] = 0; set_status(fs, 0x8090A0, ""); }
+            open = tool(fs, t);
+        }
         else if (py >= TOOLS_H + 2) {
             int i = fs->top + (int)((py - TOOLS_H - 2) / ROW_H);
             if (i < fs->n) {
@@ -431,6 +436,7 @@ static void draw_list(Files* fs, const Layout* L) {
     button(0, y, bw, TOOLS_H, "Open", 0x2F6B3A);
     button(bw, y, bw, TOOLS_H, "New file", 0x34405A);
     button(2 * bw, y, bw, TOOLS_H, in_root(fs) ? "New project" : "Back", 0x34405A);
+    button(3 * bw, y, bw, TOOLS_H, fs->armed[0] ? "Delete?" : "Delete", fs->armed[0] ? 0x8A3030 : 0x4A3434);
     int vis = visible_rows(L);
     if (!fs->n) ui_text(8, y + TOOLS_H + 8, in_root(fs) ? "no programs yet: X = new file" : "no files", 12, 0x8090A0);
     for (int r = 0; r < vis && fs->top + r < fs->n; r++) {
