@@ -180,6 +180,14 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `sdmc:/minisharp/`, gdy takiego folderu jeszcze nie ma (zmiany użytkownika nie są nadpisywane); `make test`
       sprawdza, że się kompilują.
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
+- [ ] **API dźwięku `Audio`** (prośba użytkownika 2026-11-14; dziś w nowym rdzeniu brak dźwięku): logika w `lib/audio.c`
+      niezależna od platformy (wczytanie WAV, a potem OGG przez `stb_vorbis`; mikser programowy: kilka kanałów, głośność,
+      panorama, zapętlenie), platforma daje tylko `AudioBackend` (oddaj bufor próbek: 3DS `ndsp`, web WebAudio, PC –
+      zapis do pliku / suma kontrolna w testach, jak `--hash` dla obrazu). API: `Audio.Load("skok.wav")` → numer,
+      `Audio.Play(snd)`, `Audio.Play(snd, głośność, pan)`, `Audio.Loop(snd)`, `Audio.Stop(snd)`, `Audio.StopAll()`,
+      `Audio.Volume(0..1)`, muzyka: `Audio.Music("muzyka.ogg")` / `Audio.StopMusic()` (strumieniowo, nie cała w pamięci).
+      Dźwięki zwalniane przy wyjściu z programu (jak obrazki). Wzór: stary `source3ds/media_3ds.c` (`plat_sound_*`) –
+      przegląd przed przeniesieniem. Testy na PC, rozdział „Dźwięk” z przykładem w projekcie Monety (`moneta.wav`).
 - [ ] **Podział `Console` na warstwy** (decyzja użytkownika 2026-11-13): `Console` to biblioteka, nie część języka ani platformy.
       (1) API jak w C# (`Write`, `WriteLine`, `ReadLine`, `Clear`, kolory, `SetCursorPosition`) w `lib/`, w C; wygodne dodatki
       (przeciążenia, formatowanie) mogą być w MiniSharpie przez `ms_register_source`. (2) Logika: siatka znaków, kursor, kolory,
@@ -285,6 +293,14 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
         do odczytu**: opis z `sdk/api/*.cs` / `api.cs` modułu, a gdy go brak – wygenerowany z zarejestrowanych tabel
         (`ms_native_at`: nazwy, parametry, typ wyniku). Ten sam podgląd posłuży Help i wyszukiwarce węzłów w grafie;
       - przestrzeń nazw w `using` (np. `using X;`) – lista jej klas do wyboru. Działa też na nazwie metody (`Console.Write|`).
+      - **zakładka „API”** (prośba użytkownika 2026-11-14): podgląd API klasy otwiera się jako osobna karta w pasku kart
+        edytora (obok plików projektu, oznaczona np. `[API] Console`, tylko do odczytu, z kolorowaniem). W niej: lista pól,
+        właściwości, metod (z przeciążeniami, typami i krótkim opisem), dotknięcie metody wstawia jej wywołanie w miejscu
+        kursora w poprzedniej karcie. Kilka zakładek API naraz; zamykane jak karty plików.
+- [ ] **Find w edytorze** (prośba użytkownika 2026-11-14): narzędzie „Find” – pole tekstu na klawiaturze ekranowej, skok
+      do następnego / poprzedniego wystąpienia (przyciski i np. L + R), podświetlenie wszystkich trafień na ekranie, licznik
+      „3 z 12”, opcja wielkość liter; potem „Replace” / „Replace all” (jedna operacja cofania). Szukanie po wszystkich
+      plikach projektu (lista trafień: plik, linia → otwiera kartę). Logika w `app/textbuf.c`/`editor.c`, test na PC.
 
 ### Etap 5 – edytor grafu: Bolt jak w Unity (B)
 - [ ] Przegląd Bolta z Unity jako wzorca (bez kopiowania kodu i grafik – `docs/graphs-notes.md` w starym repo): co z niego
