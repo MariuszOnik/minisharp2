@@ -23,6 +23,12 @@ static const uint32_t KIND_RGB[] = { 0xD4D4D4, 0x569CD6, 0x4EC9B0, 0xCE9178, 0xB
 
 enum { TOOL_SAVE, TOOL_RUN, TOOL_UNDO, TOOL_REDO, NTOOLS };
 static const char* TOOL_NAMES[NTOOLS] = { "Save", "Run", "Undo", "Redo" };
+/* in the selection mode (X) the same four buttons are the clipboard */
+enum { SEL_COPY, SEL_CUT, SEL_PASTE, SEL_ALL };
+static const char* SEL_NAMES[NTOOLS] = { "Copy", "Cut", "Paste", "All" };
+
+/* one clipboard for all files the editor opens (copy in one file, paste in another) */
+static char* clipboard;
 
 struct Editor {
     EditorHost host;
@@ -44,6 +50,7 @@ struct Editor {
     uint32_t ms;
     uint32_t heldSince[4], lastRepeat[4];   /* Up, Down, Left, Right, then B */
     uint32_t bSince, bLast;
+    int selMode;                        /* X: the D-pad grows the selection, the tools are Copy / Cut / Paste / All */
 };
 
 /* ---------- layout ---------- */
@@ -131,7 +138,7 @@ static char* read_file(const char* path, int* missing) {
 
 int ed_open(Editor* ed, const char* path) {
     snprintf(ed->path, sizeof ed->path, "%s", path);
-    ed->top = 0; ed->scrollX = 0; ed->errLine = 0; ed->leaveArmed = 0; ed->svcLen = -1;
+    ed->top = 0; ed->scrollX = 0; ed->errLine = 0; ed->leaveArmed = 0; ed->svcLen = -1; ed->selMode = 0;
     free_others(ed);
     int missing;
     char* s = read_file(path, &missing);
@@ -237,7 +244,42 @@ static void run(Editor* ed) {
     if (ed->errLine > 0) tb_set_cursor(ed->tb, tb_line_start(ed->tb, ed->errLine - 1), 0);
 }
 
+/* ---------- selection and clipboard ---------- */
+static void set_sel_mode(Editor* ed, int on) {
+    ed->selMode = on;
+    if (!on && tb_has_selection(ed->tb)) tb_set_cursor(ed->tb, tb_cursor(ed->tb), 0);
+    set_status(ed, 0x8090A0, on ? "select: D-pad, then Copy / Cut / Paste (X: done)" : base_name(ed->path));
+}
+
+static void sel_tool(Editor* ed, int t) {
+    switch (t) {
+    case SEL_COPY: case SEL_CUT: {
+        if (!tb_has_selection(ed->tb)) { set_status(ed, 0xF0D080, "nothing selected: move with the D-pad first"); return; }
+        char* s = tb_copy(ed->tb);
+        if (!s) return;
+        free(clipboard);
+        clipboard = s;
+        if (t == SEL_CUT) { tb_backspace(ed->tb); edited(ed); }
+        set_sel_mode(ed, 0);
+        set_status(ed, 0x80E080, t == SEL_CUT ? "cut" : "copied");
+        break;
+    }
+    case SEL_PASTE:
+        if (!clipboard || !clipboard[0]) { set_status(ed, 0xF0D080, "the clipboard is empty"); return; }
+        tb_insert(ed->tb, clipboard);
+        edited(ed);
+        set_sel_mode(ed, 0);
+        set_status(ed, 0x80E080, "pasted");
+        break;
+    case SEL_ALL: tb_select_all(ed->tb); break;
+    }
+}
+
+const char* ed_clipboard(void) { return clipboard ? clipboard : ""; }
+int ed_sel_mode(const Editor* ed) { return ed->selMode; }
+
 static void tool(Editor* ed, int t) {
+    if (ed->selMode) { sel_tool(ed, t); return; }
     switch (t) {
     case TOOL_SAVE: ed_save(ed); break;
     case TOOL_RUN: run(ed); break;
@@ -292,15 +334,17 @@ int ed_update(Editor* ed, const UiInput* in) {
     static const uint32_t DIRS[4] = { UI_BTN_UP, UI_BTN_DOWN, UI_BTN_LEFT, UI_BTN_RIGHT };
     for (int i = 0; i < 4; i++) {
         if (!repeat(&ed->heldSince[i], &ed->lastRepeat[i], in, DIRS[i])) continue;
+        int grow = ed->selMode;                         /* in the selection mode every move grows the selection */
         if (sel) {
-            if (i == 0) tb_move_lines(ed->tb, -(vis - 1), 0);
-            if (i == 1) tb_move_lines(ed->tb, vis - 1, 0);
-            if (i == 2) tb_move(ed->tb, TB_HOME, 0);
-            if (i == 3) tb_move(ed->tb, TB_END, 0);
-        } else tb_move(ed->tb, i == 0 ? TB_UP : i == 1 ? TB_DOWN : i == 2 ? TB_LEFT : TB_RIGHT, 0);
+            if (i == 0) tb_move_lines(ed->tb, -(vis - 1), grow);
+            if (i == 1) tb_move_lines(ed->tb, vis - 1, grow);
+            if (i == 2) tb_move(ed->tb, TB_HOME, grow);
+            if (i == 3) tb_move(ed->tb, TB_END, grow);
+        } else tb_move(ed->tb, i == 0 ? TB_UP : i == 1 ? TB_DOWN : i == 2 ? TB_LEFT : TB_RIGHT, grow);
     }
     if (repeat(&ed->bSince, &ed->bLast, in, UI_BTN_B)) { tb_backspace(ed->tb); edited(ed); }
-    if (in->down & UI_BTN_Y) tool(ed, TOOL_UNDO);
+    if (in->down & UI_BTN_Y) { if (tb_undo(ed->tb)) edited(ed); }
+    if (in->down & UI_BTN_X) set_sel_mode(ed, !ed->selMode);
     if ((in->down & UI_BTN_R) && ed->nsug) { complete(ed, 0); edited(ed); }
     if (in->down & UI_BTN_SELECT) ed_save(ed);
     if (in->down & UI_BTN_A) run(ed);
@@ -374,10 +418,11 @@ static void draw_panel(Editor* ed, const Layout* L) {
     ui_screen(L->panelScreen);
     float y = L->panelY, bw = L->panelW / NTOOLS;
     for (int i = 0; i < NTOOLS; i++) {
-        uint32_t bg = i == TOOL_RUN ? 0x2F6B3A : 0x34405A;
+        const char* name = ed->selMode ? SEL_NAMES[i] : TOOL_NAMES[i];
+        uint32_t bg = ed->selMode ? 0x5A4A20 : i == TOOL_RUN ? 0x2F6B3A : 0x34405A;
         ui_rect(i * bw + 1, y + 1, bw - 2, 20, bg);
-        float tw = ui_text_width(TOOL_NAMES[i], 12);
-        ui_text(i * bw + (bw - tw) / 2, y + 4, TOOL_NAMES[i], 12, 0xFFFFFF);
+        float tw = ui_text_width(name, 12);
+        ui_text(i * bw + (bw - tw) / 2, y + 4, name, 12, 0xFFFFFF);
     }
     /* the signature of the call at the cursor, otherwise the status */
     ui_clip(0, (int)(y + 23), (int)L->panelW, 22);

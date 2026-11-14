@@ -145,3 +145,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Rozdział 12 „List i Dictionary” (11 przykładów) i przy okazji `string.Join`: kompilator zamienia go na
   pętlę z ukrytymi zmiennymi, więc każdy element zamienia się w tekst tak jak w `"" + x` (także przez `ToString`
   obiektu), bez nowej instrukcji VM. Wyszło, że usuwanie z listy w `foreach` nie daje błędu jak w C# – w „Braki”.
+- 2026-11-14: Zaznaczanie i schowek w edytorze: X przełącza tryb zaznaczania, w którym D-pad zaznacza, a pasek
+  narzędzi zmienia się w Copy / Cut / Paste / All. Schowek jest wspólny dla plików, więc można przenieść kod między
+  plikami projektu.

@@ -180,6 +180,51 @@ int main(void) {
     ed_free(ed);
     remove(PATH);
 
+    /* selection mode (X): D-pad selects, the tools are Copy / Cut / Paste / All; the clipboard is shared */
+    Editor* es = ed_new(&host);
+    ed_open(es, "build/tmp/test_sel.cs");
+    tb_set_text(ed_buf(es), "abc def\nxyz");
+    frame(es, UI_BTN_X);
+    check(ed_sel_mode(es), "X turns the selection mode on");
+    drawn[0] = 0;
+    ed_draw(es);
+    check(strstr(drawn, "|Copy|") && strstr(drawn, "|Paste|") && !strstr(drawn, "|Run|"), "the tools become Copy / Cut / Paste / All");
+    frame(es, UI_BTN_RIGHT); frame(es, UI_BTN_RIGHT); frame(es, UI_BTN_RIGHT);
+    check(tb_has_selection(ed_buf(es)), "the D-pad grows the selection");
+    UiInput ti = { 0 };
+    ti.touching = ti.touchDown = 1; ti.x = 0 * 80 + 10; ti.y = 5; ti.ms = now += 20;     /* Copy */
+    ed_update(es, &ti);
+    check(!strcmp(ed_clipboard(), "abc") && !ed_sel_mode(es) && !tb_has_selection(ed_buf(es)), "Copy: the clipboard, the mode ends");
+    tb_set_cursor(ed_buf(es), tb_len(ed_buf(es)), 0);
+    frame(es, UI_BTN_X);
+    ti.x = 2 * 80 + 10; ti.ms = now += 20;                                                /* Paste */
+    ed_update(es, &ti);
+    check(!strcmp(tb_text(ed_buf(es)), "abc def\nxyzabc"), "Paste at the cursor");
+    tb_set_cursor(ed_buf(es), 4, 0);
+    frame(es, UI_BTN_X);
+    frame(es, UI_BTN_RIGHT); frame(es, UI_BTN_RIGHT); frame(es, UI_BTN_RIGHT);
+    ti.x = 1 * 80 + 10; ti.ms = now += 20;                                                /* Cut */
+    ed_update(es, &ti);
+    check(!strcmp(tb_text(ed_buf(es)), "abc \nxyzabc") && !strcmp(ed_clipboard(), "def"), "Cut removes and copies");
+    frame(es, UI_BTN_Y);
+    check(!strcmp(tb_text(ed_buf(es)), "abc def\nxyzabc"), "Y undoes the cut");
+    frame(es, UI_BTN_X);
+    ti.x = 3 * 80 + 10; ti.ms = now += 20;                                                /* All */
+    ed_update(es, &ti);
+    int fa, fb;
+    tb_selection(ed_buf(es), &fa, &fb);
+    check(fa == 0 && fb == tb_len(ed_buf(es)) && ed_sel_mode(es), "All selects everything");
+    frame(es, UI_BTN_X);
+    check(!ed_sel_mode(es) && !tb_has_selection(ed_buf(es)), "X again: done, the selection is dropped");
+    Editor* es2 = ed_new(&host);
+    ed_open(es2, "build/tmp/test_sel2.cs");
+    frame(es2, UI_BTN_X);
+    ti.x = 2 * 80 + 10; ti.ms = now += 20;
+    ed_update(es2, &ti);
+    check(!strcmp(tb_text(ed_buf(es2)), "def"), "the clipboard is shared between files");
+    ed_free(es2);
+    ed_free(es);
+
     /* a project: suggestions and signatures know the classes of its other files */
     make_dir("build/tmp/edproj");
     write_file("build/tmp/edproj/Ship.cs", "class Ship\n{\n    public int hp;\n    public void Hit(int dmg, bool crit) { hp -= dmg; }\n}\n");

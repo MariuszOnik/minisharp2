@@ -3,7 +3,8 @@
  * and the touch keyboard on the touch screen (or all on one screen). Draws and reads input only through app/ui.h;
  * tested on the PC (tests/unit/test_editor.c). Running a program is the host's job (EditorHost.run).
  * Buttons: D-pad cursor, L + D-pad line start / end / page, B delete, Y undo, R first suggestion,
- * A run, SELECT save, START leave (twice when there are unsaved changes). */
+ * A run, SELECT save, START leave (twice when there are unsaved changes), X selection mode: the D-pad grows the
+ * selection and the four tools become Copy / Cut / Paste / All (X again: done). */
 #ifndef MS_EDITOR_H
 #define MS_EDITOR_H
 
@@ -36,5 +37,7 @@ int ed_top_line(const Editor* ed);
 int ed_error_line(const Editor* ed);            /* 1-based line of the last error, 0 = none */
 void ed_key(Editor* ed, const char* k);         /* text from the keyboard, KBD_BACKSPACE or KBD_ENTER */
 int ed_visible_lines(void);
+int ed_sel_mode(const Editor* ed);              /* 1 = the selection mode (X) is on */
+const char* ed_clipboard(void);                 /* the editor's clipboard, shared by all files ("" = empty) */
 
 #endif
