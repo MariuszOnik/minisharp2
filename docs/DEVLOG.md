@@ -207,3 +207,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: `Time.Millis()` to teraz prawdziwy czas (zegar urządzenia), także bez klatek – benchmark w `Main` na 3DS
   pokazywał same zera, bo liczył zegar gry. Aplikacja na 3DS ma własny folder `sdmc:/minisharp2` (stary przemianowany
   na `oldMinisharp`), a każde uruchomienie pisze osobny log `logs/<program>_<czas>.txt` z pamięcią przed / po.
+- 2026-11-14: Graficzne menu (`app/menu.c`): kafelki na dotyk, ostatnie pliki z edytora, opis i linia stanu na górnym
+  ekranie. Host 3DS nie przełącza już ekranów między konsolą tekstową a citro2d (poza testami X).

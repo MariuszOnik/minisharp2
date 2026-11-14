@@ -1,16 +1,17 @@
-/* MiniSharp - minimal 3DS host (stage 2 step 0): a text console from libctru, no graphics yet.
- *   A      run sdmc:/minisharp2/main.cs (Main, then Update/Draw every frame until START)
- *   X      run the test files from sdmc:/minisharp2/tests/ (the .cs files there and in errors/, the folders in projects/)
- *          and write each result to sdmc:/minisharp2/tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
- *          tools/3ds_tests.sh compares them with tests/expected/ on the PC
- *   B      programs and projects on the card (app/files.c), then the code editor (app/editor.c; A in it runs the
- *          program - or the whole project for a file in a project folder - and jumps to the error line)
- *   Y      terminal (app/terminal.c, touch keyboard, app/ui.h on citro2d; START = back)
- *   START  quit
+/* MiniSharp - the 3DS host. The screens are in citro2d all the time (ui_3ds.c); the main menu is app/menu.c:
+ *   Programs (B)    programs and projects on the card (app/files.c), then the code editor (app/editor.c; A in it runs
+ *                   the program - or the whole project for a file in a project folder - and jumps to the error line)
+ *   Run main.cs     sdmc:/minisharp2/main.cs on the console screen (app/conscreen.c)
+ *   Terminal (Y)    app/terminal.c, touch keyboard; START = back
+ *   Help (R)        the chapters of sdk/docs (app/help.c)
+ *   Tests (X)       the test files from sdmc:/minisharp2/tests/ (the .cs files there and in errors/, the folders in
+ *                   projects/), each result to tests/out/<name>.txt (stdout and errors together, like 2>&1 on PC);
+ *                   tools/3ds_tests.sh compares them with tests/expected/ on the PC. They run on the text console.
+ *   Recent          the last files opened in the editor (sdmc:/minisharp2/recent.txt)
+ *   Quit (START)
  * START+SELECT held = the Stop button: a running loop (also Main with while (true)) stops with "stopped by the user".
  * If sdmc:/minisharp2/tests/auto exists, the tests run at start, the file is removed and the app quits (emulator runs).
- * Console output goes to the top screen and to sdmc:/minisharp2/logs/<program>_<time>.txt; the menu is on the bottom screen.
- * The full platform (citro2d, Gfx, Input, menu) comes in stage 3 and builds on this file. */
+ * Each program gets a fresh VM and its own log: sdmc:/minisharp2/logs/<program>_<time>.txt. */
 #include <3ds.h>
 #include "ms.h"
 #include "lib.h"
@@ -19,6 +20,7 @@
 #include "editor.h"
 #include "files.h"
 #include "help.h"
+#include "menu.h"
 #include "conscreen.h"
 #include "ui_3ds.h"
 #include <dirent.h>
@@ -292,9 +294,8 @@ static int run_dir(const char* dir, const char* prefix, int projects) {
     return n;
 }
 
-static void menu(void);
-
-static void run_tests(void) {
+/* X: the tests, on the libctru text console (one progress line); returns how many ran */
+static int run_tests(void) {
     mkdir(OUT_DIR, 0777);
     g_screen = 0;
     g_tests = 0;
@@ -304,9 +305,7 @@ static void run_tests(void) {
     n += run_dir(TESTS_DIR "/errors", "error_", 0);
     n += run_dir(TESTS_DIR "/projects", "", 1);
     g_screen = 1;
-    menu();
-    if (n) printf("\n%d tests run, results in\n" OUT_DIR "/\nCompare on the PC:\n  sh tools/3ds_tests.sh compare <sd>\n", n);
-    else printf("\nno tests in " TESTS_DIR "\n(sh tools/3ds_send.sh tests)\n");
+    return n;
 }
 
 /* a first program, so A does something on a fresh card */
@@ -381,26 +380,14 @@ static void install_examples(void) {
     closedir(d);
 }
 
-static void menu(void) {
-    consoleSelect(&bottom); consoleClear();
-    printf("MiniSharp2 (" BUILD_ID ")\n\n");
-    printf("A      run " MAIN_CS "\n");
-    printf("X      run tests from " TESTS_DIR "\n");
-    printf("B      editor: programs and projects\n");
-    printf("Y      terminal\n");
-    printf("R      Help: the language\n");
-    printf("START  quit\n");
-}
+/* the main menu (app/menu.c) on citro2d; the screens stay in citro2d all the time, except for the tests (X) */
+static Menu* g_menu;
 
 /* Y: the terminal (app/terminal.c): lines typed on the touch keyboard run at once, the output scrolls on the top
- * screen. The screens go to citro2d for the time of the terminal and back to the text console after it. */
-static void terminal(void) {
-    Terminal* t = NULL;
-    if (!ui3ds_init() || !(t = term_new())) {
-        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
-        printf("\ncannot open the terminal\n");
-        return;
-    }
+ * screen; 0 = no memory */
+static int terminal(void) {
+    Terminal* t = term_new();
+    if (!t) return 0;
     term_set_stop_hint(t, "START+SELECT: stop a loop");
     while (aptMainLoop()) {
         hidScanInput();
@@ -413,10 +400,7 @@ static void terminal(void) {
     }
     term_free(t);
     lib_set_output(out_write);
-    ui3ds_exit();
-    consoleInit(GFX_TOP, &top);
-    consoleInit(GFX_BOTTOM, &bottom);
-    menu();
+    return 1;
 }
 
 /* a new log for one run: logs/<program>_<YYYYMMDD-HHMMSS>.txt (the .cs name or the project folder), with a header */
@@ -496,6 +480,7 @@ static void edit_file(const char* path) {
     Editor* ed = ed_new(&host);
     if (!ed) return;
     ed_open(ed, path);
+    menu_add_recent(g_menu, path);                  /* shown in the menu's "Recent" rows */
     ed_set_config(ed, APP_DIR "/editor.txt", APP_DIR "/themes");    /* the font size and the colour scheme */
     char proj[400];
     if (files_project_of(APP_DIR, path, proj, sizeof proj)) ed_set_project(ed, proj);
@@ -536,29 +521,11 @@ static int help_loop(void) {
 
 static void editor_help(void) { help_loop(); }
 
-static void help(void) {
-    int inited = ui3ds_init();
-    if (!inited || !help_loop()) {
-        if (inited) ui3ds_exit();
-        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
-        printf("\ncannot open Help\n");
-        return;
-    }
-    ui3ds_exit();
-    consoleInit(GFX_TOP, &top);
-    consoleInit(GFX_BOTTOM, &bottom);
-    menu();
-}
-
 /* B: the programs and projects on the card (app/files.c); a chosen file opens in the editor, START there
- * comes back to the list */
-static void editor(void) {
-    Files* fs = NULL;
-    if (!ui3ds_init() || !(fs = files_new(APP_DIR))) {
-        consoleInit(GFX_TOP, &top); consoleInit(GFX_BOTTOM, &bottom); menu();
-        printf("\ncannot open the editor\n");
-        return;
-    }
+ * comes back to the list; 0 = no memory */
+static int editor(void) {
+    Files* fs = files_new(APP_DIR);
+    if (!fs) return 0;
     while (aptMainLoop()) {
         hidScanInput();
         UiInput in;
@@ -571,10 +538,13 @@ static void editor(void) {
         ui3ds_frame_end();
     }
     files_free(fs);
-    ui3ds_exit();
-    consoleInit(GFX_TOP, &top);
-    consoleInit(GFX_BOTTOM, &bottom);
-    menu();
+    return 1;
+}
+
+/* opens one file in the editor straight from the menu's "Recent" rows (a missing file: an empty editor) */
+static int open_recent(const char* path) {
+    edit_file(path);
+    return 1;
 }
 
 int main(void) {
@@ -595,10 +565,9 @@ int main(void) {
     lib_set_output(out_write);
     ms_register_hook("Update");
     ms_register_hook("Draw");
-    menu();
 
     FILE* autof = fopen(TESTS_DIR "/auto", "r");
-    if (autof) {
+    if (autof) {                                    /* the emulator runs: the tests at once, on the text console */
         fclose(autof);
         remove(TESTS_DIR "/auto");
         run_tests();
@@ -607,26 +576,63 @@ int main(void) {
         return 0;
     }
 
+    g_menu = menu_new(APP_DIR, APP_DIR "/recent.txt");
+    if (!g_menu || !ui3ds_init()) {
+        printf("MiniSharp2: cannot start the screens\n(no memory). START = quit\n");
+        while (aptMainLoop()) { hidScanInput(); if (hidKeysDown() & KEY_START) break; gspWaitForVBlank(); }
+        menu_free(g_menu);
+        romfsExit();
+        gfxExit();
+        return 0;
+    }
+    menu_set_build(g_menu, "build " BUILD_ID);
+
+    /* the menu loop: each tile runs to its end and comes back here; a program gets a fresh VM every time (run) */
     while (aptMainLoop()) {
         hidScanInput();
-        u32 k = hidKeysDown();
-        if (k & KEY_START) break;
-        if (k & KEY_A) {                            /* main.cs on the console screen */
-            if (ui3ds_init()) {
-                run_on_screen(MAIN_CS, 0);
-                ui3ds_exit();
-            }
+        UiInput in;
+        ui3ds_input(&in);
+        int a = menu_update(g_menu, &in);
+        if (a == MENU_QUIT) break;
+        char msg[200];
+        switch (a) {
+        case MENU_RUN_MAIN:
+            run_on_screen(MAIN_CS, 0);
+            snprintf(msg, sizeof msg, "main.cs: %.150s", g_lastErr[0] ? g_lastErr : "finished ok (log in logs/)");
+            menu_set_status(g_menu, msg, g_lastErr[0] != 0);
+            break;
+        case MENU_PROGRAMS:
+            if (!editor()) menu_set_status(g_menu, "cannot open the programs: no memory", 1);
+            break;
+        case MENU_OPEN_RECENT:
+            open_recent(menu_chosen(g_menu));
+            break;
+        case MENU_TERMINAL:
+            if (!terminal()) menu_set_status(g_menu, "cannot open the terminal: no memory", 1);
+            break;
+        case MENU_HELP:
+            if (!help_loop()) menu_set_status(g_menu, "cannot open Help: no memory", 1);
+            break;
+        case MENU_TESTS: {                          /* the text console for the time of the tests */
+            ui3ds_exit();
             consoleInit(GFX_TOP, &top);
             consoleInit(GFX_BOTTOM, &bottom);
-            menu();
-            printf("\n%s (output also in logs/)\n", g_lastErr[0] ? "error" : "done");
+            int n = run_tests();
+            if (!ui3ds_init()) { romfsExit(); gfxExit(); return 0; }
+            if (n) snprintf(msg, sizeof msg, "%d tests run, results in tests/out (compare on the PC)", n);
+            else snprintf(msg, sizeof msg, "no tests in tests/ (sh tools/3ds_send.sh tests)");
+            menu_set_status(g_menu, msg, 0);
+            break;
         }
-        if (k & KEY_X) run_tests();
-        if (k & KEY_Y) terminal();
-        if (k & KEY_B) editor();
-        if (k & KEY_R) help();
-        gspWaitForVBlank();
+        default:
+            break;
+        }
+        ui3ds_frame_begin(0x101418, 0x0C0C0C);
+        menu_draw(g_menu);
+        ui3ds_frame_end();
     }
+    ui3ds_exit();
+    menu_free(g_menu);
     romfsExit();
     gfxExit();
     return 0;

@@ -235,13 +235,15 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `sdmc:/minisharp` przemianowany na `oldMinisharp` – stara aplikacja go już nie znajdzie); każde uruchomienie pisze
       osobny `logs/<program>_<RRRRMMDD-GGMMSS>.txt` (nagłówek z buildem, wyjście programu, wynik, czas, zajęta sterta
       i wolna pamięć liniowa przed / po – widać, czy programy coś po sobie zostawiają). Folder `logs/` nie jest projektem.
-- [ ] **Graficzne menu hosta** (prośba użytkownika 2026-11-14) zamiast tekstowej konsoli libctru: dolny ekran – duże
-      przyciski na dotyk (Programy, Terminal, Help, Testy, Ustawienia: czcionka, schemat), górny – logo, build, ostatnie
-      projekty. Logika w `app/menu.c` bez rysowania (jak `files.c`), test na PC, rysowanie przez `app/ui.h` (citro2d) –
-      znika przełączanie konsola ↔ citro2d. **Każdy program z menu startuje „z czystym kontem”**: nowa VM i program,
-      po wyjściu `vm_free` + `ms_free_program`, obrazki zwalniane (`lib_gfx_reset`), stan `Gfx`/`Input`/`Time`
-      zerowany. Do dopilnowania: obrazki zwalniać już przy wyjściu (teraz dopiero przy starcie następnego programu),
-      a liczby pamięci z logu porównać po kilku uruchomieniach na konsoli (wyciek = rosnące „heap in use after”).
+- [x] **Graficzne menu hosta** (prośba użytkownika 2026-11-14) – zrobione 2026-11-14: `app/menu.c` (rysuje tylko przez
+      `app/ui.h`, test `tests/unit/test_menu.c`): dolny ekran – 6 kafelków na dotyk (Programs, Run main.cs, Terminal,
+      Help, Tests, Quit; krzyżak + A, skróty B/Y/R/X/START), pod nimi 3 ostatnie pliki z edytora (`recent.txt`, do 5,
+      brakujące pomijane); górny – tytuł, build, opis wybranego kafelka, linia stanu (wynik `main.cs`, testów, błąd).
+      Host 3DS jest w citro2d cały czas (tekstowa konsola libctru tylko na czas testów X i przy `tests/auto`).
+      **Każdy program startuje „z czystym kontem”**: nowa VM i program, po wyjściu `vm_free` + `ms_free_program`,
+      obrazki zwalniane przy wyjściu (`lib_set_gfx(NULL)`), stan `Gfx`/`Input`/`Time` zerowany przy starcie.
+      **Sprawdzić na konsoli**: wygląd i dotyk kafelków, powrót z każdej akcji, liczby pamięci w `logs/` po kilku
+      uruchomieniach (wyciek = rosnące „heap in use after”). Później: kafelek Ustawienia (czcionka, schemat).
 - [ ] **Przenośność – sprawdzić na konsoli** (uwagi 2026-11-13; to, co zależy od procesora, VM już pilnuje: zawijanie `int`,
       przesunięcia `& 31`, `int.MinValue / -1`, nasycanie `(int)` – `tests/lib_edges.cs`):
       - ostatnia cyfra `float`: `sinf`, `powf` i wypisywanie `%.7g` pochodzą z różnych bibliotek C (3DS: newlib, Switch, PC) –

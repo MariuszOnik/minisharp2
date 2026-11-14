@@ -4,7 +4,13 @@ Ten rozdział opisuje samą aplikację na 3DS: jak pisać, uruchamiać i ustawia
 
 ## Menu i lista plików
 
-- **A** w menu uruchamia `main.cs`, **B** otwiera listę programów i projektów, **Y** terminal, **R** ten Help.
+- Menu to kafelki na dolnym ekranie: **Programs**, **Run main.cs**, **Terminal**, **Help**, **Tests**, **Quit**.
+  Dotknij kafelka albo wybierz go krzyżakiem i naciśnij **A**. Skróty: **B** programy, **Y** terminal, **R** ten Help,
+  **X** testy, **START** wyjście. Górny ekran mówi, co robi wybrany kafelek, a na dole pokazuje wynik ostatniej akcji
+  (np. błąd programu).
+- Pod kafelkami są **ostatnie pliki** otwierane w edytorze (Recent) – dotknięcie od razu otwiera plik.
+- Każdy program startuje od zera: dostaje nową maszynę wirtualną, a po wyjściu jego pamięć i obrazki są zwalniane.
+  Wynik i zajętość pamięci trafiają do dziennika `logs/<program>_<data-godzina>.txt`.
 - Na liście: **A** albo dwa dotknięcia otwierają, **X** nowy plik, **Y** nowy projekt, **SELECT** dwa razy albo przycisk
   „Delete” usuwa (folder projektu tylko pusty).
 - Projekt to folder: wszystkie jego pliki `.cs` kompilują się razem i otwierają się w edytorze jako **karty**.
