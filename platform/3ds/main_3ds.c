@@ -60,6 +60,7 @@ static int stop_pressed(void) {
  * (the tests, X in the menu) */
 static ConScreen* g_cs;
 static u64 g_lastDraw;
+static int g_inGameFrame;                      /* between ui3ds_frame_begin and _end of a game's frame (Draw) */
 
 static void cs_frame(void) {
     ui3ds_frame_begin(0x000000, 0x0C0C0C);
@@ -71,7 +72,7 @@ static void cs_frame(void) {
 static void out_write(const char* s) {
     if (g_cs) {                                 /* the text is in the grid already (lib/console.c): show it now and then */
         if (g_out) fputs(s, g_out);
-        if (osGetTime() - g_lastDraw > 50) cs_frame();
+        if (!g_inGameFrame && osGetTime() - g_lastDraw > 50) cs_frame();
         return;
     }
     if (g_screen) { consoleSelect(&top); fputs(s, stdout); }
@@ -107,6 +108,8 @@ static int call(VM* vm, int func) {
     int r = vm_call(vm, func);
     while (r == MS_WAIT_INPUT) {
         if (g_cs) {
+            int inGame = g_inGameFrame;             /* ReadLine during a game's frame: that frame ends first */
+            if (inGame) { ui3ds_frame_end(); g_inGameFrame = 0; }
             cs_ask(g_cs);
             int ev = CS_NONE;
             while (ev != CS_LINE && ev != CS_EOF) {
@@ -117,6 +120,7 @@ static int call(VM* vm, int func) {
                 ev = cs_update(g_cs, &in);
                 cs_frame();
             }
+            if (inGame) { ui3ds_frame_begin(0x000000, 0x000000); g_inGameFrame = 1; }
             r = vm_resume_input(vm, ev == CS_LINE ? cs_line(g_cs) : NULL);
             continue;
         }
@@ -161,24 +165,37 @@ static void run(const char* path, int isProject, int frames) {
         return;
     }
     g_ms = 0;
+    if (g_cs) { lib_set_gfx(ui3ds_gfx()); lib_gfx_reset(); }
     VM* vm = vm_new(p);
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
     if (ok && up >= 0) {
         for (int f = 0; (frames < 0 || f < frames) && ok; f++) {
+            int game = 0;                           /* a frame of a game: Draw paints the screens */
             if (frames < 0) {
                 if (!aptMainLoop()) break;
                 hidScanInput();
-                if (hidKeysDown() & KEY_START) break;
-                if (g_cs) cs_frame();               /* waits for the screen like gspWaitForVBlank */
-                else gspWaitForVBlank();
+                if (g_cs) {
+                    UiInput in;
+                    ui3ds_input(&in);
+                    if ((in.held & UI_BTN_START) && (in.held & UI_BTN_SELECT)) break;   /* START alone is Btn.Start */
+                    lib_input_frame(in.held, in.touching, in.x, in.y);
+                    if (dr >= 0) { ui3ds_frame_begin(0x000000, 0x000000); g_inGameFrame = game = 1; }
+                } else {
+                    if (hidKeysDown() & KEY_START) break;
+                    gspWaitForVBlank();
+                }
             }
             g_ms += 1000.0 / 60;
             ok = call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);
             if (ok && dr >= 0) ok = call(vm, dr);
+            if (g_inGameFrame) { ui3ds_frame_end(); g_inGameFrame = 0; }
+            else if (g_cs && frames < 0 && !game) cs_frame();   /* a text program with Update: the console screen */
+            lib_time_frame(1.0f / 60);
         }
     }
+    lib_set_gfx(NULL);
     if (!ok && !ms_vm_quit_requested(vm)) {
         snprintf(err, sizeof err, "%s", ms_vm_error(vm));
         project_map_error(&proj, err, sizeof err);
@@ -314,7 +331,7 @@ static void terminal(void) {
 static int run_on_screen(const char* path, int isProject) {
     g_cs = cs_new(40, 20);
     if (!g_cs) { snprintf(g_lastErr, sizeof g_lastErr, "out of memory"); return 0; }
-    cs_set_hint(g_cs, "START: stop Update    START+SELECT: stop any loop");
+    cs_set_hint(g_cs, "START+SELECT: stop the program");
     lib_console_set_grid(cs_grid(g_cs));
     g_out = fopen(LOG_PATH, "w");
     cs_frame();

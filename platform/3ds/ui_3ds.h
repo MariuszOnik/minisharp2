@@ -13,4 +13,8 @@ void ui3ds_frame_begin(uint32_t topBg, uint32_t bottomBg);  /* clears both scree
 void ui3ds_frame_end(void);
 void ui3ds_input(UiInput* in);                              /* after hidScanInput() */
 
+/* lib/gfx.h on citro2d (Gfx.Rect, Circle, Line, Text...): valid between ui3ds_init and ui3ds_exit */
+#include "gfx.h"
+const GfxBackend* ui3ds_gfx(void);
+
 #endif

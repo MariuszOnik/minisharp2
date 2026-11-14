@@ -52,6 +52,25 @@ static void s_clip(int x, int y, int w, int h) {
 
 static const UiBackend BACKEND = { 2, 1, { 400, 320 }, { 240, 240 }, s_select, s_rect, s_text, s_width, s_clip };
 
+/* ---------- lib/gfx.h: the colours come with alpha (0xAARRGGBB) ---------- */
+static u32 acol(uint32_t argb) { return C2D_Color32((argb >> 16) & 255, (argb >> 8) & 255, argb & 255, (argb >> 24) & 255); }
+static void g_clear(uint32_t argb) { C2D_DrawRectSolid(0, 0, 0.5f, g_cur ? 320 : 400, 240, acol(argb)); }
+static void g_rect(float x, float y, float w, float h, uint32_t argb) { C2D_DrawRectSolid(x, y, 0.5f, w, h, acol(argb)); }
+static void g_circle(float x, float y, float r, uint32_t argb) { C2D_DrawCircleSolid(x, y, 0.5f, r, acol(argb)); }
+static void g_line(float x1, float y1, float x2, float y2, float w, uint32_t argb) {
+    u32 c = acol(argb);
+    C2D_DrawLine(x1, y1, c, x2, y2, c, w < 1 ? 1 : w, 0.5f);
+}
+static void g_text(float x, float y, const char* s, float size, uint32_t argb) {
+    C2D_Text t;
+    C2D_TextParse(&t, g_buf, s);                    /* a full buffer of this frame parses only what fits */
+    C2D_TextOptimize(&t);
+    float sc = size / g_fontPx;
+    C2D_DrawText(&t, C2D_WithColor, x, y, 0.5f, sc, sc, acol(argb));
+}
+static const GfxBackend GFX = { 2, { 400, 320 }, { 240, 240 }, s_select, g_clear, g_rect, g_circle, g_line, g_text, s_width };
+const GfxBackend* ui3ds_gfx(void) { return &GFX; }
+
 int ui3ds_init(void) {
     /* the text console switched the screens to RGB565 without double buffering; citro2d wants them as at start */
     gfxSetScreenFormat(GFX_TOP, GSP_BGR8_OES);
@@ -59,7 +78,7 @@ int ui3ds_init(void) {
     gfxSetDoubleBuffering(GFX_TOP, true);
     gfxSetDoubleBuffering(GFX_BOTTOM, true);
     if (!C3D_Init(C3D_DEFAULT_CMDBUF_SIZE)) return 0;
-    if (!C2D_Init(C2D_DEFAULT_MAX_OBJECTS)) { C3D_Fini(); return 0; }
+    if (!C2D_Init(8192)) { C3D_Fini(); return 0; }    /* games draw many small things: twice the default */
     C2D_Prepare();
     g_target[0] = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     g_target[1] = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
