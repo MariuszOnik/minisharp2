@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #ifdef _WIN32
 #include <direct.h>
 #define make_dir(p) _mkdir(p)
@@ -33,6 +34,7 @@ struct Files {
     Entry e[MAX_ENTRIES];
     int n, sel, top;
     int naming;
+    char armed[68];                     /* SELECT pressed once on this entry: the second press deletes it */
     char name[NAME_MAX_LEN + 1];
     char status[200];
     uint32_t statusRgb;
@@ -262,6 +264,36 @@ void files_key(Files* fs, const char* k) {
     } else if (n + strlen(k) <= NAME_MAX_LEN) strcat(fs->name, k);
 }
 
+/* ---------- deleting ---------- */
+/* SELECT on an entry asks, the second SELECT on the same entry deletes it. A project folder is deleted only
+ * when it is empty (its files are deleted one by one first: nothing disappears by one wrong press). */
+static void delete_selected(Files* fs) {
+    if (fs->sel >= fs->n) return;
+    Entry* e = &fs->e[fs->sel];
+    char msg[200];
+    if (strcmp(fs->armed, e->name)) {
+        snprintf(fs->armed, sizeof fs->armed, "%s", e->name);
+        snprintf(msg, sizeof msg, "SELECT again: delete %s", e->name);
+        set_status(fs, 0xFF9060, msg);
+        return;
+    }
+    fs->armed[0] = 0;
+    char path[480];
+    int n = (int)strlen(e->name);
+    if (e->isDir) n--;                                  /* "Game/" -> Game */
+    snprintf(path, sizeof path, "%s/%.*s", fs->dir, n, e->name);
+    int ok = e->isDir ? rmdir(path) == 0 : remove(path) == 0;
+    if (!ok) {
+        set_status(fs, 0xFF7070, e->isDir ? "the project is not empty: delete its files first" : "cannot delete the file");
+        return;
+    }
+    snprintf(msg, sizeof msg, "deleted %.*s", n, e->name);
+    int sel = fs->sel;
+    files_scan(fs);
+    fs->sel = sel < fs->n ? sel : (fs->n ? fs->n - 1 : 0);
+    set_status(fs, 0x80E080, msg);
+}
+
 /* ---------- input ---------- */
 static int repeat(uint32_t* since, uint32_t* last, const UiInput* in, uint32_t btn) {
     if (in->down & btn) { *since = *last = in->ms; return 1; }
@@ -315,6 +347,9 @@ int files_update(Files* fs, const UiInput* in) {
         go_up(fs);
     }
     int vis = visible_rows(&L);
+    int wasSel = fs->sel;
+    if (in->down & UI_BTN_SELECT) delete_selected(fs);
+    else if (in->down && fs->armed[0]) { fs->armed[0] = 0; set_status(fs, 0x8090A0, ""); }   /* any other button cancels */
     if (repeat(&fs->upSince, &fs->upLast, in, UI_BTN_UP) && fs->sel > 0) fs->sel--;
     if (repeat(&fs->downSince, &fs->downLast, in, UI_BTN_DOWN) && fs->sel < fs->n - 1) fs->sel++;
     if (in->down & UI_BTN_L) fs->sel = fs->sel > vis ? fs->sel - vis : 0;
@@ -334,6 +369,7 @@ int files_update(Files* fs, const UiInput* in) {
             }
         }
     }
+    if (fs->sel != wasSel && fs->armed[0]) { fs->armed[0] = 0; set_status(fs, 0x8090A0, ""); }
     keep_visible(fs, &L);
     return open ? FILES_OPEN : FILES_STAY;
 }
@@ -368,7 +404,7 @@ static void draw_info(Files* fs, const Layout* L) {
             in_root(fs) ? "all its .cs files are compiled together." : "together: classes see each other.",
             "",
             "A: open    B: back    X: new file",
-            in_root(fs) ? "Y: new project    L / R: page" : "L / R: page",
+            in_root(fs) ? "Y: new project   L/R: page   SELECT: delete" : "L / R: page    SELECT: delete",
         };
         for (int i = 0; i < (int)(sizeof HELP / sizeof HELP[0]); i++) ui_text(8, y + i * 15, HELP[i], 12, 0xA0A8B0);
         y += 5 * 15 + 6;

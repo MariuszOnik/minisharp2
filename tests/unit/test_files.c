@@ -169,6 +169,28 @@ int main(void) {
     check(!files_project_of(ROOT, ROOT "/main.cs", dir, sizeof dir), "project_of: a single program");
     check(!files_project_of(ROOT, "other/x.cs", dir, sizeof dir), "project_of: outside the root");
 
+    /* deleting: SELECT asks, a second SELECT deletes; another button cancels; a project only when empty */
+    int hi = find(fs, "Hello.cs");
+    while (files_selected(fs) < hi) frame(fs, UI_BTN_DOWN);
+    frame(fs, UI_BTN_SELECT);
+    check(strstr(files_status(fs), "SELECT again") && read_all(ROOT "/Hello.cs"), "SELECT asks first");
+    frame(fs, UI_BTN_UP);
+    check(!strstr(files_status(fs), "SELECT again"), "moving cancels the delete");
+    frame(fs, UI_BTN_DOWN);
+    frame(fs, UI_BTN_SELECT);
+    frame(fs, UI_BTN_SELECT);
+    check(!read_all(ROOT "/Hello.cs") && find(fs, "Hello.cs") < 0 && strstr(files_status(fs), "deleted"), "SELECT twice deletes the file");
+    while (files_selected(fs) > 0) frame(fs, UI_BTN_UP);
+    while (strcmp(files_name(fs, files_selected(fs)), "Nowy/")) frame(fs, UI_BTN_DOWN);
+    frame(fs, UI_BTN_SELECT); frame(fs, UI_BTN_SELECT);
+    check(find(fs, "Nowy/") >= 0 && strstr(files_status(fs), "not empty"), "a project with files is not deleted");
+    frame(fs, UI_BTN_A);
+    frame(fs, UI_BTN_SELECT); frame(fs, UI_BTN_SELECT);
+    check(files_count(fs) == 0 && !read_all(ROOT "/Nowy/Program.cs"), "the project's last file deleted");
+    frame(fs, UI_BTN_B);
+    frame(fs, UI_BTN_SELECT); frame(fs, UI_BTN_SELECT);
+    check(find(fs, "Nowy/") < 0, "an empty project folder is deleted");
+
     check(frame(fs, UI_BTN_START) == FILES_LEAVE, "START leaves");
     files_free(fs);
     ui_set_backend(NULL);
