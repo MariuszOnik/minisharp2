@@ -226,3 +226,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Moduły w C (PLAN-ISO I0): moduł rejestruje funkcje, stałe i klasy C# pod jedną nazwą, a program włącza go
   zdaniem `using Iso;`. Bez tego klas modułu nie ma, a kompilator podpowiada, czego brakuje. Folder `modules/` wchodzi do
   buildów PC i 3DS sam; na razie bez żadnego modułu – pierwszy będzie iso.
+- 2026-11-14: Sortowanie izometryczne przeniesione do `modules/iso/iso_sort.c` – ten sam algorytm co w starym `iso.c`,
+  ale stan w strukturze, więc edytor będzie mógł mieć mapę i podgląd prefabu naraz. Test na mieście 24×24 z ludzikami:
+  kolejność zgodna z testem wszystkich par, a na klatkę sprawdza się ~970 par zamiast 242 tysięcy.
