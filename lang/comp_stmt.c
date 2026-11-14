@@ -240,14 +240,16 @@ void compile_stmt(C* c, Stmt* s) {
                 /* for (i = next(0); i >= 0; i = next(i + 1)) { kv = entry i } ; kv takes two slots: key, value */
                 if (s->tn && resolve_typenode(c, s->tn, 0) != ct->kvp)
                     cfail(c, s->line, "'foreach' over %s gives %s; write 'var'", type_name(c, ct), type_name(c, ct->kvp));
-                int coll = alloc_temp(c), idx = alloc_temp(c);
+                int coll = alloc_temp(c), idx = alloc_temp(c), ver = alloc_temp(c);
                 emit_op1(c, OP_STORE, coll); emit_pop(c);
                 emit_op1(c, OP_ICONST, 0); emit_op1(c, OP_STORE, idx); emit_pop(c);
+                emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_DICT, D_VERSION); emit_op1(c, OP_STORE, ver); emit_pop(c);
                 int kslot = declare_local(c, s->name, s->nlen, ct->kvp, s->line);
                 c->locals[c->nlocals - 1].boxed = 0;          /* two slots; a lambda cannot use it */
                 c->locals[c->nlocals - 1].readOnly = 1;
                 alloc_temp(c);                                  /* kslot + 1: the value */
                 int start = code_label(c);
+                emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LOAD, ver); emit_op1(c, OP_DICT, D_CHECKVER);   /* new key: error */
                 emit_op1(c, OP_LOAD, coll); emit_op1(c, OP_LOAD, idx); emit_op1(c, OP_DICT, D_NEXT);
                 emit_op1(c, OP_STORE, idx); emit_op1(c, OP_ICONST, 0); emit_op(c, OP_IGE);
                 int jz = emit_jump(c, OP_JZ);

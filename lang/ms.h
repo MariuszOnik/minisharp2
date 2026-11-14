@@ -35,6 +35,8 @@ typedef struct { Value key, val; uint32_t hash; int32_t live; } DictEntry;   /* 
 typedef struct {
     Obj h;
     int32_t count, used, cap, icap, ntomb, freeList, freeCount;
+    int32_t version;                    /* grows when a new key is added: foreach stops with an error (Remove, Clear and
+                                           overwriting a value are allowed while looping, as in .NET Core 3.0+) */
     DictEntry* entries; int32_t* index;
 } ObjDict;
 

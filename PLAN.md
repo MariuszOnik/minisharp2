@@ -109,8 +109,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       - ~~usuwanie z listy w trakcie `foreach` po niej przechodzi bez błędu~~ (zrobione 2026-11-14, użytkownik zostawił
         decyzję mnie: `ObjList.version` rośnie przy każdej zmianie – jak `_version` w .NET, także `l[i] = x` i `Sort`;
         `foreach` po `List` sprawdza go przed każdym krokiem (`L_VERSION`/`L_CHECKVER`), `ForEach` po każdym wywołaniu;
-        testy `foreach_change`, `rt_foreach_*`, `rt_listforeach_add`). Zostało: to samo dla `Dictionary` (w .NET Core
-        błąd daje tylko dodanie nowego klucza; `Remove` i nadpisanie wartości są dozwolone).
+        testy `foreach_change`, `rt_foreach_*`, `rt_listforeach_add`). `Dictionary` też (2026-11-14): `ObjDict.version`
+        rośnie tylko przy nowym kluczu, jak w .NET Core 3.0+ (`Remove`, `Clear`, nadpisanie wartości dozwolone); testy
+        `dict_change`, `rt_dictforeach_add`. Różnica, która zostaje: `foreach` po `d.Keys`/`d.Values` idzie po kopii,
+        więc dodanie klucza tam nie daje błędu (w .NET daje).
 - [x] **Braki względem C# znalezione przy rozdziale 15:** aliasy `using G = Gra;` / `using V = Gra.Wektor;` (zrobione
       2026-11-14, użytkownik zostawił wybór mnie: `NsName.alias` w `usings` klasy, `find_class` zamienia pierwszy człon
       nazwy na cel i szuka od przestrzeni globalnej, printer je drukuje, `project.c` bierze bibliotekę z celu; test

@@ -173,3 +173,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   i linię. Pasek tytułu pokazuje karty z gwiazdką przy zmienionych.
 - 2026-11-14: Przycisk „Copy” w Help: przykład widoczny na ekranie trafia do schowka edytora, więc można go wkleić
   (X, Paste) i od razu uruchomić. Help nie zna edytora – dostaje tylko funkcję kopiowania od hosta.
+- 2026-11-14: `foreach` po słowniku: błąd tylko przy dodaniu nowego klucza – sprawdzone w źródłach .NET, że od
+  .NET Core 3.0 `Remove`, `Clear` i nadpisanie wartości w trakcie pętli są dozwolone, więc u nas też.

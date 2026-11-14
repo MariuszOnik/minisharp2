@@ -300,6 +300,9 @@ Razem sztuk: 172
 
 `var` zamiast typu pary oznacza „kompilator sam wie, jaki to typ”. Pełna nazwa to `KeyValuePair<string, int>`.
 
+W pętli po słowniku wolno zmieniać wartości (`plecak[para.Key] = 0`) i usuwać pary (`Remove`), ale **nie wolno
+dodawać nowych kluczy** – program zatrzyma się z błędem. Nowe klucze zbierz w liście i dodaj po pętli.
+
 ## Liczenie słów – przykład z życia
 
 Słownik świetnie liczy, ile razy coś wystąpiło:

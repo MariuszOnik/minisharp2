@@ -377,6 +377,7 @@ static MS_COLD int dict_put(VM* vm, ObjDict* d, Value key, Value val, int onlyNe
     d->entries[e].key = key; d->entries[e].val = val; d->entries[e].hash = h; d->entries[e].live = 1;
     d->index[i] = e;
     d->count++;
+    d->version++;
     return 1;
 }
 
@@ -1486,8 +1487,21 @@ static int vm_run_loop(VM* vm, int startFp) {
                     ObjDict* d = (ObjDict*)alloc_obj(vm, sizeof(ObjDict), O_DICT);
                     if (!d) FAIL("out of memory");
                     d->count = d->used = d->cap = d->icap = d->ntomb = d->freeCount = 0; d->freeList = -1;
+                    d->version = 0;
                     d->entries = NULL; d->index = NULL;
                     sp->t = V_OBJ; sp->as.o = (Obj*)d; sp++;
+                    NEXT;
+                }
+                if (sub == D_VERSION) {         /* foreach: a null dictionary is reported by the loop itself */
+                    sp[-1].as.i = sp[-1].t == V_OBJ ? ((ObjDict*)sp[-1].as.o)->version : 0;
+                    sp[-1].t = V_INT;
+                    NEXT;
+                }
+                if (sub == D_CHECKVER) {
+                    if (sp[-2].t == V_OBJ && ((ObjDict*)sp[-2].as.o)->version != sp[-1].as.i)
+                        FAIL("a key was added to the dictionary inside its own foreach; collect the new keys in a list and "
+                             "add them after the loop (Remove and changing values are allowed)");
+                    sp -= 2;
                     NEXT;
                 }
                 int nargs = sub == D_ADD ? 2 : (sub == D_CLEAR || sub == D_KEYS || sub == D_VALUES) ? 0 : 1;
