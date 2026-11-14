@@ -138,8 +138,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       Zrobione 2026-11-13: `vm_call` zwraca `MS_WAIT_INPUT`, `vm_resume_input(vm, linia)` (NULL = koniec wejścia → `null`),
       `ms_vm_wait_input` dla funkcji wbudowanych, `vm->depth` pilnuje zagnieżdżenia; host PC czyta stdin (`--echo`),
       testy `readline` (+ `tests/input/readline.txt`), `rt_readline_lambda`, `repl`; terminal: następna linia to
-      odpowiedź (`repl_answer`); dokumentacja: blok ` ```wejscie `, rozdział 9. **Zostało:** na 3DS zwykły program
-      (konsola tekstowa) kończy się błędem „tylko w terminalu” – pole wpisywania przyjdzie z siatką `Console` (etap 3);
+      odpowiedź (`repl_answer`); dokumentacja: blok ` ```wejscie `, rozdział 9. Na 3DS zwykły program pyta przez
+      `app/conscreen.c` (2026-11-14; wcześniej błąd „tylko w terminalu”);
       testy na 3DS biorą odpowiedzi z `tests/input/`.
 - [x] `printer.c` (AST → kod) z testami `print/*` (2026-11-13): `lang/printer.c` + `ms_format` („Formatuj kod”),
       host `--print`, `tests/unit/test_printer.c` (każdy plik testów, projektów i przykład z dokumentacji: wydruk daje
@@ -331,7 +331,11 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    na liście; folder projektu tylko pusty; test w `test_files`; też narzędzie „Delete” na dotyk, dwa dotknięcia),
    ~~zaznaczanie i schowek~~ (zrobione 2026-11-14: X włącza tryb zaznaczania – D-pad i L + D-pad powiększają
    zaznaczenie, cztery narzędzia to wtedy Copy / Cut / Paste / All; jeden schowek dla wszystkich plików; test w
-   `test_editor`; schowek systemowy dojdzie w wersji web), wyjście programu w oknie edytora zamiast konsoli tekstowej (gdy `Console` dostanie siatkę znaków), ~~Help~~ (zrobione 2026-11-14: `app/help.c` – lista rozdziałów
+   `test_editor`; schowek systemowy dojdzie w wersji web), ~~wyjście programu w oknie zamiast konsoli tekstowej~~ (zrobione 2026-11-14:
+   `app/conscreen.c` – siatka `Console` 40 × 20 na górnym ekranie z kolorami, `Console.ReadLine` pyta przez pole i
+   klawiaturę na dolnym (START = koniec wejścia), na końcu wynik albo błąd na czerwono do A / B; na 3DS tak działa A w
+   menu i Run w edytorze; test `test_conscreen` uruchamia prawdziwy program z dwoma pytaniami; 50 × 30 czeka na
+   czcionkę bitmapową 8 × 8 – systemowa jest proporcjonalna i przy 8 px nieczytelna), ~~Help~~ (zrobione 2026-11-14: `app/help.c` – lista rozdziałów
    `sdk/docs` i czytnik z zawijaniem, blokami kodu/wyniku, dopiskami, przewijaniem, Prev/Next; test `test_help`; na 3DS
    R w menu, rozdziały z `romfs:/docs` wbudowanych w `.3dsx` łączone z `sdmc:/minisharp/docs` – plik z karty zastępuje
    wbudowany o tej samej nazwie, nowe pliki dochodzą; `help_load_dirs`). Zostało:

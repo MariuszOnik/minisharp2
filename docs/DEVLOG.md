@@ -182,3 +182,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Kolory konsoli jak w C# (`Console.ForegroundColor = ConsoleColor.Red`). Zamiast dokładać do kompilatora
   „właściwości funkcji wbudowanych”, klasa ze źródła o nazwie wbudowanej klasy ją rozszerza – właściwości i enum są
   napisane w MiniSharpie, a błąd w nich wskazuje linię użytkownika, nie linię ukrytego źródła.
+- 2026-11-14: Program uruchomiony na 3DS (A w menu, Run w edytorze) pisze do siatki `Console` na górnym ekranie,
+  z kolorami, a `Console.ReadLine` wreszcie działa poza terminalem: pole i klawiatura na dolnym ekranie. Ekran odświeża
+  się co 50 ms podczas pisania i co klatkę w pętli `Update`; konsola tekstowa libctru zostaje tylko dla testów (X).
