@@ -163,7 +163,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       (przeciążenia, formatowanie) mogą być w MiniSharpie przez `ms_register_source`. (2) Logika: siatka znaków, kursor, kolory,
       przewijanie, zawijanie – jedna w `lib/`, testowana na PC. **Zrobione 2026-11-14:** `lib/textgrid.c` (komórki ze
       znakiem i kolorami ConsoleColor, kursor, zawijanie bez pustej linii po pełnym wierszu, przewijanie, `\r \t \b`,
-      `tg_version` do odświeżania, paleta), test `test_textgrid`. (3) Umowa z platformą – kilka funkcji: narysuj siatkę, daj
+      `tg_version` do odświeżania, paleta), test `test_textgrid`.
+      Podłączone do `Console` (2026-11-14): `lib_console_set_grid` – `Write` trafia też do siatki, działają `Console.Clear()`,
+      `SetCursorPosition(x, y)` (poza siatką błąd jak wyjątek C#), `ResetColor()`; bez siatki te trzy nic nie robią.
+      Host PC: `--grid 50x30` (na końcu wypisuje wiersze siatki); testy `console_grid`, `rt_setcursor`. (3) Umowa z platformą – kilka funkcji: narysuj siatkę, daj
       wpisaną linię, czy naciśnięto Stop (`platform/3ds`, `web`, `pc`). Host decyduje, gdzie siatka jest widoczna (cały ekran,
       okienko w menu/edytorze, tekst w testach). Kompilator i VM widzą `Console` jak każdą zarejestrowaną klasę.
 - [x] **Przenieść `repl.c` z `lang/` do `app/`** (zrobione 2026-11-13: `app/repl.c`, `app` w obu Makefile'ach) (decyzja użytkownika 2026-11-13): terminal to narzędzie na języku (jak edytor),

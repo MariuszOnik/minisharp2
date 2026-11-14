@@ -5,6 +5,11 @@
 
 /* Where Console.Write/WriteLine go. The host sets it (3DS: the terminal on screen); NULL = stdout. */
 void lib_set_output(void (*write)(const char* s));
+/* The character grid (lib/textgrid.h) the host shows as the console: Write goes into it too, and Console.Clear,
+ * SetCursorPosition and ResetColor work on it. NULL (the default) = no grid: those three do nothing. */
+struct TextGrid;
+void lib_console_set_grid(struct TextGrid* g);
+struct TextGrid* lib_console_grid(void);
 
 /* One function per class group; lib_register_all calls them in the old natives.c order. */
 void lib_register_console(void);    /* Console */

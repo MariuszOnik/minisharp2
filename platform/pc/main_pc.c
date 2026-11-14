@@ -5,6 +5,8 @@
  *   minisharp file.cs --check       only compile, report errors
  *   minisharp file.cs --dis         print the bytecode
  *   minisharp file.cs --echo        Console.ReadLine reads stdin; --echo also prints each line read (a console session)
+ *   minisharp file.cs --grid 50x30  the console is a character grid (Clear, SetCursorPosition, colours work); at the end
+ *                                   its rows are printed instead of the output stream
  *   minisharp --repl                terminal: run inputs from stdin (a line with an open '{' or '(' goes on in the next)
  *   minisharp --print file.cs       the file printed again by the AST printer ("Format code"; comments are dropped)
  *   minisharp --ci folder           editor suggestions (codeindex) at every marker comment slash-star-?-star-slash
@@ -18,6 +20,7 @@
 #include "repl.h"
 #include "printer.h"
 #include "codeindex.h"
+#include "textgrid.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +65,9 @@ static char* read_line(void) {
     return s;
 }
 
-static int g_echo;                      /* --echo: print each line read by Console.ReadLine */
+static int g_echo;
+static TextGrid* grid;                  /* --grid WxH */
+static void no_output(const char* s) { (void)s; }                      /* --echo: print each line read by Console.ReadLine */
 
 /* vm_call; Console.ReadLine gets its lines from stdin until the call ends */
 static int call(VM* vm, int func) {
@@ -184,6 +189,10 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--check")) check = 1;
         else if (!strcmp(argv[i], "--dis")) dis = 1;
         else if (!strcmp(argv[i], "--echo")) g_echo = 1;
+        else if (!strcmp(argv[i], "--grid") && i + 1 < argc) {
+            int gw = 0, gh = 0;
+            if (sscanf(argv[++i], "%dx%d", &gw, &gh) != 2 || !(grid = tg_new(gw, gh))) { fprintf(stderr, "bad --grid %s (e.g. 50x30)\n", argv[i]); return 2; }
+        }
         else { fprintf(stderr, "unknown option %s\n", argv[i]); return 2; }
     }
     char dir[256];
@@ -226,6 +235,7 @@ int main(int argc, char** argv) {
     if (dis) ms_disassemble(p);
     if (check) { ms_free_program(p); project_free(&proj); return 0; }
 
+    if (grid) { lib_console_set_grid(grid); lib_set_output(no_output); }
     VM* vm = vm_new(p);
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
@@ -238,6 +248,14 @@ int main(int argc, char** argv) {
         }
     }
     int rc = 0;
+    if (grid) {                                     /* the grid's rows, without the empty ones at the bottom */
+        int last = tg_height(grid) - 1;
+        char row[4096];
+        while (last >= 0 && tg_row_text(grid, last, row, sizeof row) == 0) last--;
+        for (int y = 0; y <= last; y++) { tg_row_text(grid, y, row, sizeof row); printf("%s\n", row); }
+        lib_console_set_grid(NULL); lib_set_output(NULL);
+        tg_free(grid);
+    }
     if (!ok && !ms_vm_quit_requested(vm)) {
         snprintf(err, sizeof err, "%s", ms_vm_error(vm));
         project_map_error(&proj, err, sizeof err);

@@ -177,3 +177,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   .NET Core 3.0 `Remove`, `Clear` i nadpisanie wartości w trakcie pętli są dozwolone, więc u nas też.
 - 2026-11-14: Siatka znaków pod `Console` (`lib/textgrid.c`): sama logika, bez rysowania – platforma czyta komórki.
   Pełny wiersz zawija się dopiero przy następnym znaku, więc 50 znaków i `\n` na ekranie 50×30 to jedna linia, nie dwie.
+- 2026-11-14: `Console.Clear`, `SetCursorPosition`, `ResetColor` na siatce znaków; host PC dostał `--grid 20x6`, który na
+  końcu wypisuje zawartość siatki – tak testujemy programy rysujące tekstem (ramki, plansze roguelike'a).

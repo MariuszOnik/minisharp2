@@ -1,0 +1,1 @@
+runtime error: line 2 (P.Main): SetCursorPosition(10, 0) is outside the console (10 x 3: x 0..9, y 0..2)
