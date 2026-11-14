@@ -74,7 +74,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] Rozdział 12 „List i Dictionary” (dodawanie, szukanie, `Sort`, usuwanie od końca, słownik, `TryGetValue`,
       `foreach` po parach, liczenie słów, listy obiektów).
 - [ ] Kolejne rozdziały (propozycja kolejności):
-     , lambdy, enum/struct/właściwości, przestrzenie nazw,
+      lambdy, enum/struct/właściwości, przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 
