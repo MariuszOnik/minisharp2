@@ -848,7 +848,8 @@ static Program* compile(const char* src, char* err, int errlen, char* replDecls,
     compile_static_init(c, c->P->staticInit);
     c->P->entryMain = entry_point(c, "Main");
     for (int h = 0; h < ms_nhooks; h++) {           /* copied: hooks registered later do not change this program */
-        snprintf(c->P->hookNames[h], sizeof c->P->hookNames[h], "%s", ms_hook_names[h]);
+        memcpy(c->P->hookNames[h], ms_hook_names[h], MS_HOOK_NAME);    /* same size; memcpy, not snprintf: ARM gcc */
+        c->P->hookNames[h][MS_HOOK_NAME - 1] = 0;                      /* warned about a truncation that cannot happen */
         c->P->hookFuncs[h] = entry_point(c, ms_hook_names[h]);
     }
     c->P->nhooks = ms_nhooks;
