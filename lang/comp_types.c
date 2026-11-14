@@ -386,11 +386,13 @@ const char* class_hint(C* c, const char* n, int l) {
             break;
         }
     }
+    const char* mod = buf[0] ? NULL : ms_module_of_class(n, l);
+    if (mod) snprintf(buf, sizeof buf, " (it is in module %s: add 'using %s;')", mod, mod);
     return buf;
 }
 int is_builtin_class(const char* n, int l) {
-    for (int i = 0; i < ms_nnatives; i++) if (namecs(n, l, ms_natives[i].cls)) return 1;
-    for (int i = 0; i < ms_nconsts; i++) if (namecs(n, l, ms_consts[i].cls)) return 1;
+    for (int i = 0; i < ms_nnatives; i++) if (ms_native_visible(i) && namecs(n, l, ms_natives[i].cls)) return 1;
+    for (int i = 0; i < ms_nconsts; i++) if (ms_const_visible(i) && namecs(n, l, ms_consts[i].cls)) return 1;
     return 0;
 }
 int find_local(C* c, const char* n, int l) {

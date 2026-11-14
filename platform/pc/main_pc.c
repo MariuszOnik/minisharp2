@@ -20,6 +20,7 @@
  * Exit code: 0 ok, 1 compile error, 2 bad arguments / cannot read, 3 runtime error. */
 #include "ms.h"
 #include "lib.h"
+#include "modules.h"
 #include "project.h"
 #include "repl.h"
 #include "printer.h"
@@ -215,10 +216,12 @@ int main(int argc, char** argv) {
     if (argc == 2 && !strcmp(argv[1], "--repl")) {
         ms_set_clock(frame_millis);
         lib_register_all();
+        modules_register_all();
         return repl_main();
     }
     if (argc == 3 && !strcmp(argv[1], "--ci")) {
         lib_register_all();
+        modules_register_all();
         return ci_main(argv[2]);
     }
     if (argc == 3 && !strcmp(argv[1], "--print")) {
@@ -260,6 +263,7 @@ int main(int argc, char** argv) {
 
     ms_set_clock(frame_millis);
     lib_register_all();
+    modules_register_all();
     ms_register_hook("Update");             /* the game loop is the host's: the language knows only Main */
     ms_register_hook("Draw");
 

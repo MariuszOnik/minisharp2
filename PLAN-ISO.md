@@ -110,8 +110,11 @@ Najmniejsza rzecz, która sprawdza cały pomysł, zanim powstaną pełne edytory
 
 ### I0 – przygotowanie
 - [ ] Ustalić, gdzie leżą materiały (`IsometricLib/` jest nieśledzony; zob. „Do decyzji”).
-- [ ] Minimalne API modułów z PLAN.md Etap 6 (folder `modules/<nazwa>`, moduł rejestruje swoją tabelę funkcji,
-      `api.cs`, testy, włączanie w buildzie, `using Iso;`) – wystarczy tyle, ile potrzebuje iso.
+- [x] Minimalne API modułów – zrobione 2026-11-14: `MsModule` + `ms_register_module` (lang/ms.h): nazwa, funkcje,
+      stałe i klasy C# modułu; program włącza moduł zdaniem `using Nazwa;` w dowolnym pliku (bez niego klas modułu nie
+      ma, błąd podpowiada `add 'using Iso;'`); `modules/modules.c` (`modules_register_all`, wołane przez hosty PC i 3DS),
+      foldery `modules/<nazwa>/` wchodzą do buildów same; zasady w `modules/README.md`; test `test_modules.c`.
+      Jeszcze nie: `api.cs` dla Help, pełne nazwy bez `using` (`Iso.IsoWorld.X()`), podpowiedzi edytora filtrowane wg `using`.
 
 ### I1 – rdzeń modułu: sortowanie i przeliczenia
 - [ ] Przenieść `iso.c` / `iso.h` z `toee-3d` do `modules/iso` z przeglądem (nagłówek z autorem unity-iso-tools zostaje).
@@ -204,6 +207,6 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 
 Prototyp P1, w tej kolejności:
 1. [x] I2a (refleksja po stronie C) – zrobione 2026-11-14.
-2. I0: minimalne API modułów, potem I1 (przeniesienie `iso.c` z testem, scalanie).
+2. [x] I0: minimalne API modułów – zrobione 2026-11-14. Dalej I1 (przeniesienie `iso.c` z testem, scalanie).
 3. Scena z pliku + flagi + `IsoBehaviour` + `Sygnał` (część I3), test bez okna, stres test na 3DS.
 Potem P2 (mini edytor) i dalsze etapy.

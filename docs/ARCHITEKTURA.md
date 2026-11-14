@@ -78,6 +78,7 @@ int        ms_entry(p, MS_ENTRY_MAIN) / ms_hook(p, "Update");        // indeks f
 int        ms_register(const NativeDef* table, int n);               // warstwy i moduły dokładają funkcje (jest: lang/register.c)
 int        ms_register_hook("Update");                               // pętla gry jest warstwy wyżej: rdzeń zna tylko Main
 int        ms_register_source(const char* cs);                       // klasy C# dokładane przez warstwę (np. Node grafu)
+int        ms_register_module(&mod);                                 // moduł C: funkcje + stałe + klasy C#, włączany 'using Nazwa;' (modules/README.md)
 // refleksja (lang/reflect.c) – dla warstw, które budują obiekty z danych (scena, inspektor):
 int        ms_class_find(p, "Gra.Drzwi"); ms_field_count / ms_field_info / ms_field_find; ms_method_find(p, cls, "Update", 0, &owner);
 int        vm_new_object(vm, cls, &obj); ms_set_field(vm, obj, i, v);  // tworzenie po nazwie, pola z kontrolą typu

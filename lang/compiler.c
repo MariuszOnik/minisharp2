@@ -858,11 +858,32 @@ static int entry_point(C* c, const char* name) {
 /* Classes registered by the layers above (ms_register_source, e.g. the graph layer's base class of nodes) are added to
    the parsed program unless it declares a class of the same name itself; each source is parsed on its own, so the
    program's text and lines stay as they are. */
+/* modules the program turns on: 'using Name;' (without an alias) in any of its classes */
+static void modules_on(ProgramAST* ast) {
+    ms_modules_on = 0;
+    for (int m = 0; m < ms_nmodules; m++) {
+        const char* mn = ms_modules[m]->name;
+        int ml = (int)strlen(mn), on = 0;
+        for (int i = 0; i < ast->nclasses && !on; i++)
+            for (int u = 0; u < ast->classes[i].nusings && !on; u++) {
+                NsName* us = &ast->classes[i].usings[u];
+                on = !us->alen && us->l == ml && !memcmp(us->s, mn, ml);
+            }
+        if (on) ms_modules_on |= 1u << m;
+    }
+}
+
 static void add_sources(C* c, ProgramAST* ast) {
     int nown = ast->nclasses;
-    for (int s = 0; s < ms_nsources; s++) {
+    for (int s = 0; s < ms_nsources + ms_nmodules; s++) {
+        const char* src = s < ms_nsources ? ms_sources[s] : NULL;
+        if (s >= ms_nsources) {
+            int m = s - ms_nsources;
+            if (!((ms_modules_on >> m) & 1u) || !ms_modules[m]->source) continue;
+            src = ms_modules[m]->source;
+        }
         int n;
-        Token* t = ms_lex(&c->pc, ms_sources[s], &n);
+        Token* t = ms_lex(&c->pc, src, &n);
         ProgramAST* extra = ms_parse(&c->pc, t, n);
         for (int k = 0; k < extra->nclasses; k++) {
             ClassDecl* x = &extra->classes[k];
@@ -897,6 +918,7 @@ static Program* compile(const char* src, char* err, int errlen, char* replDecls,
     int ntok;
     Token* toks = ms_lex(&c->pc, src, &ntok);
     ProgramAST* ast = ms_parse(&c->pc, toks, ntok);
+    modules_on(ast);
     add_sources(c, ast);
     lower_props(c, ast);
     collect(c, ast);

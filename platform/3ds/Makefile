@@ -13,7 +13,9 @@ include $(DEVKITARM)/3ds_rules
 
 TARGET   := MiniSharp
 # the core layers + this platform (file names must be unique across the folders: the objects go into one directory)
-SOURCES  := lang lib graph app platform/3ds
+# modules/ (the list) and every modules/<name>/ (a new module folder is picked up on its own)
+MODDIRS  := modules $(patsubst $(TOPDIR)/%/,%,$(wildcard $(TOPDIR)/modules/*/))
+SOURCES  := lang lib graph app $(MODDIRS) platform/3ds
 BUILD    := build/obj3ds
 
 # build identifier (commit, "+" = uncommitted changes, date), shown in the Homebrew Launcher and in the menu

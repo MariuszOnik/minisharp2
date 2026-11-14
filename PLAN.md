@@ -337,7 +337,8 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `dlopen`), więc kod C modułu jest **wkompilowany** w build (`modules/iso`), a program włącza go na żądanie
       (`using Iso;` – klasy modułu widoczne dopiero wtedy). Build z modułami: osobny `.3dsx` albo wszystkie moduły
       w jednym. Na webie to samo (jeden `.wasm`). Wolna pamięć: kod modułu zajmuje miejsce zawsze, dane dopiero po `using`.
-- [ ] API modułów (folder, tabela funkcji, `api.cs`, testy, włączanie w buildzie).
+- [ ] API modułów (folder, tabela funkcji, `api.cs`, testy, włączanie w buildzie). **Częściowo 2026-11-14**
+      (PLAN-ISO I0): `ms_register_module`, `using Nazwa;`, `modules/`, test `test_modules`; brak `api.cs` i osobnych buildów.
 - [ ] `modules/iso` – **osobny plan: [PLAN-ISO.md](PLAN-ISO.md)** (silnik iso, scena z hierarchią, prefaby, skrypty
       `IsoBehaviour`, fizyka lite, edytor map w menu hosta; refleksja w języku).
 - [ ] `modules/3d` (ogólne 3D: `Gfx3D`, `Cam`, prymitywy, siatki).

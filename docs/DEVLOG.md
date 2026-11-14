@@ -223,3 +223,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Refleksja po stronie C (PLAN-ISO I2a): kompilator zostawia w programie opis klas – pola z typami,
   konstruktor bez parametrów, metody – a host może z nazwy klasy zrobić obiekt, ustawić mu pola z kontrolą typu, zawołać
   jego `Update` i trzymać go poza stosem bez obawy o GC. Na tym stanie loader sceny i inspektor; test `test_reflect`.
+- 2026-11-14: Moduły w C (PLAN-ISO I0): moduł rejestruje funkcje, stałe i klasy C# pod jedną nazwą, a program włącza go
+  zdaniem `using Iso;`. Bez tego klas modułu nie ma, a kompilator podpowiada, czego brakuje. Folder `modules/` wchodzi do
+  buildów PC i 3DS sam; na razie bez żadnego modułu – pierwszy będzie iso.

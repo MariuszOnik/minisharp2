@@ -207,7 +207,7 @@ static Type* call_method(C* c, Expr* e, CMethod* m, int hasThis, int virt) {
 
 static void store_out(C* c, Expr* o, Type* vt);
 static int native_index(const char* cls, const char* name) {
-    for (int i = 0; i < ms_nnatives; i++) if (!strcmp(ms_natives[i].cls, cls) && !strcmp(ms_natives[i].name, name)) return i;
+    for (int i = 0; i < ms_nnatives; i++) if (ms_native_visible(i) && !strcmp(ms_natives[i].cls, cls) && !strcmp(ms_natives[i].name, name)) return i;
     return -1;
 }
 /* int.TryParse(s, out n), float.TryParse(s, out x): bool on the stack, the number (or 0) stored in n */
@@ -302,7 +302,7 @@ static Type* call_native(C* c, Expr* e, const char* cls, int clen, int self) {
     for (int pass = 0; pass < 2 && ni < 0; pass++)
         for (int i = 0; i < ms_nnatives; i++) {
             const NativeDef* d = &ms_natives[i];
-            if (!namecs(cls, clen, d->cls) || !namecs(f->name, f->nlen, d->name)) continue;
+            if (!ms_native_visible(i) || !namecs(cls, clen, d->cls) || !namecs(f->name, f->nlen, d->name)) continue;
             if (any < 0) any = i;
             if (d->np == e->nargs + self && sameCount < 0) sameCount = i;
             if (d->np != e->nargs + self) continue;

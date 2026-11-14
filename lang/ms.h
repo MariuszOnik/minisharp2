@@ -91,6 +91,21 @@ int ms_register_hook(const char* name);
  * e.g. the graph layer's base class of nodes. The string is kept, not copied. 1 = ok. */
 #define MS_MAX_SOURCES 16
 int ms_register_source(const char* src);
+/* Modules: optional parts written in C (e.g. the isometric engine) that are built into the application but that a
+ * program turns on with 'using Name;' (in any of its files). Until then their classes do not exist for it: the
+ * names stay free, and a program that uses them without 'using' gets "add 'using Name;'". 'source' (or NULL): C#
+ * classes of the module, added like ms_register_source but only when the module is on. The struct and its tables
+ * are kept, not copied. 1 = ok (also when registered again), 0 = bad entry, a second module of that name, too many. */
+#define MS_MAX_MODULES 32
+typedef struct {
+    const char* name;
+    const NativeDef* natives; int nnatives;
+    const ConstDef* consts; int nconsts;
+    const char* source;
+} MsModule;
+int ms_register_module(const MsModule* m);
+int ms_module_count(void);
+const MsModule* ms_module_at(int i);        /* NULL outside 0..count-1 */
 int ms_native_count(void);                 /* registered functions (for Help, hints, the graph's node catalogue) */
 const NativeDef* ms_native_at(int i);      /* NULL outside 0..count-1 */
 

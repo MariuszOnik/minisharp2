@@ -23,7 +23,9 @@ endif
 BIN := $(BUILD)/minisharp$(EXE)
 
 # Warstwy, które wchodzą do binarki testowej (kolejne dochodzą w etapach 1–3).
-SRCDIRS := lang lib graph app platform/pc
+# moduły: modules/ (lista) i każdy modules/<nazwa>/ – nowy folder wchodzi do buildu sam
+MODDIRS := modules $(patsubst %/,%,$(wildcard modules/*/))
+SRCDIRS := lang lib graph app $(MODDIRS) platform/pc
 SRC     := $(strip $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.c)))
 HDR     := $(strip $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.h)))
 INC     := $(foreach d,$(SRCDIRS),-I$(d))

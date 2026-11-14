@@ -42,27 +42,73 @@ static int grow(void** arr, int* cap, int need, size_t elem) {
     return 1;
 }
 
-int ms_register(const NativeDef* table, int n) {
+/* module of each native / constant: -1 = always visible (language, library, platform), else a module number */
+const int8_t* ms_native_module = NULL;
+const int8_t* ms_const_module = NULL;
+static int8_t* natMod; static int natModCap;
+static int8_t* constMod; static int constModCap;
+uint32_t ms_modules_on = 0;
+
+static int reg_natives(const NativeDef* table, int n, int mod) {
     if (!table || n < 0) return 0;
     if (seen(table)) return 1;
     for (int i = 0; i < n; i++) {
         const NativeDef* d = &table[i];
         if (!d->cls || !d->name || !d->fn || d->np < 0 || d->np > MS_MAXNATIVEARGS) return 0;
     }
-    if (!grow((void**)&natives, &natCap, ms_nnatives + n, sizeof *natives) || !remember(table)) return 0;
+    if (!grow((void**)&natives, &natCap, ms_nnatives + n, sizeof *natives) ||
+        !grow((void**)&natMod, &natModCap, ms_nnatives + n, sizeof *natMod) || !remember(table)) return 0;
     memcpy(natives + ms_nnatives, table, (size_t)n * sizeof *natives);
-    ms_natives = natives; ms_nnatives += n;
+    memset(natMod + ms_nnatives, mod, (size_t)n);
+    ms_natives = natives; ms_native_module = natMod; ms_nnatives += n;
     return 1;
 }
 
-int ms_register_consts(const ConstDef* table, int n) {
+static int reg_consts(const ConstDef* table, int n, int mod) {
     if (!table || n < 0) return 0;
     if (seen(table)) return 1;
     for (int i = 0; i < n; i++) if (!table[i].cls || !table[i].name) return 0;
-    if (!grow((void**)&consts, &constCap, ms_nconsts + n, sizeof *consts) || !remember(table)) return 0;
+    if (!grow((void**)&consts, &constCap, ms_nconsts + n, sizeof *consts) ||
+        !grow((void**)&constMod, &constModCap, ms_nconsts + n, sizeof *constMod) || !remember(table)) return 0;
     memcpy(consts + ms_nconsts, table, (size_t)n * sizeof *consts);
-    ms_consts = consts; ms_nconsts += n;
+    memset(constMod + ms_nconsts, mod, (size_t)n);
+    ms_consts = consts; ms_const_module = constMod; ms_nconsts += n;
     return 1;
+}
+
+int ms_register(const NativeDef* table, int n) { return reg_natives(table, n, -1); }
+int ms_register_consts(const ConstDef* table, int n) { return reg_consts(table, n, -1); }
+
+/* ---------- modules: built into the build, turned on by 'using Name;' in the program ---------- */
+const MsModule* ms_modules[MS_MAX_MODULES];
+int ms_nmodules = 0;
+
+int ms_register_module(const MsModule* m) {
+    if (!m || !m->name || !*m->name) return 0;
+    for (int i = 0; i < ms_nmodules; i++) {
+        if (ms_modules[i] == m) return 1;
+        if (!strcmp(ms_modules[i]->name, m->name)) return 0;     /* two modules with one name */
+    }
+    if (ms_nmodules == MS_MAX_MODULES) return 0;
+    int k = ms_nmodules;
+    if (m->nnatives && !reg_natives(m->natives, m->nnatives, k)) return 0;
+    if (m->nconsts && !reg_consts(m->consts, m->nconsts, k)) return 0;
+    ms_modules[ms_nmodules++] = m;
+    return 1;
+}
+
+int ms_module_count(void) { return ms_nmodules; }
+const MsModule* ms_module_at(int i) { return i >= 0 && i < ms_nmodules ? ms_modules[i] : NULL; }
+
+/* the module of a native class name that is off right now, or NULL (for 'add using X;' hints) */
+const char* ms_module_of_class(const char* n, int l) {
+    for (int i = 0; i < ms_nnatives; i++)
+        if (natMod[i] >= 0 && !ms_native_visible(i) && (int)strlen(natives[i].cls) == l && !memcmp(natives[i].cls, n, l))
+            return ms_modules[natMod[i]]->name;
+    for (int i = 0; i < ms_nconsts; i++)
+        if (constMod[i] >= 0 && !ms_const_visible(i) && (int)strlen(consts[i].cls) == l && !memcmp(consts[i].cls, n, l))
+            return ms_modules[constMod[i]]->name;
+    return NULL;
 }
 
 int ms_native_count(void) { return ms_nnatives; }

@@ -15,6 +15,7 @@
 #include <3ds.h>
 #include "ms.h"
 #include "lib.h"
+#include "modules.h"
 #include "project.h"
 #include "terminal.h"
 #include "editor.h"
@@ -562,6 +563,7 @@ int main(void) {
     lib_set_real_clock(real_millis);
     ms_set_interrupt(stop_pressed);
     lib_register_all();
+    modules_register_all();
     lib_set_output(out_write);
     ms_register_hook("Update");
     ms_register_hook("Draw");

@@ -549,7 +549,7 @@ Type* compile_expr(C* c, Expr* e) {
                 }
                 if (r.k == R_BUILTIN) {
                     for (int i = 0; i < ms_nconsts; i++)
-                        if (namecs(e->a->name, e->a->nlen, ms_consts[i].cls) && namecs(e->name, e->nlen, ms_consts[i].name)) {
+                        if (ms_const_visible(i) && namecs(e->a->name, e->a->nlen, ms_consts[i].cls) && namecs(e->name, e->nlen, ms_consts[i].name)) {
                             if (ms_consts[i].isFloat) { emit_fconst(c, ms_consts[i].fvalue); return &tFloat; }
                             emit_op1(c, OP_ICONST, ms_consts[i].ivalue);
                             return &tInt;

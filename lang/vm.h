@@ -148,5 +148,15 @@ extern const NativeDef* ms_natives;
 extern int ms_nnatives;
 extern const ConstDef* ms_consts;
 extern int ms_nconsts;
+/* modules (ms_register_module): which module each native / constant belongs to (-1 none) and which modules the
+ * program being compiled turned on with 'using Name;' (bit k = module k; set by the compiler before it looks up names) */
+extern const int8_t* ms_native_module;
+extern const int8_t* ms_const_module;
+extern uint32_t ms_modules_on;
+extern const MsModule* ms_modules[MS_MAX_MODULES];
+extern int ms_nmodules;
+static inline int ms_native_visible(int i) { int m = ms_native_module[i]; return m < 0 || ((ms_modules_on >> m) & 1u); }
+static inline int ms_const_visible(int i) { int m = ms_const_module[i]; return m < 0 || ((ms_modules_on >> m) & 1u); }
+const char* ms_module_of_class(const char* n, int l);   /* module of a native class that is off now, or NULL */
 
 #endif
