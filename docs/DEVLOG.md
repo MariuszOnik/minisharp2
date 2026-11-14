@@ -168,3 +168,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   nazw hooków) usunięte – build 3DS jest bez ostrzeżeń; wyszło też, że alias `using G = Gra;` jest po cichu pomijany.
 - 2026-11-14: Aliasy `using G = Gra;` (wcześniej po cichu pomijane): alias zastępuje pierwszy człon nazwy przy szukaniu
   klasy, więc działa w typach, `new`, wywołaniach statycznych i enumach bez osobnego kodu w każdym miejscu.
+- 2026-11-14: Karty w edytorze: wszystkie pliki projektu są otwarte naraz (L + X / L + Y), podpowiedzi widzą
+  niezapisane zmiany w innych kartach, Run zapisuje wszystko, a błąd kompilacji w innym pliku przełącza na jego kartę
+  i linię. Pasek tytułu pokazuje karty z gwiazdką przy zmienionych.

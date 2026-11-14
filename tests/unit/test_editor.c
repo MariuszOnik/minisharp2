@@ -267,7 +267,48 @@ int main(void) {
     ed_draw(ep);
     check(strstr(drawn, "Hit(int dmg, bool crit)") != NULL && strstr(drawn, "[arg 2]") != NULL,
           "the signature of a method from another file");
+
+    /* tabs: the project's files, L + X / L + Y, live texts for the service, Run saves all, an error opens its tab */
+    check(ed_tabs(ep) == 2 && !strcmp(ed_tab_name(ep, 0), "Main.cs") && !strcmp(ed_tab_name(ep, 1), "Ship.cs")
+          && ed_current_tab(ep) == 0, "the project's files are tabs, in name order");
+    UiInput li = { 0 };
+    li.held = UI_BTN_L | UI_BTN_X; li.down = UI_BTN_X; li.ms = now += 20;
+    int lenMain = tb_len(ed_buf(ep));
+    ed_update(ep, &li);
+    check(ed_current_tab(ep) == 1 && strstr(tb_text(ed_buf(ep)), "class Ship") && !ed_sel_mode(ep), "L + X: the next tab");
+    TextBuf* sb = ed_buf(ep);
+    tb_set_cursor(sb, tb_line_start(sb, 3) + tb_line_len(sb, 3), 0);
+    ed_key(ep, KBD_ENTER);
+    type(ep, "public void Napraw() { }");
+    frame(ep, 0);
+    li.held = UI_BTN_L | UI_BTN_Y; li.down = UI_BTN_Y; li.ms = now += 20;
+    ed_update(ep, &li);
+    check(ed_current_tab(ep) == 0 && tb_len(ed_buf(ep)) == lenMain, "L + Y: back, and Y with L does not undo");
+    pb = ed_buf(ep);
+    tb_set_cursor(pb, tb_line_start(pb, 5) + tb_line_len(pb, 5), 0);
+    tb_backspace(pb); tb_backspace(pb); tb_backspace(pb); tb_backspace(pb);   /* "s.Hit(3, " -> "s." */
+    while (tb_text(pb)[tb_cursor(pb) - 1] != '.') tb_backspace(pb);
+    type(ep, "Nap");
+    frame(ep, 0);
+    frame(ep, UI_BTN_R);
+    check(strstr(tb_text(pb), "s.Napraw") != NULL, "suggestions see the unsaved text of the other tab");
+    drawn[0] = 0;
+    ed_draw(ep);
+    check(strstr(drawn, "Main.cs*|") && strstr(drawn, "Ship.cs*|"), "both tabs in the title, changed ones with *");
+    check(frame(ep, UI_BTN_START) == 1 && strstr(ed_status(ep), "unsaved"), "START warns about any changed tab");
+    runAnswer = "compile error: Ship.cs line 2: expected '}'";
+    int r0 = runs;
+    frame(ep, UI_BTN_A);
+    const char* shipOnCard = read_all("build/tmp/edproj/Ship.cs");
+    check(runs == r0 + 1 && shipOnCard && strstr(shipOnCard, "Napraw"), "Run saves every changed tab");
+    check(ed_current_tab(ep) == 1 && ed_error_line(ep) == 2, "an error in another file opens its tab at the line");
+    drawn[0] = 0;
+    ed_draw(ep);
+    check(strstr(drawn, "Main.cs|") && strstr(drawn, "Ship.cs|"), "saved: no * in the title");
+    runAnswer = NULL;
+    check(ed_switch_tab(ep, 5) == 0 && ed_switch_tab(ep, 0) == 1, "ed_switch_tab");
     check(ed_set_project(ep, NULL) == 0 && ed_project_files(ep) == 0, "no project: the other files are dropped");
+    check(ed_tabs(ep) == 1 && !strcmp(ed_tab_name(ep, 0), "Main.cs"), "no project: only the open file's tab is left");
     ed_free(ep);
     remove("build/tmp/edproj/Ship.cs");
     remove("build/tmp/edproj/Main.cs");

@@ -311,8 +311,10 @@ dokumentacji). Bez systemowej klawiatury `swkbd` – **od razu własna**, rysowa
    folder (`files_project_of`). **Sprawdzić na konsoli**: lista, dotyk, nowy plik/projekt, Run projektu.
 11. Edytor, dalej: ~~usługa języka dostaje wszystkie pliki projektu~~ (zrobione 2026-11-14: `ed_set_project` czyta
    pozostałe pliki projektu i folderów z `uses.txt` przez `project_load`, edytowany plik to tekst 0 usługi, reszta tylko
-   do odczytu; 3DS woła to po `ed_open`, gdy plik leży w projekcie; test w `test_editor`). Zostało: karty kilku plików
-   projektu (dziś inne pliki są brane z karty w chwili otwarcia), ~~usuwanie pliku~~ (zrobione 2026-11-14: SELECT dwa razy
+   do odczytu; 3DS woła to po `ed_open`, gdy plik leży w projekcie; test w `test_editor`). ~~Karty kilku plików
+   projektu~~ (zrobione 2026-11-14: pliki projektu otwierają się jako karty w kolejności nazw, L + X / L + Y przełącza,
+   usługa języka widzi niezapisany tekst wszystkich kart, Run zapisuje wszystkie zmienione, błąd „Plik.cs line N”
+   otwiera kartę tego pliku, START ostrzega o zmianach w każdej karcie; najwyżej 12 kart, test w `test_editor`), ~~usuwanie pliku~~ (zrobione 2026-11-14: SELECT dwa razy
    na liście; folder projektu tylko pusty; test w `test_files`; też narzędzie „Delete” na dotyk, dwa dotknięcia),
    ~~zaznaczanie i schowek~~ (zrobione 2026-11-14: X włącza tryb zaznaczania – D-pad i L + D-pad powiększają
    zaznaczenie, cztery narzędzia to wtedy Copy / Cut / Paste / All; jeden schowek dla wszystkich plików; test w

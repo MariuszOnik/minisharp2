@@ -4,7 +4,8 @@
  * tested on the PC (tests/unit/test_editor.c). Running a program is the host's job (EditorHost.run).
  * Buttons: D-pad cursor, L + D-pad line start / end / page, B delete, Y undo, R first suggestion,
  * A run, SELECT save, START leave (twice when there are unsaved changes), X selection mode: the D-pad grows the
- * selection and the tools become Copy / Cut / Paste / All / Done (X again: done). Tools: Save, Run, Undo, Redo, Help. */
+ * selection and the tools become Copy / Cut / Paste / All / Done (X again: done). Tools: Save, Run, Undo, Redo, Help.
+ * A project's files are tabs: L + X next, L + Y previous; Run saves every changed tab. */
 #ifndef MS_EDITOR_H
 #define MS_EDITOR_H
 
@@ -28,6 +29,11 @@ int ed_save(Editor* ed);                        /* 1 = written */
  * now so that suggestions and signatures know their classes; returns how many were read. Call after ed_open. */
 int ed_set_project(Editor* ed, const char* dir);
 int ed_project_files(const Editor* ed);
+/* the project's files are open in tabs (ed_set_project); L + X / L + Y switch to the next / previous one */
+int ed_tabs(const Editor* ed);
+int ed_current_tab(const Editor* ed);
+const char* ed_tab_name(const Editor* ed, int i);    /* "Ship.cs" */
+int ed_switch_tab(Editor* ed, int i);                /* 0 = no such tab */
 /* one frame of input; 0 = leave the editor */
 int ed_update(Editor* ed, const UiInput* in);
 void ed_draw(Editor* ed);

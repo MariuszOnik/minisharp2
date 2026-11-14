@@ -1,7 +1,7 @@
 /* MiniSharp - code editor (see editor.h). Moved in parts from the old source3ds/editor.c: the screen layout, the
  * colours, the buttons and run-then-jump-to-the-error; the buffer is app/textbuf.c and the language knowledge
- * is lang/service.c now. One file is edited; the other files of its project (ed_set_project) are read from the
- * card so that suggestions and signatures know their classes (tabs come next). */
+ * is lang/service.c now. The files of a project (ed_set_project) are open in tabs: suggestions and signatures see
+ * all of them as they are being edited, Run saves them all, an error opens the tab of its file. */
 #include "editor.h"
 #include "keyboard.h"
 #include "service.h"
@@ -30,15 +30,20 @@ static const char* SEL_NAMES[NTOOLS] = { "Copy", "Cut", "Paste", "All", "Done" }
 /* one clipboard for all files the editor opens (copy in one file, paste in another) */
 static char* clipboard;
 
+#define MAX_TABS 12
+/* a file open in a tab; the current tab's view lives in the Editor fields (tb, path, top...) and goes back here
+ * when another tab is chosen */
+typedef struct { TextBuf* tb; char path[320]; int top; float scrollX; int errLine; } Tab;
+
 struct Editor {
     EditorHost host;
     TextBuf* tb;
     MsService* svc;
-    char path[256];
+    char path[320];
     int top;                            /* first line on screen */
     float scrollX;
     int errLine;
-    char status[300];
+    char status[340];
     uint32_t statusRgb;
     int leaveArmed;                     /* START pressed once with unsaved changes */
     char sug[NSUG][SVC_WORD];
@@ -46,7 +51,8 @@ struct Editor {
     char sig[128];
     int sigArg;
     int svcLen; unsigned svcSum;        /* the text the service has (to give it a new one only after changes) */
-    char** others; int nothers;         /* the other files of the project (read-only, for the service) */
+    char** others; int nothers;         /* library files of the project (uses.txt; read-only, for the service) */
+    Tab tabs[MAX_TABS]; int ntabs, cur; /* the open files: tabs[cur].tb == tb */
     uint32_t ms;
     uint32_t heldSince[4], lastRepeat[4];   /* Up, Down, Left, Right, then B */
     uint32_t bSince, bLast;
@@ -93,15 +99,21 @@ Editor* ed_new(const EditorHost* host) {
     ed->svc = svc_new();
     if (!ed->tb || !ed->svc) { ed_free(ed); return NULL; }
     ed->svcLen = -1;
+    ed->tabs[0].tb = ed->tb; ed->ntabs = 1; ed->cur = 0;
     kbd_reset();
     kbd_set_enter_label("Enter");
     return ed;
 }
 
+/* drops the project: its library texts and every tab but the current one (which becomes tab 0) */
 static void free_others(Editor* ed) {
     for (int i = 0; i < ed->nothers; i++) free(ed->others[i]);
     free(ed->others);
     ed->others = NULL; ed->nothers = 0;
+    for (int i = 0; i < ed->ntabs; i++) if (i != ed->cur) tb_free(ed->tabs[i].tb);
+    memset(&ed->tabs[0], 0, sizeof ed->tabs[0]);
+    ed->tabs[0].tb = ed->tb;
+    ed->ntabs = 1; ed->cur = 0;
     ed->svcLen = -1;
 }
 
@@ -158,27 +170,99 @@ int ed_set_project(Editor* ed, const char* dir) {
     if (!project_load(dir, &pr, err, sizeof err)) return 0;
     ed->others = (char**)calloc(pr.nfiles > 0 ? pr.nfiles : 1, sizeof(char*));
     if (!ed->others) { project_free(&pr); return 0; }
+    /* the project's own files become tabs in the order of their names, the open one at its place; library files
+     * (uses.txt) are only read for the service. A file that is not saved yet stays the first tab. */
+    Tab tabs[MAX_TABS];
+    int n = 0, curAt = -1;
     for (int i = 0; i < pr.nfiles; i++) {
-        if (!strcmp(pr.files[i].path, ed->path)) continue;     /* the edited file comes from the buffer */
+        if (!strcmp(pr.files[i].path, ed->path)) {           /* the edited file comes from the buffer */
+            if (n < MAX_TABS) { memset(&tabs[n], 0, sizeof tabs[n]); tabs[n].tb = ed->tb; curAt = n++; }
+            continue;
+        }
         char* t = read_file(pr.files[i].path, NULL);
-        if (t) ed->others[ed->nothers++] = t;
+        if (!t) continue;
+        if (pr.files[i].lib || n >= MAX_TABS - (curAt < 0)) { ed->others[ed->nothers++] = t; continue; }
+        TextBuf* tb = tb_new(t);
+        free(t);
+        if (!tb) continue;
+        memset(&tabs[n], 0, sizeof tabs[n]);
+        tabs[n].tb = tb;
+        snprintf(tabs[n].path, sizeof tabs[n].path, "%s", pr.files[i].path);
+        n++;
     }
     project_free(&pr);
-    return ed->nothers;
+    if (curAt < 0) {                                         /* not on the card yet: first */
+        memmove(&tabs[1], &tabs[0], sizeof(Tab) * n);
+        memset(&tabs[0], 0, sizeof tabs[0]);
+        tabs[0].tb = ed->tb; curAt = 0; n++;
+    }
+    memcpy(ed->tabs, tabs, sizeof(Tab) * n);
+    snprintf(ed->tabs[curAt].path, sizeof ed->tabs[curAt].path, "%s", ed->path);
+    ed->ntabs = n; ed->cur = curAt;
+    ed->svcLen = -1;
+    return ed->ntabs - 1 + ed->nothers;
 }
 
-int ed_project_files(const Editor* ed) { return ed->nothers; }
+int ed_project_files(const Editor* ed) { return ed->ntabs - 1 + ed->nothers; }
 
-int ed_save(Editor* ed) {
-    FILE* f = fopen(ed->path, "wb");                   /* written as it is: UTF-8 without BOM, '\n' */
-    if (!f || fwrite(tb_text(ed->tb), 1, tb_len(ed->tb), f) != (size_t)tb_len(ed->tb)) {
+/* ---------- tabs ---------- */
+int ed_tabs(const Editor* ed) { return ed->ntabs; }
+int ed_current_tab(const Editor* ed) { return ed->cur; }
+const char* ed_tab_name(const Editor* ed, int i) {
+    if (i < 0 || i >= ed->ntabs) return "";
+    return base_name(i == ed->cur ? ed->path : ed->tabs[i].path);
+}
+
+int ed_switch_tab(Editor* ed, int i) {
+    if (i < 0 || i >= ed->ntabs) return 0;
+    if (i == ed->cur) return 1;
+    Tab* t = &ed->tabs[ed->cur];                             /* the view goes back into its tab */
+    t->top = ed->top; t->scrollX = ed->scrollX; t->errLine = ed->errLine;
+    snprintf(t->path, sizeof t->path, "%s", ed->path);
+    if (tb_has_selection(ed->tb)) tb_set_cursor(ed->tb, tb_cursor(ed->tb), 0);
+    ed->cur = i;
+    t = &ed->tabs[i];
+    ed->tb = t->tb;
+    snprintf(ed->path, sizeof ed->path, "%s", t->path);
+    ed->top = t->top; ed->scrollX = t->scrollX; ed->errLine = t->errLine;
+    ed->selMode = 0; ed->leaveArmed = 0;
+    ed->svcLen = -1;                                         /* text 0 of the service is another file now */
+    set_status(ed, 0x8090A0, base_name(ed->path));
+    return 1;
+}
+
+static int any_modified(const Editor* ed) {
+    for (int i = 0; i < ed->ntabs; i++) if (tb_modified(ed->tabs[i].tb)) return 1;
+    return 0;
+}
+
+static int write_buf(TextBuf* tb, const char* path) {
+    FILE* f = fopen(path, "wb");                       /* written as it is: UTF-8 without BOM, '\n' */
+    if (!f || fwrite(tb_text(tb), 1, tb_len(tb), f) != (size_t)tb_len(tb)) {
         if (f) fclose(f);
-        set_status(ed, 0xFF7070, "cannot save the file");
         return 0;
     }
     fclose(f);
-    tb_set_saved(ed->tb);
+    tb_set_saved(tb);
+    return 1;
+}
+
+int ed_save(Editor* ed) {
+    if (!write_buf(ed->tb, ed->path)) { set_status(ed, 0xFF7070, "cannot save the file"); return 0; }
     set_status(ed, 0x80E080, "saved");
+    return 1;
+}
+
+/* Run compiles the files on the card: every changed tab is saved first */
+static int save_all(Editor* ed) {
+    if (!ed_save(ed)) return 0;
+    for (int i = 0; i < ed->ntabs; i++)
+        if (i != ed->cur && tb_modified(ed->tabs[i].tb) && !write_buf(ed->tabs[i].tb, ed->tabs[i].path)) {
+            char m[300];
+            snprintf(m, sizeof m, "cannot save %s", base_name(ed->tabs[i].path));
+            set_status(ed, 0xFF7070, m);
+            return 0;
+        }
     return 1;
 }
 
@@ -193,12 +277,14 @@ static void refresh(Editor* ed) {
     const char* t = tb_text(ed->tb);
     int n = tb_len(ed->tb);
     unsigned sum = checksum(t, n);
-    if (ed->svcLen < 0) {                               /* new file or project: the buffer is text 0, then the others */
-        const char** all = (const char**)malloc(sizeof(char*) * (ed->nothers + 1));
+    if (ed->svcLen < 0) {   /* new file, project or tab: the buffer is text 0, then the other tabs, then the libraries */
+        const char** all = (const char**)malloc(sizeof(char*) * (ed->ntabs + ed->nothers + 1));
         if (all) {
-            all[0] = t;
-            for (int i = 0; i < ed->nothers; i++) all[i + 1] = ed->others[i];
-            svc_set_texts(ed->svc, all, ed->nothers + 1);
+            int k = 0;
+            all[k++] = t;
+            for (int i = 0; i < ed->ntabs; i++) if (i != ed->cur) all[k++] = tb_text(ed->tabs[i].tb);
+            for (int i = 0; i < ed->nothers; i++) all[k++] = ed->others[i];
+            svc_set_texts(ed->svc, all, k);
             free(all);
         } else svc_set_texts(ed->svc, &t, 1);
         ed->svcLen = n; ed->svcSum = sum;
@@ -236,9 +322,14 @@ static int error_line(const char* err) {
 
 static void run(Editor* ed) {
     if (!ed->host.run) { set_status(ed, 0xFF7070, "this host cannot run programs"); return; }
-    if (!ed_save(ed)) return;
+    if (!save_all(ed)) return;
     char err[300] = "";
     if (ed->host.run(ed->path, err, sizeof err)) { set_status(ed, 0x80E080, "ran without errors"); ed->errLine = 0; return; }
+    for (int i = 0; i < ed->ntabs; i++) {                /* "Ship.cs line 12: ..." (a project): open that file's tab */
+        char at[340];
+        snprintf(at, sizeof at, "%s line ", ed_tab_name(ed, i));
+        if (strstr(err, at)) { ed_switch_tab(ed, i); break; }
+    }
     set_status(ed, 0xFF7070, err);
     ed->errLine = error_line(err);
     if (ed->errLine > 0) tb_set_cursor(ed->tb, tb_line_start(ed->tb, ed->errLine - 1), 0);
@@ -321,7 +412,7 @@ int ed_update(Editor* ed, const UiInput* in) {
     ed->ms = in->ms;
     Layout L = layout();
     if (in->down & UI_BTN_START) {
-        if (!tb_modified(ed->tb) || ed->leaveArmed) return 0;
+        if (!any_modified(ed) || ed->leaveArmed) return 0;
         ed->leaveArmed = 1;
         set_status(ed, 0xF0D080, "unsaved changes: SELECT saves, START again leaves without saving");
         return 1;
@@ -348,8 +439,10 @@ int ed_update(Editor* ed, const UiInput* in) {
         } else tb_move(ed->tb, i == 0 ? TB_UP : i == 1 ? TB_DOWN : i == 2 ? TB_LEFT : TB_RIGHT, grow);
     }
     if (repeat(&ed->bSince, &ed->bLast, in, UI_BTN_B)) { tb_backspace(ed->tb); edited(ed); }
-    if (in->down & UI_BTN_Y) { if (tb_undo(ed->tb)) edited(ed); }
-    if (in->down & UI_BTN_X) set_sel_mode(ed, !ed->selMode);
+    if ((in->down & UI_BTN_Y) && !(in->held & UI_BTN_L)) { if (tb_undo(ed->tb)) edited(ed); }
+    if ((in->held & UI_BTN_L) && (in->down & (UI_BTN_X | UI_BTN_Y)) && ed->ntabs > 1)   /* L + X / L + Y: next / previous tab */
+        ed_switch_tab(ed, (ed->cur + (in->down & UI_BTN_X ? 1 : ed->ntabs - 1)) % ed->ntabs);
+    else if (in->down & UI_BTN_X) set_sel_mode(ed, !ed->selMode);
     if ((in->down & UI_BTN_R) && ed->nsug) { complete(ed, 0); edited(ed); }
     if (in->down & UI_BTN_SELECT) ed_save(ed);
     if (in->down & UI_BTN_A) run(ed);
@@ -361,10 +454,28 @@ int ed_update(Editor* ed, const UiInput* in) {
 /* ---------- drawing ---------- */
 static void draw_code(Editor* ed, const Layout* L) {
     ui_screen(L->codeScreen);
-    char title[300];
-    snprintf(title, sizeof title, "%s%s", base_name(ed->path), tb_modified(ed->tb) ? " *" : "");
     ui_rect(0, 0, L->codeW, 16, 0x1C2230);
-    ui_text(6, 2, title, 12, 0x7FB2FF);
+    /* the tabs: from the first one that still lets the current one fit before the position text */
+    int first = 0;
+    for (;;) {
+        float x = 6;
+        for (int i = first; i <= ed->cur; i++) {
+            char nm[340];
+            snprintf(nm, sizeof nm, "%s%s", ed_tab_name(ed, i), tb_modified(ed->tabs[i].tb) ? "*" : "");
+            x += ui_text_width(nm, 12) + 14;
+        }
+        if (x < L->codeW - 60 || first >= ed->cur) break;
+        first++;
+    }
+    float tx = 6;
+    for (int i = first; i < ed->ntabs && tx < L->codeW - 60; i++) {
+        char nm[340];
+        snprintf(nm, sizeof nm, "%s%s", ed_tab_name(ed, i), tb_modified(ed->tabs[i].tb) ? "*" : "");
+        float w = ui_text_width(nm, 12);
+        if (i == ed->cur && ed->ntabs > 1) ui_rect(tx - 4, 0, w + 8, 16, 0x2C3E5C);
+        ui_text(tx, 2, nm, 12, i == ed->cur ? 0x7FB2FF : 0x707A88);
+        tx += w + 14;
+    }
     int line = tb_line_of(ed->tb, tb_cursor(ed->tb)), col = tb_col_of(ed->tb, tb_cursor(ed->tb));
     char pos[40];
     snprintf(pos, sizeof pos, "%d:%d", line + 1, col + 1);
