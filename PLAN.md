@@ -75,8 +75,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       `foreach` po parach, liczenie słów, listy obiektów).
 - [x] Rozdział 13 „Lambdy” (`Func`/`Action`, metody listy z lambdą, `Sort` z porównaniem, pamiętane zmienne,
       metoda jako wartość, zdarzenia `+=`/`-=`, ściąga typów).
+- [x] Rozdział 14 „enum i struct” (enum w `switch`, liczby i rzutowania, enum jako klucz; struct kopiowany przy
+      przypisaniu i w metodzie, struct czy klasa). Właściwości są już w rozdziale 10.
 - [ ] Kolejne rozdziały (propozycja kolejności):
-      enum/struct/właściwości, przestrzenie nazw,
+      przestrzenie nazw,
       korutyny, projekty (`uses.txt`), gra: Update/Draw, Gfx, Input, dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.
 

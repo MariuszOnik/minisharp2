@@ -150,3 +150,5 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
   plikami projektu.
 - 2026-11-14: Rozdział 13 „Lambdy” – 8 sprawdzanych przykładów: od `x => x * 2` przez `Find`/`RemoveAll`/`Sort`
   na listach po licznik pamiętający zmienną i zdarzenia z `+=`/`-=`. Wszystko działało bez zmian w języku.
+- 2026-11-14: Rozdział 14 „enum i struct” – 7 przykładów; najważniejsze porównanie: struktura kopiowana przy
+  przypisaniu obok klasy dzielonej przez dwie zmienne.
