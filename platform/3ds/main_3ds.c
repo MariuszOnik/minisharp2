@@ -19,6 +19,7 @@
 #include "editor.h"
 #include "files.h"
 #include "help.h"
+#include "conscreen.h"
 #include "ui_3ds.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -55,7 +56,24 @@ static int stop_pressed(void) {
     return (h & KEY_START) && (h & KEY_SELECT);
 }
 
+/* a program run by the user shows its Console in this screen (app/conscreen.c, citro2d); NULL = the text console
+ * (the tests, X in the menu) */
+static ConScreen* g_cs;
+static u64 g_lastDraw;
+
+static void cs_frame(void) {
+    ui3ds_frame_begin(0x000000, 0x0C0C0C);
+    cs_draw(g_cs);
+    ui3ds_frame_end();
+    g_lastDraw = osGetTime();
+}
+
 static void out_write(const char* s) {
+    if (g_cs) {                                 /* the text is in the grid already (lib/console.c): show it now and then */
+        if (g_out) fputs(s, g_out);
+        if (osGetTime() - g_lastDraw > 50) cs_frame();
+        return;
+    }
     if (g_screen) { consoleSelect(&top); fputs(s, stdout); }
     if (g_out) fputs(s, g_out);
 }
@@ -84,11 +102,24 @@ static void run_fail(const char* fmt, const char* a) {
 /* answers for Console.ReadLine while running the tests (tests/input/<name>.txt); NULL = a program of the user */
 static FILE* g_in;
 
-/* vm_call; Console.ReadLine reads g_in. Typing an answer needs the keyboard, which the text console here has not:
- * only the terminal (Y) can do it for now (the Console grid of stage 3 brings it to programs). */
+/* vm_call; Console.ReadLine reads g_in (tests) or asks on the console screen (the keyboard on the touch screen) */
 static int call(VM* vm, int func) {
     int r = vm_call(vm, func);
     while (r == MS_WAIT_INPUT) {
+        if (g_cs) {
+            cs_ask(g_cs);
+            int ev = CS_NONE;
+            while (ev != CS_LINE && ev != CS_EOF) {
+                if (!aptMainLoop()) { ev = CS_EOF; break; }
+                hidScanInput();
+                UiInput in;
+                ui3ds_input(&in);
+                ev = cs_update(g_cs, &in);
+                cs_frame();
+            }
+            r = vm_resume_input(vm, ev == CS_LINE ? cs_line(g_cs) : NULL);
+            continue;
+        }
         if (!g_in && !g_screen) { r = vm_resume_input(vm, NULL); continue; }    /* a test without answers: like stdin from /dev/null */
         if (!g_in) {
             ms_vm_fail(vm,"Console.ReadLine: typing an answer works only in the terminal (Y in the menu) for now");
@@ -139,7 +170,8 @@ static void run(const char* path, int isProject, int frames) {
                 if (!aptMainLoop()) break;
                 hidScanInput();
                 if (hidKeysDown() & KEY_START) break;
-                gspWaitForVBlank();
+                if (g_cs) cs_frame();               /* waits for the screen like gspWaitForVBlank */
+                else gspWaitForVBlank();
             }
             g_ms += 1000.0 / 60;
             ok = call(vm, up);
@@ -276,29 +308,40 @@ static void terminal(void) {
     menu();
 }
 
-/* the editor's Run: the screens go back to the text console, the program runs like with A in the menu, then
- * a key returns to the editor (citro2d again); the error, if any, goes back to the editor for the jump */
-static int editor_run(const char* path, char* err, int errcap) {
-    ui3ds_exit();
-    consoleInit(GFX_TOP, &top);
-    consoleInit(GFX_BOTTOM, &bottom);
-    consoleSelect(&bottom);
-    char proj[400];
-    int isProject = files_project_of(APP_DIR, path, proj, sizeof proj);
-    printf("running %s\n(START stops Update,\nSTART+SELECT stops any loop)\n", isProject ? proj : path);
+/* runs a program by the user on the console screen (the screens are in citro2d already): its Console is a 40 x 20
+ * grid on the top screen (the system font is proportional: bigger cells than 50 x 30 stay readable), ReadLine asks
+ * on the touch screen; at the end the result stays until A / B. 1 = no error (else the error in g_lastErr). */
+static int run_on_screen(const char* path, int isProject) {
+    g_cs = cs_new(40, 20);
+    if (!g_cs) { snprintf(g_lastErr, sizeof g_lastErr, "out of memory"); return 0; }
+    cs_set_hint(g_cs, "START: stop Update    START+SELECT: stop any loop");
+    lib_console_set_grid(cs_grid(g_cs));
     g_out = fopen(LOG_PATH, "w");
-    run(isProject ? proj : path, isProject, -1);
+    cs_frame();
+    run(path, isProject, -1);
     if (g_out) { fclose(g_out); g_out = NULL; }
-    consoleSelect(&bottom);
-    printf("\n%s\n\nA / B: back to the editor\n", g_lastErr[0] ? "error (see the top screen)" : "done");
+    cs_finish(g_cs, g_lastErr[0] == 0, g_lastErr);
     while (aptMainLoop()) {
         hidScanInput();
-        if (hidKeysDown() & (KEY_A | KEY_B)) break;
-        gspWaitForVBlank();
+        UiInput in;
+        ui3ds_input(&in);
+        if (cs_update(g_cs, &in) == CS_LEAVE) break;
+        cs_frame();
     }
-    snprintf(err, errcap, "%s", g_lastErr);
-    if (!ui3ds_init()) return 0;
+    lib_console_set_grid(NULL);
+    cs_free(g_cs);
+    g_cs = NULL;
     return g_lastErr[0] == 0;
+}
+
+/* the editor's Run: the program runs on the console screen, then back to the editor; the error, if any, goes back
+ * to the editor for the jump */
+static int editor_run(const char* path, char* err, int errcap) {
+    char proj[400];
+    int isProject = files_project_of(APP_DIR, path, proj, sizeof proj);
+    int ok = run_on_screen(isProject ? proj : path, isProject);
+    snprintf(err, errcap, "%s", g_lastErr);
+    return ok;
 }
 
 static void editor_help(void);
@@ -419,14 +462,15 @@ int main(void) {
         hidScanInput();
         u32 k = hidKeysDown();
         if (k & KEY_START) break;
-        if (k & KEY_A) {
-            consoleSelect(&top); consoleClear();
-            consoleSelect(&bottom); printf("\nrunning... (START stops Update,\nSTART+SELECT stops any loop)\n");
-            g_out = fopen(LOG_PATH, "w");
-            run(MAIN_CS, 0, -1);
-            if (g_out) { fclose(g_out); g_out = NULL; }
+        if (k & KEY_A) {                            /* main.cs on the console screen */
+            if (ui3ds_init()) {
+                run_on_screen(MAIN_CS, 0);
+                ui3ds_exit();
+            }
+            consoleInit(GFX_TOP, &top);
+            consoleInit(GFX_BOTTOM, &bottom);
             menu();
-            printf("\ndone (output also in log.txt)\n");
+            printf("\n%s (output also in log.txt)\n", g_lastErr[0] ? "error" : "done");
         }
         if (k & KEY_X) run_tests();
         if (k & KEY_Y) terminal();

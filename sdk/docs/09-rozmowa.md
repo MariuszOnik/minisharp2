@@ -3,8 +3,8 @@
 Do tej pory program tylko mówił: wypisywał, co policzył. Teraz nauczy się **słuchać**. `Console.ReadLine()` czeka,
 aż użytkownik wpisze linię tekstu i zatwierdzi ją Enterem, a potem oddaje ją programowi jako napis.
 
-Na 3DS odpowiedź wpiszesz na razie tylko w terminalu (zob. „W terminalu” na końcu rozdziału); okno uruchomionego
-programu dostanie klawiaturę w jednej z kolejnych wersji.
+Na 3DS, gdy program czeka na odpowiedź, na dolnym ekranie pojawia się pole i klawiatura: wpisz tekst i naciśnij
+Enter (albo A). START kończy wejście – `ReadLine` oddaje wtedy `null`.
 
 ## Pytanie i odpowiedź
 
@@ -244,7 +244,7 @@ Console.Write("@");
 
 > **Dla zaawansowanych:** gdy program pisze do pliku albo do zwykłego okna tekstowego (np. testy na PC bez
 > `--grid`), `Clear` i `SetCursorPosition` nic nie robią, a kolory są tylko zapamiętywane. Pozycja spoza ekranu to
-> błąd, jak wyjątek w C#. Na ekranie 3DS konsola ma 50 kolumn i 30 wierszy.
+> błąd, jak wyjątek w C#. Na ekranie 3DS konsola ma 40 kolumn i 20 wierszy.
 
 ## W terminalu
 
