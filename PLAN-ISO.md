@@ -28,17 +28,35 @@ nie kod edytora Unity.
 | Stary moduł C | stare repo, gałąź `toee-3d`: `src/iso.c` + `iso.h` (373 linie, sortowanie z kubełkami, zależności nieruchomych liczone raz), `games/IsoBench`, `games/IsoBenchC` |
 | Sprajty testowe | `IsometricLib/kenney_isometric-buildings.zip` (CC0) |
 
-## Model (szkic)
+## Model (decyzje użytkownika 2026-11-14 + szkic)
 
+- **Każda mapa to scena, każda scena jest niezależna** (własny plik, własny IsoWorld; nic nie przechodzi między
+  scenami po cichu – zob. „Wspólne dane” niżej).
 - **Współrzędne** w kafelkach (float), jak u Matta: `x`, `y` po podłodze, `z` w górę. Ekran = „piksele bazowe”
   (y w dół), kamera dokłada przesunięcie i zoom.
 - **IsoWorld** – korzeń mapy: `TileSize`, `TileRatio`, `TileAngle`, `TileHeight`, `Origin` (przesunięcie całej mapy).
-- **Węzeł sceny** – nazwa, rodzic, dzieci, pozycja **względem rodzica**, aktywny. Komponenty: `IsoObject` (rozmiar,
-  ruchomy), `Sprite` (warstwy: obraz, przesunięcie, odbicie), `Collider` (bryła albo własny prostopadłościan,
-  wyzwalacz, maska), `Script` (klasa + wartości pól).
+- **Węzeł sceny** – nazwa, rodzic, dzieci, pozycja **względem rodzica**. Węzeł bez bryły to grupa (folder).
+- **IsoObject ma stały zestaw sekcji wbudowanych w C**, nie dowolne komponenty: Transform (pozycja, rozmiar bryły),
+  Wygląd (warstwy sprajtów: obraz, przesunięcie, odbicie), Kolizja (bryła albo własny prostopadłościan, wyzwalacz,
+  warstwa), Flagi, **Skrypty** (lista klas `IsoBehaviour` z wartościami pól). Otwarte na rozszerzanie są tylko skrypty.
+- **Flagi w inspektorze:**
+  - `Statyczny` / `Ruchomy` – statyczny: zależności sortowania liczone raz, kolizja jako przeszkoda; przesunięcie
+    statycznego ze skryptu działa, ale przelicza jego zależności (ostrzeżenie w logu).
+  - `Widoczny` on/off – niewidoczny nie jest rysowany ani sortowany, ale kolizja, wyzwalacz i skrypty działają
+    (obiekty zdarzeń, strefy, punkty startu). W edytorze widać go jako półprzezroczysty szkielet bryły.
+  - `Aktywny` on/off – nieaktywny nie istnieje dla gry (bez `Update`, bez kolizji, bez rysowania); dotyczy też dzieci.
+  - (tylko edytor) `Zablokowany` – nie da się go zaznaczyć na mapie.
+- **Prefab albo obiekt jednorazowy:** obiekt sceny może być w całości opisany w scenie (specjalny, jedyny w swoim
+  rodzaju) albo być instancją prefabu z nadpisanymi polami. „Zapisz jako prefab” robi z jednorazowego prefab,
+  „Odepnij od prefabu” robi z instancji obiekt jednorazowy. Na start **bez zagnieżdżonych prefabów i wariantów**.
 - **Sortowanie zawsze na płaskiej liście** pozycji światowych – hierarchia służy edycji i grupowaniu. Dziecko
   IsoObjectu to albo warstwa wizualna rodzica (piętro, cień, efekt), albo osobny obiekt sortowany niezależnie.
-- **Skrypty:**
+- **Podłoga = zwykłe sortowane obiekty** (decyzja 2026-11-14: bez osobnej warstwy). Do sprawdzenia w prototypie:
+  **scalanie** – grupę jednakowych, płaskich kafelków tworzących pełny prostokąt na tej samej wysokości sortujemy jako
+  **jedną dużą bryłę** (rysowaną w środku od tyłu do przodu), np. 40 kafelków = 1 obiekt dla sortowania. Działa, gdy
+  sprajty nie wystają poza bryłę i nic w nią nie wchodzi; to samo dla rzędu ściany. Flaga grupy `Scal` + licznik par
+  przed / po w stres teście.
+- **Skrypty** (na start tylko `.cs`, grafy później; kilka skryptów na obiekt, lista w inspektorze z „+ Dodaj skrypt”):
   ```cs
   using Iso;
   class Drzwi : IsoBehaviour {
@@ -49,6 +67,44 @@ nie kod edytora Unity.
       public override void OnTriggerEnter(IsoObject kto) { }
   }
   ```
+
+  Pola do inspektora: publiczne pola typów prostych (`int`, `float`, `bool`, `string`, enum), `Image`, prefab oraz
+  **odwołania do innych obiektów sceny / ich skryptów** (`public Drzwi cel;` – wybierane w inspektorze).
+
+## Unity: co dobre, co złe, co robimy inaczej
+
+Źródła: unity-iso-tools, wystąpienie Ryana Hipple'a „Game Architecture with Scriptable Objects” (Unite 2017),
+doświadczenia z Unity. Zasada Hipple'a: system ma być **modułowy, edytowalny i debugowalny**, a każdą scenę da się
+uruchomić i przetestować osobno.
+
+**Dobre – bierzemy:** skrypt przypięty do obiektu, pola edytowalne w inspektorze, prefaby, hierarchia, scena jako
+plik, przyciąganie do kratek i obiektów, szkielet bryły na sprajcie.
+
+| Problem w Unity | U nas |
+|---|---|
+| Ukryte zależności: `GetComponent<X>()`, `Find("Nazwa")`, `[RequireComponent]` – błąd wychodzi dopiero w grze | Odwołania jako **typowane pola ustawiane w inspektorze**; scena przy wczytaniu i edytor sprawdzają brakujące / złego typu i pokazują listę błędów. `Find` jest, ale nie jest głównym sposobem |
+| Singletony i menedżery (`GameManager.Instance`) – scena nie działa sama, test wymaga całej gry | **Wspólne dane** jako pliki projektu (pomysł Hipple'a: „zmienne” i „kanały zdarzeń” jako zasoby): np. `Zmienna<int> ZdrowieGracza`, `Sygnał DrzwiOtwarte` – skrypt A wysyła, skrypt B słucha, połączenia w inspektorze. Bez statycznego stanu w skryptach gry |
+| Dziesiątki drobnych komponentów zależnych od siebie (Collider wymaga Rigidbody wymaga IsoObject…) | Stały zestaw sekcji w C (Transform, Wygląd, Kolizja, Flagi) – zawsze są, nic nie trzeba dokładać ani szukać |
+| Kolejność `Awake`/`Start`/`Update` między obiektami nieokreślona → błędy „raz działa, raz nie” | Kolejność **stała i opisana**: najpierw wszystkie `Start` w kolejności hierarchii, potem `Update` w tej samej kolejności |
+| Każdy `Update` kosztuje, nawet pusty | Wołamy tylko metody, które skrypt naprawdę nadpisał (kompilator wie); statyczne obiekty bez skryptów nie są odwiedzane wcale |
+| Testy wymagają edytora i trybu Play | Scena i skrypty działają **bez okna** na PC: test wczytuje scenę, robi N kroków po 1/60 s (zegar gry już jest powtarzalny) i sprawdza stan. Skrypt można też utworzyć bez sceny, na obiekcie testowym |
+| Zmiana nazwy pola gubi dane w scenach po cichu | Nieznane pole przy wczytaniu = ostrzeżenie, wartość zostaje w pliku (nie ginie przy zapisie) |
+| Zagnieżdżone prefaby i warianty – trudne do zrozumienia nadpisania | Jeden poziom: prefab + nadpisane pola; edytor pokazuje, które pola są nadpisane |
+| Brak oddzielenia: kod gry zna edytor (`#if UNITY_EDITOR`) | Edytor tylko czyta i zapisuje plik sceny i woła refleksję; skrypty gry nic o nim nie wiedzą |
+
+**Ryzyka u nas:** VM jest wolniejsza od C# w Unity – setki skryptów z `Update` na 3DS trzeba zmierzyć w prototypie;
+refleksja to nowy fragment rdzenia języka (testy błędów!); pamięć 3DS przy dużych scenach (liczniki w logu).
+
+## Prototyp (cel najbliższy, decyzja 2026-11-14: „zbudujmy i sprawdźmy”)
+
+Najmniejsza rzecz, która sprawdza cały pomysł, zanim powstaną pełne edytory:
+- **P1 – runtime** (I0 + I1 + I2 + najważniejsze z I3): scena z pliku pisanego ręcznie, IsoWorld z przesuwaniem,
+  obiekty jednorazowe i z prefabu, flagi `Statyczny/Ruchomy`, `Widoczny`, `Aktywny`, skrypty `IsoBehaviour` z polami
+  ustawianymi przez refleksję, `Sygnał` jako wspólne zdarzenie, test bez okna na PC. Stres test na 3DS: liczba
+  obiektów, czas sortowania, czas skryptów, pamięć; podłoga zwykła i **scalona** – porównanie.
+- **P2 – mini edytor**: kafelek w menu, mapa, paleta prefabów, stawianie / zaznaczanie / przesuwanie z przyciąganiem,
+  inspektor (flagi, lista skryptów i ich pola), zapis sceny, „Graj”.
+- Po prototypie: wnioski do tego pliku, potem dalsze etapy poniżej.
 
 ## Etapy
 
@@ -64,7 +120,8 @@ nie kod edytora Unity.
 - [ ] API MiniSharp: `IsoWorld` (parametry kafelka, `Origin`, `IsoToScreen`, `ScreenToIso(p, z)`, `TouchTile`),
       `IsoObject` (`Position`, `Size`, `TilePosition`, `Moving`), rysowanie posortowanych sprajtów, kamera (przesunięcie, zoom).
 - [ ] Przykład / test runtime: stres test w stylu `Gra.cs` (budynki, ludziki, liczniki par i zależności).
-- [ ] Podłoga jako **warstwa kafelków** (tablica, bez sortowania, rysowana pierwsza) – zob. „Do decyzji”.
+- [ ] **Scalanie** grupy płaskich kafelków w jedną bryłę sortowania (sprawdzenie warunków: pełny prostokąt, jedna
+      wysokość, sprajty w bryle) + test zgodności kolejności z wersją bez scalania.
 - [ ] Rozdział dokumentacji „Świat izometryczny”.
 
 ### I2 – refleksja w języku (rdzeń, decyzja użytkownika 2026-11-14: dodajemy)
@@ -122,8 +179,9 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 
 - **Gdzie trzymać `IsometricLib/`** (projekt Unity + zip Kenneya, ~2 MB): propozycja – poza repo (np.
   `E:\minsharpProject\IsometricLib`) albo w `.gitignore`; do repo tylko sprajty potrzebne testom.
-- **Podłoga**: osobna warstwa kafelków (tablica, bez sortowania – oszczędność pamięci i czasu na 3DS; mapa 48×48 to
-  2304 obiekty mniej) czy zwykłe IsoObjecty jak w `Gra.cs`. Propozycja: warstwa kafelków + obiekty sortowane.
+- (rozstrzygnięte 2026-11-14: podłoga to zwykłe sortowane obiekty, do sprawdzenia scalanie w prototypie.)
+- **Wspólne dane między scenami** (np. ekwipunek gracza przy przejściu na inną mapę): pliki `Zmienna`/`Sygnał` żyją
+  w projekcie, nie w scenie, więc przetrwają zmianę sceny – czy to wystarczy, czy potrzebny jest zapis stanu gry.
 - **Format `.scene` / `.prefab`**: JSON (wspólny `json.c` z edytorem grafu, PLAN.md Etap 5) czy prosty tekst wierszowy.
   Propozycja: JSON.
 - **Edytor map a pętla gry**: czy „Graj” uruchamia scenę w tym samym procesie co edytor (szybko), czy jak zwykły program
@@ -131,6 +189,8 @@ Wymaga warstwy abstrakcji UI z PLAN.md Etap 4.
 
 ## Następny krok
 
+Prototyp P1, w tej kolejności:
 1. I2 (refleksja) – niezależne od reszty, rdzeń języka, można zacząć od razu.
-2. I0: minimalne API modułów, potem I1 (przeniesienie `iso.c` z testem).
-3. I3 → I4 → I5 / I6 (edytory po warstwie abstrakcji UI z PLAN.md Etap 4).
+2. I0: minimalne API modułów, potem I1 (przeniesienie `iso.c` z testem, scalanie).
+3. Scena z pliku + flagi + `IsoBehaviour` + `Sygnał` (część I3), test bez okna, stres test na 3DS.
+Potem P2 (mini edytor) i dalsze etapy.

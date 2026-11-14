@@ -217,3 +217,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Osobny plan silnika izometrycznego (PLAN-ISO.md): moduł iso na bazie unity-iso-tools i starego `iso.c`,
   scena z hierarchią, prefaby, skrypty `IsoBehaviour` z inspektorem, fizyka lite i edytor map w menu hosta. Do języka
   dojdzie refleksja (podzbiór `System.Reflection`); modele 3D i pełna fizyka odłożone.
+- 2026-11-14: PLAN-ISO dopracowany: każda mapa to niezależna scena, obiekty z prefabu albo jednorazowe, flagi
+  Statyczny/Ruchomy, Widoczny, Aktywny, lista skryptów w inspektorze. Tabela „co złe w Unity” (wg Hipple'a): typowane
+  odwołania zamiast GetComponent, sygnały zamiast singletonów, stała kolejność Update, testy bez okna. Podłoga sortowana, w prototypie sprawdzimy scalanie kafelków.
