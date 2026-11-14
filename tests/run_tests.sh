@@ -51,6 +51,12 @@ else
         n=$(basename "$d")
         check "$n" "$("$BIN" --ci "tests/ci/$n" 2>&1)" "tests/expected/$n.txt"
     done
+    # Przykładowe projekty wbudowane w aplikację (sdk/examples/<nazwa>/): muszą się kompilować
+    for d in sdk/examples/*/; do
+        [ -d "$d" ] || continue
+        n=$(basename "$d")
+        if r=$("$BIN" "$d" --check 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: example/$n: $r"; fi
+    done
     # Printer AST: program wydrukowany przez --print działa tak samo jak oryginał (print/<nazwa>; bez rt_*,
     # bo ich komunikaty mają numery linii, które po wydruku są inne)
     rm -rf build/print; mkdir -p build/print

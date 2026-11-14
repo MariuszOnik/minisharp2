@@ -175,6 +175,10 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       filtr NEAREST, do 1024×1024. Test `gfx_image` (+ `tests/assets/sheet.png`). Poprawka: pętla klatek rusza też dla
       programu z samym `Draw()` (wcześniej tylko z `Update()`).
       **Sprawdzić na konsoli:** czy obrazek nie jest do góry nogami i czy obrót idzie zgodnie z ruchem wskazówek zegara.
+- [x] **Przykładowe projekty w aplikacji** (2026-11-14): `sdk/examples/Gwiazdki` (rozdział 16) i `sdk/examples/Monety`
+      (rozdział 17, z obrazkami `gracz.png`, `moneta.png`) jadą w `.3dsx` (romfs) i przy starcie kopiują się do
+      `sdmc:/minisharp/`, gdy takiego folderu jeszcze nie ma (zmiany użytkownika nie są nadpisywane); `make test`
+      sprawdza, że się kompilują.
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
 - [ ] **Podział `Console` na warstwy** (decyzja użytkownika 2026-11-13): `Console` to biblioteka, nie część języka ani platformy.
       (1) API jak w C# (`Write`, `WriteLine`, `ReadLine`, `Clear`, kolory, `SetCursorPosition`) w `lib/`, w C; wygodne dodatki

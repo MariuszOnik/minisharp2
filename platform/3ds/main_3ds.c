@@ -295,6 +295,48 @@ static void ensure_main(void) {
     fclose(f);
 }
 
+/* the example projects built into the .3dsx (romfs:/examples, from sdk/examples) are copied to the card once:
+ * a folder that is there already (maybe changed by the user) is left alone */
+static void copy_file(const char* from, const char* to) {
+    FILE* in = fopen(from, "rb");
+    if (!in) return;
+    FILE* out = fopen(to, "wb");
+    if (out) {
+        char buf[4096];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof buf, in)) > 0) fwrite(buf, 1, n, out);
+        fclose(out);
+    }
+    fclose(in);
+}
+
+static void install_examples(void) {
+    DIR* d = opendir("romfs:/examples");
+    if (!d) return;
+    struct dirent* e;
+    while ((e = readdir(d))) {
+        if (e->d_name[0] == '.') continue;
+        char src[300], dst[300];
+        snprintf(src, sizeof src, "romfs:/examples/%s", e->d_name);
+        snprintf(dst, sizeof dst, APP_DIR "/%s", e->d_name);
+        struct stat st;
+        if (stat(src, &st) || !S_ISDIR(st.st_mode) || !stat(dst, &st)) continue;
+        mkdir(dst, 0777);
+        DIR* f = opendir(src);
+        if (!f) continue;
+        struct dirent* g;
+        while ((g = readdir(f))) {
+            if (g->d_name[0] == '.') continue;
+            char a[600], b[600];
+            snprintf(a, sizeof a, "%s/%s", src, g->d_name);
+            snprintf(b, sizeof b, "%s/%s", dst, g->d_name);
+            copy_file(a, b);
+        }
+        closedir(f);
+    }
+    closedir(d);
+}
+
 static void menu(void) {
     consoleSelect(&bottom); consoleClear();
     printf("MiniSharp2 (" BUILD_ID ")\n\n");
@@ -464,6 +506,7 @@ int main(void) {
     consoleInit(GFX_BOTTOM, &bottom);
     mkdir(APP_DIR, 0777);
     ensure_main();
+    install_examples();
 
     ms_set_clock(frame_millis);
     ms_set_interrupt(stop_pressed);
