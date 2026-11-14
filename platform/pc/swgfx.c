@@ -78,7 +78,50 @@ static void s_text(float x, float y, const char* s, float size, uint32_t argb) {
     }
 }
 
-static const GfxBackend BACKEND = { 2, { 400, 320 }, { 240, 240 }, s_select, s_clear, s_rect, s_circle, s_line, s_text, s_width };
+/* ---------- pictures: kept as RGBA, drawn by mapping every screen pixel back into the picture (nearest pixel) ---------- */
+#define MAX_PICS 256
+typedef struct { unsigned char* px; int w, h; } Pic;
+static Pic pics[MAX_PICS];
+static int npics;
+
+static int s_image_create(const unsigned char* rgba, int w, int h) {
+    if (npics == MAX_PICS || w <= 0 || h <= 0 || w > 4096 || h > 4096) return -1;
+    unsigned char* c = (unsigned char*)malloc((size_t)w * h * 4);
+    if (!c) return -1;
+    memcpy(c, rgba, (size_t)w * h * 4);
+    pics[npics].px = c; pics[npics].w = w; pics[npics].h = h;
+    return npics++;
+}
+
+static void s_image_free_all(void) {
+    for (int i = 0; i < npics; i++) free(pics[i].px);
+    npics = 0;
+}
+
+static void s_image(int id, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, float angle, uint32_t argb) {
+    if (id < 0 || id >= npics || dw == 0 || dh == 0 || sw <= 0 || sh <= 0) return;
+    Pic* p = &pics[id];
+    float cx = dx + fabsf(dw) / 2, cy = dy + fabsf(dh) / 2;
+    float ca = cosf(angle), sa = sinf(angle);
+    float rad = sqrtf(dw * dw + dh * dh) / 2 + 1;
+    int x0 = (int)floorf(cx - rad), x1 = (int)ceilf(cx + rad), y0 = (int)floorf(cy - rad), y1 = (int)ceilf(cy + rad);
+    unsigned ta = argb >> 24;
+    for (int py = y0; py <= y1; py++)
+        for (int px = x0; px <= x1; px++) {
+            float ox = px + 0.5f - cx, oy = py + 0.5f - cy;
+            float u = ox * ca + oy * sa, v = -ox * sa + oy * ca;   /* turned back by the angle */
+            float fu = u / dw + 0.5f, fv = v / dh + 0.5f;          /* 0..1 across the rectangle (mirrored when dw < 0) */
+            if (fu < 0 || fu >= 1 || fv < 0 || fv >= 1) continue;
+            int ix = (int)(sx + fu * sw), iy = (int)(sy + fv * sh);
+            if (ix < 0 || iy < 0 || ix >= p->w || iy >= p->h) continue;
+            const unsigned char* c = p->px + ((size_t)iy * p->w + ix) * 4;
+            unsigned a = c[3] * ta / 255;
+            if (a) blend(px, py, (a << 24) | ((uint32_t)c[0] << 16) | ((uint32_t)c[1] << 8) | c[2]);
+        }
+}
+
+static const GfxBackend BACKEND = { 2, { 400, 320 }, { 240, 240 }, s_select, s_clear, s_rect, s_circle, s_line, s_text, s_width,
+                                     s_image_create, s_image, s_image_free_all };
 
 const GfxBackend* swgfx_init(void) {
     for (int i = 0; i < 2; i++) {
@@ -90,7 +133,10 @@ const GfxBackend* swgfx_init(void) {
     return &BACKEND;
 }
 
-void swgfx_free(void) { for (int i = 0; i < 2; i++) { free(fb[i]); fb[i] = NULL; } }
+void swgfx_free(void) {
+    s_image_free_all();
+    for (int i = 0; i < 2; i++) { free(fb[i]); fb[i] = NULL; }
+}
 
 void swgfx_begin_frame(void) {      /* like the 3DS: every frame starts black */
     for (int i = 0; i < 2; i++) if (fb[i]) memset(fb[i], 0, sizeof(uint32_t) * (size_t)W[i] * H[i]);

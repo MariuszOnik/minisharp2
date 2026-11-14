@@ -2,7 +2,9 @@
 #include "gfx.h"
 #include "libvalue.h"
 #include "lib.h"
+#include "image.h"
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 static const GfxBackend* be;
@@ -13,12 +15,31 @@ static int touching, prevTouching, touchX, touchY;
 static float delta = 1.0f / 60;
 static int frame;
 
-void lib_set_gfx(const GfxBackend* b) { be = b; screen = 0; if (be && be->select) be->select(0); }
+/* pictures: the number MiniSharp sees is an index here (1, 2, ...; 0 = none), loading the same file again gives it again */
+#define MAX_IMAGES 256
+typedef struct { int id, w, h; char path[600]; } Img;
+static Img images[MAX_IMAGES];
+static int nimages;
+static char baseDir[300];
+
+void lib_gfx_set_dir(const char* dir) { snprintf(baseDir, sizeof baseDir, "%s", dir ? dir : ""); }
+
+static void forget_images(void) {
+    if (nimages && be && be->imageFreeAll) be->imageFreeAll();
+    nimages = 0;
+}
+
+void lib_set_gfx(const GfxBackend* b) {
+    if (b != be) forget_images();               /* the pictures belong to the backend that made them */
+    be = b; screen = 0;
+    if (be && be->select) be->select(0);
+}
 const GfxBackend* lib_gfx(void) { return be; }
 
 void lib_gfx_reset(void) {
     held = prevHeld = 0; touching = prevTouching = 0; touchX = touchY = 0;
     delta = 1.0f / 60; frame = 0; alpha = 1.0f; screen = 0;
+    forget_images();
     if (be && be->select) be->select(0);
 }
 
@@ -119,6 +140,79 @@ static Value n_lerp(VM* vm, Value* a) {
 static Value n_width(VM* vm, Value* a) { (void)vm; (void)a; return vint(be ? be->w[screen] : 0); }
 static Value n_height(VM* vm, Value* a) { (void)vm; (void)a; return vint(be ? be->h[screen] : 0); }
 
+/* ---------- pictures ---------- */
+static Value n_loadimage(VM* vm, Value* a) {
+    const char* name = vstr(a[0]);
+    if (!*name) { ms_vm_fail(vm, "Gfx.LoadImage: no file name"); return vint(0); }
+    char path[600];
+    if (name[0] == '/' || strchr(name, ':') || !baseDir[0]) snprintf(path, sizeof path, "%s", name);
+    else snprintf(path, sizeof path, "%s/%s", baseDir, name);
+    for (int i = 0; i < nimages; i++) if (!strcmp(images[i].path, path)) return vint(i + 1);
+    if (!be || !be->imageCreate) return vint(0);            /* no screen (tests of text programs): nothing to draw on */
+    if (nimages == MAX_IMAGES) { ms_vm_fail(vm, "Gfx.LoadImage: at most %d pictures", MAX_IMAGES); return vint(0); }
+    int w, h;
+    const char* why = "";
+    unsigned char* px = image_load_file(path, &w, &h, &why);
+    if (!px) { ms_vm_fail(vm, "Gfx.LoadImage: cannot read '%s' (%s)", path, why ? why : "?"); return vint(0); }
+    int id = be->imageCreate(px, w, h);
+    image_free_pixels(px);
+    if (id < 0) { ms_vm_fail(vm, "Gfx.LoadImage: '%s' is too big for the screen's memory (%d x %d)", path, w, h); return vint(0); }
+    Img* im = &images[nimages++];
+    im->id = id; im->w = w; im->h = h;
+    snprintf(im->path, sizeof im->path, "%s", path);
+    return vint(nimages);
+}
+
+static Img* image_of(VM* vm, Value v, const char* what) {
+    int i = v.as.i;
+    if (i == 0 && !be) return NULL;                         /* LoadImage without a screen gave 0: drawing does nothing */
+    if (i < 1 || i > nimages) { ms_vm_fail(vm, "%s: %d is not a picture from Gfx.LoadImage", what, i); return NULL; }
+    return &images[i - 1];
+}
+
+static void draw_part(Img* im, float sx, float sy, float sw, float sh, float x, float y, float sc, float angle) {
+    if (be && be->image) be->image(im->id, sx, sy, sw, sh, x, y, sw * sc, sh * sc, angle, argb(0xFFFFFF));
+}
+/* Gfx.Image(img, x, y [, scale]): the whole picture with its top left corner at x, y; a negative scale mirrors it */
+static Value n_image4(VM* vm, Value* a) {
+    Img* im = image_of(vm, a[0], "Gfx.Image");
+    if (im) {
+        float sc = a[3].as.f;
+        float x = a[1].as.f, y = a[2].as.f;
+        if (sc < 0) x -= im->w * sc;                        /* mirrored: it stays in the same place */
+        draw_part(im, 0, 0, (float)im->w, (float)im->h, x, y, sc, 0);
+    }
+    return vnone();
+}
+static Value n_image(VM* vm, Value* a) { Value b[4] = { a[0], a[1], a[2], vfloat(1) }; return n_image4(vm, b); }
+/* Gfx.ImagePart(img, sx, sy, sw, sh, x, y [, scale]): one frame of a sprite sheet */
+static Value n_imagepart8(VM* vm, Value* a) {
+    Img* im = image_of(vm, a[0], "Gfx.ImagePart");
+    if (im) {
+        float sc = a[7].as.f, x = a[5].as.f;
+        if (sc < 0) x -= a[3].as.f * sc;
+        draw_part(im, a[1].as.f, a[2].as.f, a[3].as.f, a[4].as.f, x, a[6].as.f, sc, 0);
+    }
+    return vnone();
+}
+static Value n_imagepart(VM* vm, Value* a) {
+    Value b[8]; memcpy(b, a, sizeof(Value) * 7); b[7] = vfloat(1); return n_imagepart8(vm, b);
+}
+/* Gfx.ImageRot(img, x, y, angle, scale): centred at x, y, turned by angle degrees (clockwise) */
+static Value n_imagerot(VM* vm, Value* a) {
+    Img* im = image_of(vm, a[0], "Gfx.ImageRot");
+    if (im) {
+        float sc = a[4].as.f, w = im->w * sc, h = im->h * sc;
+        float aw = w < 0 ? -w : w, ah = h < 0 ? -h : h;
+        if (be && be->image)
+            be->image(im->id, 0, 0, (float)im->w, (float)im->h, a[1].as.f - aw / 2, a[2].as.f - ah / 2, w, h,
+                      a[3].as.f * 3.14159265f / 180.0f, argb(0xFFFFFF));
+    }
+    return vnone();
+}
+static Value n_imagewidth(VM* vm, Value* a) { Img* im = image_of(vm, a[0], "Gfx.ImageWidth"); return vint(im ? im->w : 0); }
+static Value n_imageheight(VM* vm, Value* a) { Img* im = image_of(vm, a[0], "Gfx.ImageHeight"); return vint(im ? im->h : 0); }
+
 /* ---------- Input ---------- */
 static Value n_held(VM* vm, Value* a) { (void)vm; return vbool((held & (uint32_t)a[0].as.i) != 0); }
 static Value n_pressed(VM* vm, Value* a) { (void)vm; uint32_t b = (uint32_t)a[0].as.i; return vbool((held & b) && !(prevHeld & b)); }
@@ -151,6 +245,14 @@ static const NativeDef gfx[] = {
     {"Gfx", "Alpha", 1, {F}, VD, n_alpha},
     {"Gfx", "Rgb", 3, {I, I, I}, I, n_rgb},
     {"Gfx", "Lerp", 3, {I, I, F}, I, n_lerp},
+    {"Gfx", "LoadImage", 1, {S}, I, n_loadimage},
+    {"Gfx", "Image", 3, {I, F, F}, VD, n_image},
+    {"Gfx", "Image", 4, {I, F, F, F}, VD, n_image4},
+    {"Gfx", "ImagePart", 7, {I, F, F, F, F, F, F}, VD, n_imagepart},
+    {"Gfx", "ImagePart", 8, {I, F, F, F, F, F, F, F}, VD, n_imagepart8},
+    {"Gfx", "ImageRot", 5, {I, F, F, F, F}, VD, n_imagerot},
+    {"Gfx", "ImageWidth", 1, {I}, I, n_imagewidth},
+    {"Gfx", "ImageHeight", 1, {I}, I, n_imageheight},
     {"Gfx", "Width", 0, {0}, I, n_width},
     {"Gfx", "Height", 0, {0}, I, n_height},
     {"Input", "Held", 1, {I}, B, n_held},

@@ -159,17 +159,25 @@ static void run(const char* path, int isProject, int frames) {
     }
     int si = ms_entry(p, MS_ENTRY_STATIC_INIT), mi = ms_entry(p, MS_ENTRY_MAIN);
     int up = ms_hook(p, "Update"), dr = ms_hook(p, "Draw");
-    if (mi < 0 && up < 0) {
-        run_fail("%s", "compile error: line 1: no entry point: add 'static void Main()' or 'static void Update()'");
+    if (mi < 0 && up < 0 && dr < 0) {
+        run_fail("%s", "compile error: line 1: no entry point: add 'static void Main()', 'Update()' or 'Draw()'");
         ms_free_program(p); project_free(&proj);
         return;
     }
     g_ms = 0;
-    if (g_cs) { lib_set_gfx(ui3ds_gfx()); lib_gfx_reset(); }
+    if (g_cs) {
+        lib_set_gfx(ui3ds_gfx());
+        lib_gfx_reset();
+        char imgDir[400];                           /* Gfx.LoadImage("x.png"): in the project, or next to the .cs file */
+        snprintf(imgDir, sizeof imgDir, "%s", path);
+        char* slash = isProject ? NULL : strrchr(imgDir, '/');
+        if (slash) *slash = 0;
+        lib_gfx_set_dir(imgDir);
+    }
     VM* vm = vm_new(p);
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
-    if (ok && up >= 0) {
+    if (ok && (up >= 0 || dr >= 0)) {           /* the frames: Update and / or Draw */
         for (int f = 0; (frames < 0 || f < frames) && ok; f++) {
             int game = 0;                           /* a frame of a game: Draw paints the screens */
             if (frames < 0) {
@@ -187,7 +195,7 @@ static void run(const char* path, int isProject, int frames) {
                 }
             }
             g_ms += 1000.0 / 60;
-            ok = call(vm, up);
+            ok = up < 0 || call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);
             if (ok && dr >= 0) ok = call(vm, dr);
             if (g_inGameFrame) { ui3ds_frame_end(); g_inGameFrame = 0; }

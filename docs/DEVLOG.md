@@ -190,3 +190,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Etap 3, grafika 2D: API `Gfx`/`Input`/`Time`/`App` napisane raz w `lib/gfx.c`, platforma daje tylko kilka
   funkcji rysujących. Host PC rysuje w pamięci i umie „nacisnąć” przyciski w wybranych klatkach, więc gry da się
   testować w CI po skrócie obrazu. Pięć testów czekających od początku na Gfx/Input/App wreszcie przechodzi.
+- 2026-11-14: Obrazki: `Gfx.LoadImage` + `Image`/`ImagePart`/`ImageRot` z odbiciem, skalą i przezroczystością; PNG dekoduje
+  `stb_image`. Na 3DS tekstury układam ręcznie w kafelki 8×8 (porządek Mortona, wiersze od dołu) – do sprawdzenia na
+  konsoli. Przy okazji wyszło, że program z samym `Draw()` nie dostawał klatek, a test grafiki porównywał czarny ekran.

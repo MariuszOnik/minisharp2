@@ -54,6 +54,7 @@ else
     # Printer AST: program wydrukowany przez --print działa tak samo jak oryginał (print/<nazwa>; bez rt_*,
     # bo ich komunikaty mają numery linii, które po wydruku są inne)
     rm -rf build/print; mkdir -p build/print
+    [ -d tests/assets ] && cp -r tests/assets build/print/    # obrazki testów (Gfx.LoadImage szuka obok programu)
     for f in tests/*.cs; do
         n=$(basename "$f" .cs)
         [ -f "tests/expected/$n.txt" ] || continue

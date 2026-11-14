@@ -284,8 +284,8 @@ int main(int argc, char** argv) {
     }
     int si = ms_entry(p, MS_ENTRY_STATIC_INIT), mi = ms_entry(p, MS_ENTRY_MAIN);
     int up = ms_hook(p, "Update"), dr = ms_hook(p, "Draw");
-    if (mi < 0 && up < 0) {
-        fprintf(stderr, "compile error: line 1: no entry point: add 'static void Main()' or 'static void Update()'\n");
+    if (mi < 0 && up < 0 && dr < 0) {
+        fprintf(stderr, "compile error: line 1: no entry point: add 'static void Main()', 'Update()' or 'Draw()'\n");
         ms_free_program(p); project_free(&proj);
         return 1;
     }
@@ -296,15 +296,22 @@ int main(int argc, char** argv) {
     const GfxBackend* screens = swgfx_init();
     lib_set_gfx(screens);
     lib_gfx_reset();
+    {                                               /* Gfx.LoadImage("x.png"): next to the program (or in the project) */
+        char imgDir[512];
+        snprintf(imgDir, sizeof imgDir, "%s", isProject ? dir : argv[1]);
+        char* slash = isProject ? NULL : strrchr(imgDir, '/');
+        if (!isProject) { if (slash) *slash = 0; else snprintf(imgDir, sizeof imgDir, "."); }
+        lib_gfx_set_dir(imgDir);
+    }
     VM* vm = vm_new(p);
     int ok = si < 0 || call(vm, si);
     if (ok && mi >= 0) ok = call(vm, mi);
-    if (ok && up >= 0) {
+    if (ok && (up >= 0 || dr >= 0)) {           /* the frames: Update and / or Draw */
         for (int f = 0; f < frames && ok; f++) {
             g_ms += 1000.0 / 60;
             input_for_frame(f);
             swgfx_begin_frame();
-            ok = call(vm, up);
+            ok = up < 0 || call(vm, up);
             if (ok) ok = vm_tick_coroutines(vm);    /* after Update, before Draw, like Unity */
             if (ok && dr >= 0) ok = call(vm, dr);
             lib_time_frame(1.0f / 60);

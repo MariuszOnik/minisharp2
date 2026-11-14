@@ -68,7 +68,64 @@ static void g_text(float x, float y, const char* s, float size, uint32_t argb) {
     float sc = size / g_fontPx;
     C2D_DrawText(&t, C2D_WithColor, x, y, 0.5f, sc, sc, acol(argb));
 }
-static const GfxBackend GFX = { 2, { 400, 320 }, { 240, 240 }, s_select, g_clear, g_rect, g_circle, g_line, g_text, s_width };
+/* pictures: GPU textures (RGBA8, sides a power of two from 8 to 1024) in the 3DS tiled order, rows from the bottom */
+#define MAX_PICS 256
+typedef struct { C3D_Tex tex; int w, h, tw, th; } Pic;
+static Pic g_pics[MAX_PICS];
+static int g_npics;
+
+static int pow2(int n) { int p = 8; while (p < n) p <<= 1; return p; }
+
+static int g_image_create(const unsigned char* rgba, int w, int h) {
+    if (g_npics == MAX_PICS || w <= 0 || h <= 0 || w > 1024 || h > 1024) return -1;
+    Pic* p = &g_pics[g_npics];
+    int tw = pow2(w), th = pow2(h);
+    if (!C3D_TexInit(&p->tex, (u16)tw, (u16)th, GPU_RGBA8)) return -1;
+    u32* dst = (u32*)p->tex.data;
+    memset(dst, 0, (size_t)tw * th * 4);
+    for (int y = 0; y < h; y++) {
+        int fy = th - 1 - y;                        /* the texture's first row is the picture's bottom */
+        for (int x = 0; x < w; x++) {
+            const unsigned char* c = rgba + ((size_t)y * w + x) * 4;
+            u32 tile = (u32)(((fy >> 3) * (tw >> 3) + (x >> 3)) << 6);
+            u32 in = (u32)((x & 1) | ((fy & 1) << 1) | ((x & 2) << 1) | ((fy & 2) << 2) | ((x & 4) << 2) | ((fy & 4) << 3));
+            dst[tile + in] = ((u32)c[0] << 24) | ((u32)c[1] << 16) | ((u32)c[2] << 8) | c[3];   /* RGBA8: A B G R in memory */
+        }
+    }
+    GSPGPU_FlushDataCache(p->tex.data, (u32)tw * th * 4);
+    C3D_TexSetFilter(&p->tex, GPU_NEAREST, GPU_NEAREST);     /* pixel art stays sharp when scaled */
+    C3D_TexSetWrap(&p->tex, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+    p->w = w; p->h = h; p->tw = tw; p->th = th;
+    return g_npics++;
+}
+
+static void g_image(int id, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, float angle, uint32_t argb) {
+    if (id < 0 || id >= g_npics || dw == 0 || dh == 0) return;
+    Pic* p = &g_pics[id];
+    Tex3DS_SubTexture st;
+    st.width = (u16)sw; st.height = (u16)sh;
+    st.left = sx / p->tw; st.right = (sx + sw) / p->tw;
+    st.top = 1.0f - sy / p->th; st.bottom = 1.0f - (sy + sh) / p->th;
+    C2D_Image img = { &p->tex, &st };
+    float aw = dw < 0 ? -dw : dw, ah = dh < 0 ? -dh : dh;
+    C2D_DrawParams pr;
+    pr.pos.x = dx + aw / 2; pr.pos.y = dy + ah / 2; pr.pos.w = dw; pr.pos.h = dh;   /* a negative size mirrors */
+    pr.center.x = dw / 2; pr.center.y = dh / 2;
+    pr.depth = 0.5f; pr.angle = angle;
+    unsigned a = argb >> 24;
+    if (a >= 255) { C2D_DrawImage(img, &pr, NULL); return; }
+    C2D_ImageTint tint;
+    C2D_AlphaImageTint(&tint, a / 255.0f);
+    C2D_DrawImage(img, &pr, &tint);
+}
+
+static void g_image_free_all(void) {
+    for (int i = 0; i < g_npics; i++) C3D_TexDelete(&g_pics[i].tex);
+    g_npics = 0;
+}
+
+static const GfxBackend GFX = { 2, { 400, 320 }, { 240, 240 }, s_select, g_clear, g_rect, g_circle, g_line, g_text, s_width,
+                                g_image_create, g_image, g_image_free_all };
 const GfxBackend* ui3ds_gfx(void) { return &GFX; }
 
 int ui3ds_init(void) {

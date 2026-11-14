@@ -66,3 +66,5 @@ gry (ToEE, Fallout) to moduły w swoich repozytoriach, **nic z gier w rdzeniu**.
   prawdziwy znak nowej linii (zepsute `printf("\n")`). Zmiany w kodzie C z `\n`, `\r`, `\\` rób narzędziem **Edit**
   (albo skrypt zapisany narzędziem Write), nie Pythonem z heredoku. Nie pisz też `cat > plik` bez heredoku – czeka na stdin.
 - Wyniki testów zapisuj do plików, w czacie tylko podsumowanie.
+- `tests/run_tests.sh` ma w wyrażeniu awk **dosłowny znak CR**: Python czytający plik w trybie tekstowym zamienia go na
+  nową linię i psuje skrypt. Edytuj go narzędziem Edit albo w Pythonie z `open(..., newline='')`.

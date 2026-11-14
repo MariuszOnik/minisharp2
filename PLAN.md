@@ -165,6 +165,14 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - [x] `platform/pc`: ekrany w pamięci (`swgfx.c`, 400×240 + 320×240, czarne na początku klatki), `--press A@10`,
       `--press Left@5-20`, `--touch 3@100,50`, `--hash` (skrót obrazu do testów), `--ppm plik` (zrzut 400×480);
       testy `gfx_draw`, `input_frames`. Tekst na PC to prostokąt na znak (czcionka to sprawa platformy).
+- [x] **Obrazki** (2026-11-14): `Gfx.LoadImage("plik.png")` (PNG/JPG/BMP/GIF/TGA przez `stb_image` w
+      `lib/third_party`, domena publiczna; ścieżka względem folderu programu; ten sam plik = ten sam numer),
+      `Gfx.Image(img, x, y[, skala])` (ujemna skala = odbicie), `Gfx.ImagePart(img, sx, sy, sw, sh, x, y[, skala])` (arkusz
+      sprite'ów), `Gfx.ImageRot(img, x, y, kąt, skala)`, `ImageWidth/Height`, `Gfx.Alpha` działa też na obrazki. Obrazek to
+      `int` (jak kolor). PC: próbkowanie najbliższego piksela; 3DS: tekstura RGBA8 w kafelkach 8×8, wiersze od dołu,
+      filtr NEAREST, do 1024×1024. Test `gfx_image` (+ `tests/assets/sheet.png`). Poprawka: pętla klatek rusza też dla
+      programu z samym `Draw()` (wcześniej tylko z `Update()`).
+      **Sprawdzić na konsoli:** czy obrazek nie jest do góry nogami i czy obrót idzie zgodnie z ruchem wskazówek zegara.
 - [ ] `platform/3ds`: ekran, obrazki, dźwięk, dotyk, rysowanie do obrazka, teren; `Gfx`, `Input`, `Audio`, `Time`, `App`, `File`.
 - [ ] **Podział `Console` na warstwy** (decyzja użytkownika 2026-11-13): `Console` to biblioteka, nie część języka ani platformy.
       (1) API jak w C# (`Write`, `WriteLine`, `ReadLine`, `Clear`, kolory, `SetCursorPosition`) w `lib/`, w C; wygodne dodatki

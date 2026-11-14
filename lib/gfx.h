@@ -20,6 +20,13 @@ typedef struct {
     void (*line)(float x1, float y1, float x2, float y2, float width, uint32_t argb);
     void (*text)(float x, float y, const char* s, float size, uint32_t argb);   /* size = line height, y = top */
     float (*textWidth)(const char* s, float size);
+    /* pictures: imageCreate makes one from RGBA pixels (rows from the top) and gives its number, -1 = cannot;
+     * image draws the part sx, sy, sw, sh of it into dx, dy, dw, dh (a negative dw / dh mirrors it), turned by
+     * 'angle' radians around the centre of that rectangle; the alpha of argb is its transparency.
+     * imageFreeAll forgets every picture (a new program). */
+    int (*imageCreate)(const unsigned char* rgba, int w, int h);
+    void (*image)(int id, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, float angle, uint32_t argb);
+    void (*imageFreeAll)(void);
 } GfxBackend;
 
 /* NULL = no screen: drawing does nothing, Gfx.Width/Height give 0 */
@@ -35,8 +42,10 @@ enum {
 void lib_input_frame(uint32_t held, int touching, int x, int y);
 /* Time.Delta (seconds since the last frame) and Time.Frame: the host calls it once per frame */
 void lib_time_frame(float delta);
-/* a new program: no buttons, frame 0, opaque drawing, the top screen */
+/* a new program: no buttons, frame 0, opaque drawing, the top screen, no pictures */
 void lib_gfx_reset(void);
+/* the folder Gfx.LoadImage("hero.png") looks in: the program's folder (a project) or the folder of its .cs file */
+void lib_gfx_set_dir(const char* dir);
 
 void lib_register_gfx(void);        /* Gfx, Color, Screen, Input, Btn, Time, App (lib_register_all calls it) */
 

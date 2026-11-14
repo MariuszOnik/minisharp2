@@ -1,1 +1,1 @@
-compile error: line 1: no entry point: add 'static void Main()' or 'static void Update()'
+compile error: line 1: no entry point: add 'static void Main()', 'Update()' or 'Draw()'
