@@ -64,7 +64,9 @@ enum { T_VOID, T_INT, T_FLOAT, T_BOOL, T_STRING, T_NULL, T_CLASS, T_ARRAY, T_ANY
        T_STRARR /* string[], only in native signatures */, T_CORO /* IEnumerator / Coroutine */,
        T_DICT, T_KVP /* Dictionary<K,V> and the KeyValuePair<K,V> of its foreach */,
        T_FUNC /* Func<...> / Action<...> / Predicate<T> / Comparison<T> */,
-       T_ENUM /* an int at run time */, T_STRUCT /* an ObjInstance that is copied when it is stored */ };
+       T_ENUM /* an int at run time */, T_STRUCT /* an ObjInstance that is copied when it is stored */,
+       T_OBJECT /* only in native signatures: any reference (an object, array, list, string...) or null, passed as
+                   it is (T_ANY turns objects into their ToString text) */ };
 
 /* ---------- natives ---------- */
 typedef Value (*NativeFn)(VM* vm, Value* args);

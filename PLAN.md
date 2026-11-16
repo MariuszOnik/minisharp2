@@ -374,6 +374,12 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
 - **Refleksja w języku: dodajemy** (`GetType`, `typeof`, `Activator.CreateInstance`, `FieldInfo` – podzbiór C#; punkt I2).
 - Fizyka tylko „lite” (proste kolizje + prosta grawitacja); modele 3D na mapie iso i pełna fizyka – na razie nie.
 
+## Prośby z gier (poza kolejnością)
+
+- [x] 2026-11-16 (3dsOpenworld): rodzaj parametru funkcji natywnej `T_OBJECT` („object”): dowolna referencja albo null
+  przekazana jak jest. `T_ANY` zamieniał obiekty na tekst z `ToString`, więc host nie mógł dostać obiektu skryptu
+  (np. `Game.Say(npc, ...)`). Test `tests/unit/test_object.c`.
+
 ## Do decyzji
 
 - (rozstrzygnięte 2026-11-13: `char` = punkt kodowy Unicode; `int[,]` – dodać do języka.)

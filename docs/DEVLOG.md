@@ -229,3 +229,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-14: Sortowanie izometryczne przeniesione do `modules/iso/iso_sort.c` – ten sam algorytm co w starym `iso.c`,
   ale stan w strukturze, więc edytor będzie mógł mieć mapę i podgląd prefabu naraz. Test na mieście 24×24 z ludzikami:
   kolejność zgodna z testem wszystkich par, a na klatkę sprawdza się ~970 par zamiast 242 tysięcy.
+- 2026-11-16: Funkcje natywne mogą brać parametr `T_OBJECT` (w podpowiedziach „object”): skrypt podaje swój obiekt,
+  tablicę albo listę, a host dostaje samą referencję, nie tekst z `ToString` jak przy `T_ANY`. Prośba z 3dsOpenworld
+  (hooki NPC z dwoma obiektami); liczby nie pasują do `object`, test `test_object`.

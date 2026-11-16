@@ -20,7 +20,7 @@ struct Type {
 };
 
 extern Type tVoid, tInt, tFloat, tBool, tString,
-            tNull, tAny, tChar, tCoro;
+            tNull, tAny, tChar, tCoro, tObject;
 
 /* enum member: isStatic, slot unused, value = its number */
 typedef struct { const char* name; int nlen; Type* type; int isStatic; int slot; FieldDecl* decl; int32_t value; int owner; } CField;

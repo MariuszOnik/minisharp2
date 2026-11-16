@@ -6,7 +6,8 @@
 #include <stdarg.h>
 
 Type tVoid = {.k = T_VOID}, tInt = {.k = T_INT}, tFloat = {.k = T_FLOAT}, tBool = {.k = T_BOOL}, tString = {.k = T_STRING},
-     tNull = {.k = T_NULL}, tAny = {.k = T_ANY}, tChar = {.k = T_CHAR}, tCoro = {.k = T_CORO};
+     tNull = {.k = T_NULL}, tAny = {.k = T_ANY}, tChar = {.k = T_CHAR}, tCoro = {.k = T_CORO},
+     tObject = {.k = T_OBJECT};
 
 void cfail(C* c, int line, const char* fmt, ...) {
     char msg[220];
@@ -68,7 +69,7 @@ const char* type_name(C* c, Type* t) {
     switch (t->k) {
         case T_VOID: return "void"; case T_INT: return "int"; case T_FLOAT: return "float";
         case T_BOOL: return "bool"; case T_STRING: return "string"; case T_NULL: return "null";
-        case T_ANY: return "any"; case T_CHAR: return "char"; case T_CORO: return "IEnumerator";
+        case T_ANY: return "any"; case T_CHAR: return "char"; case T_CORO: return "IEnumerator"; case T_OBJECT: return "object";
         case T_LIST: snprintf(b, 96, "List<%s>", type_name(c, t->elem)); return b;
         case T_DICT: snprintf(b, 96, "Dictionary<%s, %s>", type_name(c, t->key), type_name(c, t->elem)); return b;
         case T_KVP: snprintf(b, 96, "KeyValuePair<%s, %s>", type_name(c, t->key), type_name(c, t->elem)); return b;
@@ -93,6 +94,7 @@ int type_isref(Type* t) { return t->k == T_STRING || t->k == T_CLASS || t->k == 
 int assignable(Type* from, Type* to) {
     if (from == to) return 1;
     if (to->k == T_ANY) return from->k != T_VOID;
+    if (to->k == T_OBJECT) return type_isref(from) || from->k == T_STRUCT;   /* a native's 'object': the reference itself */
     if (from->k == T_INT && to->k == T_FLOAT) return 1;
     if (from->k == T_CHAR && (to->k == T_INT || to->k == T_FLOAT)) return 1;
     if (from->k == T_NULL && (to->k == T_STRING || to->k == T_CLASS || to->k == T_ARRAY || to->k == T_LIST || to->k == T_DICT || to->k == T_CORO || to->k == T_FUNC)) return 1;
@@ -103,7 +105,7 @@ int assignable(Type* from, Type* to) {
 Type* code_type(C* c, int k) {
     switch (k) {
         case T_INT: return &tInt; case T_FLOAT: return &tFloat; case T_BOOL: return &tBool;
-        case T_STRING: return &tString; case T_ANY: return &tAny; case T_CHAR: return &tChar;
+        case T_STRING: return &tString; case T_ANY: return &tAny; case T_CHAR: return &tChar; case T_OBJECT: return &tObject;
         case T_STRARR: return array_of(c, &tString);
         default: return &tVoid;
     }

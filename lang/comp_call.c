@@ -309,7 +309,8 @@ static Type* call_native(C* c, Expr* e, const char* cls, int clen, int self) {
             int ok = 1;
             for (int q = 0; q < e->nargs && ok; q++) {
                 Type* pt = code_type(c, d->params[q + self]);
-                ok = pass == 0 ? (at[q] == pt || (pt->k == T_ANY && at[q]->k != T_VOID) || (at[q]->k == T_NULL && pt->k == T_STRING))
+                ok = pass == 0 ? (at[q] == pt || (pt->k == T_ANY && at[q]->k != T_VOID) || (at[q]->k == T_NULL && pt->k == T_STRING) ||
+                                  (pt->k == T_OBJECT && assignable(at[q], pt)))
                                : assignable(at[q], pt);
             }
             if (ok) { ni = i; break; }
