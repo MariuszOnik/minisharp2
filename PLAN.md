@@ -81,6 +81,7 @@ Opis docelowy: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md). Dev log: [docs/DEVL
       przestrzenie zagnieżdżone, kolejność szukania).
 - [x] Rozdział 16 „Pierwsza gra: Update i Draw” (klatki, rysowanie, przyciski i dotyk, czas, gra „zbierz gwiazdki”).
 - [x] Rozdział 17 „Obrazki i sprite'y” (LoadImage, skala i odbicie, arkusz i animacja, obrót, gra z monetami).
+- [x] Rozdział 19 „Ściąga: grafika i przyciski” (pełne API `Gfx`, `Color`, `Screen`/`Layout`, `Input`/`Btn`, dotyk, `Time`, `App`).
 - [ ] Kolejne rozdziały (propozycja kolejności):
       korutyny, projekty (`uses.txt`), dźwięk; poradniki krok po kroku; ściąga API.
       Dla gotowego już kodu najpierw rozdziały języka, rozdziały o grafice i projektach – gdy powstaną te części.

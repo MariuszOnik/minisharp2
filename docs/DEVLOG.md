@@ -232,3 +232,6 @@ Co sesję 1–3 zdania: co zrobione, co postanowione, na co uważać. Najnowsze 
 - 2026-11-16: Funkcje natywne mogą brać parametr `T_OBJECT` (w podpowiedziach „object”): skrypt podaje swój obiekt,
   tablicę albo listę, a host dostaje samą referencję, nie tekst z `ToString` jak przy `T_ANY`. Prośba z 3dsOpenworld
   (hooki NPC z dwoma obiektami); liczby nie pasują do `object`, test `test_object`.
+- 2026-11-17: Rozdział 19 Help „Ściąga: grafika i przyciski” – wszystkie funkcje `Gfx`/`Input`/`Time`/`App` z `lib/gfx.c`
+  w jednym miejscu (m.in. dotąd nieopisane `TextWidth`, `Lerp`, `TouchScreen`). Testy na konsoli: 253 ok, 6 różnic tylko
+  w testach zależnych od ekranów i nagranych klawiszy PC.
